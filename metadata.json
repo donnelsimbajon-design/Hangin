@@ -1,0 +1,6 @@
+{
+  "name": "Hangin - Self-Care & Mental Wellness Companion",
+  "description": "A soothing mental wellness companion application featuring interactive 3D animal companions (dog and cat), gentle habit tracking, guided mindfulness, private journaling, and peer support.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

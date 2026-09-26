@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="192" height="192">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#10b981"/>
+      <stop offset="50%" stop-color="#059669"/>
+      <stop offset="100%" stop-color="#064e3b"/>
+    </linearGradient>
+    <linearGradient id="leafGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#cbebd6"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="128" fill="url(#bg)"/>
+  <path d="M 80 160 C 180 120, 260 200, 360 170 C 410 155, 430 130, 450 140" fill="none" stroke="rgba(255,255,255,0.22)" stroke-width="18" stroke-linecap="round"/>
+  <path d="M 256 120 C 360 140, 410 240, 370 340 C 330 420, 240 430, 190 390 C 140 350, 130 260, 160 190 C 180 140, 220 120, 256 120 Z" fill="url(#leafGrad)"/>
+  <path d="M 256 140 Q 250 280 200 400" fill="none" stroke="#059669" stroke-width="12" stroke-linecap="round"/>
+  <path d="M 250 230 Q 300 210 330 220" fill="none" stroke="#059669" stroke-width="8" stroke-linecap="round"/>
+  <path d="M 245 280 Q 295 270 325 290" fill="none" stroke="#059669" stroke-width="8" stroke-linecap="round"/>
+  <g fill="#047857" opacity="0.85">
+    <ellipse cx="230" cy="340" rx="14" ry="11"/>
+    <circle cx="215" cy="320" r="5"/>
+    <circle cx="228" cy="314" r="5"/>
+    <circle cx="242" cy="318" r="5"/>
+  </g>
+</svg>
