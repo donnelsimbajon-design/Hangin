@@ -831,16 +831,6 @@ export const HomeScenicStage: React.FC<HomeScenicStageProps> = ({
             </span>
           </span>
 
-          {onChangeSpecies && (
-            <button
-              onClick={toggleSpecies}
-              className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-emerald-700/80 hover:bg-emerald-600 text-emerald-100 border border-emerald-400/40 shadow-sm hover:shadow-md active:scale-90 cursor-pointer transition-all"
-              title={`Switch to ${species === 'dog' ? 'Cat' : 'Dog'}`}
-              aria-label={`Switch to ${species === 'dog' ? 'Cat' : 'Dog'}`}
-            >
-              <Repeat className="w-3.5 h-3.5" />
-            </button>
-          )}
           {onOpenChat && (
             <button
               onClick={onOpenChat}

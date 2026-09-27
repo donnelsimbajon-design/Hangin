@@ -266,56 +266,32 @@ export const AccountView: React.FC<AccountViewProps> = ({
                   </p>
                 </div>
 
-                {/* Pet Switch */}
-                {onChangeSpecies && (
-                  <div className="w-full">
-
-                    <p className="text-xs font-medium text-slate-500 dark:text-slate-400 text-center sm:text-left">
-                      Switch Pet
-                    </p>
-
-                    <div
-                      role="group"
-                      aria-label="Choose your companion"
-                      className="mt-1.5 grid grid-cols-2 gap-1 rounded-xl border border-emerald-200 dark:border-slate-700 bg-emerald-50/60 dark:bg-slate-800/60 p-1"
-                    >
-                      {speciesOptions.map((option) => {
-                        const isActive = option === species;
-
-                        const Icon =
-                          option === 'dog'
-                            ? Dog
-                            : Cat;
-
-                        return (
-                          <button
-                            key={option}
-                            type="button"
-                            aria-pressed={isActive}
-                            onClick={() => {
-                              if (!isActive) {
-                                onChangeSpecies(option);
-                              }
-                            }}
-                            className={`inline-flex items-center justify-center gap-1.5 rounded-lg px-2 py-2 text-xs font-semibold transition-colors cursor-pointer ${
-                              isActive
-                                ? 'bg-white dark:bg-slate-900 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-slate-700 shadow-sm'
-                                : 'border border-transparent text-slate-500 dark:text-slate-400 hover:text-emerald-700 dark:hover:text-emerald-300 hover:bg-white/60 dark:hover:bg-slate-700/60'
-                            }`}
-                          >
-                            <Icon className="w-4 h-4" />
-
-                            <span>
-                              {option === 'dog'
-                                ? 'Dog'
-                                : 'Cat'}
-                            </span>
-                          </button>
-                        );
-                      })}
-                    </div>
+                {/* Chosen Companion Badge */}
+                <div className="w-full">
+                  <p className="text-xs font-medium text-slate-500 dark:text-slate-400 text-center sm:text-left">
+                    Chosen Companion
+                  </p>
+                  <div className="mt-1.5 flex items-center justify-center sm:justify-start gap-2 rounded-xl border border-emerald-200 dark:border-slate-700 bg-emerald-50/70 dark:bg-slate-800/60 p-2.5 px-3">
+                    {species === 'dog' ? (
+                      <>
+                        <Dog className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                        <span className="text-xs font-bold text-slate-900 dark:text-emerald-100">
+                          Habi the Dog
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        <Cat className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                        <span className="text-xs font-bold text-slate-900 dark:text-emerald-100">
+                          Muning the Cat
+                        </span>
+                      </>
+                    )}
+                    <span className="ml-auto text-[10px] font-black uppercase tracking-wider text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-950/80 px-2 py-0.5 rounded-full">
+                      Selected
+                    </span>
                   </div>
-                )}
+                </div>
               </div>
 
               {/* Right: name field, wellness points, wardrobe */}

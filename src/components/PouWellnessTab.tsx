@@ -872,16 +872,6 @@ export const PouWellnessTab: React.FC<PouWellnessTabProps> = ({
               </span>
             </div>
           </div>
-
-          {onChangeSpecies && (
-            <button
-              onClick={toggleSpecies}
-              title={`Switch to ${species === 'dog' ? 'Cat' : 'Dog'}`}
-              className="flex items-center justify-center w-8 h-8 rounded-full bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 border border-emerald-200 dark:border-emerald-800/60 text-emerald-700 dark:text-emerald-300 cursor-pointer transition-colors shrink-0"
-            >
-              <Repeat className="w-4 h-4" />
-            </button>
-          )}
         </div>
 
         <div className="grid grid-cols-4 gap-2.5 text-center">

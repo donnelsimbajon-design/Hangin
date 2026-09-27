@@ -14,7 +14,7 @@ import {
   Apple,
   Droplets,
 } from 'lucide-react';
-import { ThreePetCanvas } from './ThreePetCanvas';
+import { CuteCompanion } from './CuteCompanion';
 import { PetSpecies, PetAnimationMood, PetStats, EquippedAccessories, Inventory } from '../types';
 
 interface CompanionStageProps {
@@ -176,12 +176,14 @@ export const CompanionStage: React.FC<CompanionStageProps> = ({
           </div>
         </div>
 
-        {/* 3D WebGL Canvas */}
-        <ThreePetCanvas
+        {/* 2D Companion Mascot */}
+        <CuteCompanion
           species={species}
-          animationMood={stats.isSleeping ? 'sleeping' : currentMood}
+          mood={stats.isSleeping ? 'sleeping' : currentMood}
           equipped={equipped}
           onPet={handlePet}
+          size="hero"
+          interactive={true}
         />
 
         {/* Live Interaction Toast */}
