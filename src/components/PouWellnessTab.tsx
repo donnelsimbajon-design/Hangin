@@ -17,6 +17,40 @@ import {
   RefreshCw,
   Repeat,
   MessageSquare,
+  Zap,
+  Gamepad2,
+  Send,
+  X,
+  Package,
+  PackageOpen,
+  Refrigerator,
+  Brush,
+  CloudRain,
+  BriefcaseMedical,
+  HeartPulse,
+  Fan,
+  Apple,
+  Bandage,
+  Beef,
+  Bed,
+  Bone,
+  Cat,
+  Cookie,
+  Dog,
+  Droplet,
+  Fish,
+  FlaskConical,
+  Leaf,
+  Milk,
+  PawPrint,
+  Search,
+  Shield,
+  ShoppingCart,
+  Soup,
+  Sparkle,
+  Sprout,
+  Thermometer,
+  Volleyball,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { CuteCompanion } from './CuteCompanion';
@@ -41,13 +75,375 @@ interface PouWellnessTabProps {
 
 type CareRoom = 'kitchen' | 'bathroom' | 'bedroom' | 'outside' | 'clinic';
 
+type ScenePlaceId = CareRoom | 'games';
+
+interface ScenePlace {
+  id: ScenePlaceId;
+  label: string;
+  icon: React.ElementType;
+}
+
+/** Room ids map straight onto CareRoom, so tapping an icon performs exactly the
+    same navigation the old room dock did. "games" is scene-only: it opens the
+    mini-games modal and is deliberately not a CareRoom / not in the dock. */
+const SCENE_PLACES: ScenePlace[] = [
+  { id: 'kitchen', label: 'Kitchen', icon: Utensils },
+  { id: 'bathroom', label: 'Bathroom', icon: Bath },
+  { id: 'bedroom', label: 'Bedroom', icon: Moon },
+  { id: 'outside', label: 'Outside', icon: Trees },
+  { id: 'clinic', label: 'Clinic', icon: Pill },
+  { id: 'games', label: 'Games', icon: Gamepad2 },
+];
+
+interface ScenePlaceRailProps {
+  activeRoom: CareRoom;
+  isGamesOpen: boolean;
+  revealedPlace: ScenePlaceId | null;
+  onReveal: (id: ScenePlaceId | null) => void;
+  onSelectRoom: (room: CareRoom) => void;
+  onOpenGames: () => void;
+}
+
+/** The right-side place rail rendered inside each scenery. Icon-only at rest;
+    tapping an icon reveals that one label, and tapping another swaps to it.
+    Every button is a FIXED square and the label is absolutely positioned, so
+    revealing a label can never resize, shift or reflow that button, any
+    sibling icon, or the rail container itself. */
+const ScenePlaceRail: React.FC<ScenePlaceRailProps> = ({
+  activeRoom,
+  isGamesOpen,
+  revealedPlace,
+  onReveal,
+  onSelectRoom,
+  onOpenGames,
+}) => (
+  <div className="absolute top-10 right-1.5 sm:top-12 sm:right-3 z-30 flex flex-col items-center gap-1.5">
+    {SCENE_PLACES.map((place) => {
+      const PlaceIcon = place.icon;
+      const isLabelOpen = revealedPlace === place.id;
+      const isActive = place.id === 'games' ? isGamesOpen : activeRoom === place.id;
+      return (
+        <button
+          key={place.id}
+          onClick={() => {
+            if (place.id === 'games') {
+              onOpenGames();
+            } else {
+              onSelectRoom(place.id);
+            }
+            // Only ever one label visible: tapping the open icon closes it.
+            onReveal(isLabelOpen ? null : place.id);
+          }}
+          aria-label={place.label}
+          aria-pressed={isActive}
+          title={place.label}
+          className={`relative shrink-0 h-8 w-8 flex items-center justify-center rounded-full border shadow-sm transition-all active:scale-95 cursor-pointer ${
+            isActive
+              ? 'bg-emerald-500 border-emerald-600 shadow-md'
+              : 'bg-white/95 dark:bg-emerald-950/90 border-emerald-200 dark:border-[#2d4d41]/75 hover:shadow-md'
+          }`}
+        >
+          {/* Label lives OUT of flow (absolute, to the left of the button) so it
+              cannot affect any layout. The outer span owns the vertical centring
+              and the inner span owns the slide/fade, so the two transforms on the
+              same axis never fight each other. */}
+          <span className="absolute right-[calc(100%+0.375rem)] top-1/2 -translate-y-1/2 pointer-events-none">
+            <span
+              className={`block max-w-[6rem] truncate whitespace-nowrap rounded-full border px-2 py-1 text-[10px] font-black shadow-sm transition-all duration-200 ease-out ${
+                isLabelOpen ? 'translate-x-0 opacity-100' : '-translate-x-1.5 opacity-0'
+              } ${
+                isActive
+                  ? 'bg-emerald-500 border-emerald-600 text-white'
+                  : 'bg-white/95 dark:bg-emerald-950/95 border-emerald-200 dark:border-[#2d4d41]/75 text-emerald-900 dark:text-emerald-100'
+              }`}
+            >
+              {place.label}
+            </span>
+          </span>
+          <PlaceIcon
+            className={`w-4 h-4 shrink-0 ${
+              isActive ? 'text-white' : 'text-emerald-600 dark:text-emerald-300'
+            }`}
+          />
+        </button>
+      );
+    })}
+  </div>
+);
+
+/** Every glyph in this tab is a Lucide component rather than an emoji, so the
+    whole file shares one visual language and every mark can be recoloured or
+    resized by `className`. */
+type IconComponent = React.ElementType<{ className?: string }>;
+
+interface KitchenItem {
+  id: string;
+  name: string;
+  icon: IconComponent;
+  /** Tailwind text-color classes (light + dark) matching this item's real-world
+      colour — e.g. the reddish tone of raw beef, the pink of salmon, the blue of
+      water — so the glyph itself reads as that food rather than a generic tint. */
+  color: string;
+  type: 'food' | 'drink';
+  inventoryKey: keyof Inventory;
+  xp: number;
+}
+
+/** The kitchen's food + drink selection, defined ONCE and shared by the in-scene
+    pantry shelf and the draggable tray below it, so the two can never drift
+    apart. Drinks reuse the existing water / herbalTea inventory. */
+const kitchenItemsFor = (species: PetSpecies): KitchenItem[] => [
+  ...(species === 'dog'
+    ? [
+        { id: 'kibble', name: 'Beef Kibble', icon: Beef, color: 'text-red-700 dark:text-red-400', type: 'food' as const, inventoryKey: 'kibble' as keyof Inventory, xp: 5 },
+        { id: 'bone', name: 'Puppy Bone', icon: Bone, color: 'text-stone-400 dark:text-stone-300', type: 'food' as const, inventoryKey: 'bone' as keyof Inventory, xp: 8 },
+        { id: 'treat', name: 'Bickie Treat', icon: Cookie, color: 'text-amber-700 dark:text-amber-500', type: 'food' as const, inventoryKey: 'treat' as keyof Inventory, xp: 3 },
+        { id: 'apple', name: 'Apple Slice', icon: Apple, color: 'text-red-500 dark:text-red-400', type: 'food' as const, inventoryKey: 'apple' as keyof Inventory, xp: 4 },
+      ]
+    : [
+        { id: 'salmon', name: 'Steamed Salmon', icon: Fish, color: 'text-orange-400 dark:text-orange-300', type: 'food' as const, inventoryKey: 'salmon' as keyof Inventory, xp: 8 },
+        { id: 'catKibble', name: 'Tuna Kibble', icon: Fish, color: 'text-rose-400 dark:text-rose-300', type: 'food' as const, inventoryKey: 'catKibble' as keyof Inventory, xp: 5 },
+        { id: 'catnip', name: 'Catnip Herb', icon: Sprout, color: 'text-green-600 dark:text-green-400', type: 'food' as const, inventoryKey: 'catnip' as keyof Inventory, xp: 4 },
+        { id: 'catMilk', name: 'Cat Milk', icon: Milk, color: 'text-slate-300 dark:text-slate-200', type: 'food' as const, inventoryKey: 'catMilk' as keyof Inventory, xp: 3 },
+      ]),
+  { id: 'water', name: 'Fresh Water', icon: Droplet, color: 'text-sky-500 dark:text-sky-400', type: 'drink' as const, inventoryKey: 'water' as keyof Inventory, xp: 2 },
+  { id: 'herbalTea', name: 'Herbal Tea', icon: Leaf, color: 'text-amber-600 dark:text-amber-400', type: 'drink' as const, inventoryKey: 'herbalTea' as keyof Inventory, xp: 3 },
+];
+
+interface MeadowFlowerProps {
+  grown: boolean;
+  swaying: boolean;
+  stormy: boolean;
+}
+
+/** A rooted SVG flower standing in the meadow: stem, two leaves, petals and a
+    centre disc, so it grows out of the ground instead of floating over it as an
+    emoji sticker. `grown` springs it up from a low bud once rain has held, and
+    `swaying` rocks the stem in the wind on a sunny day. Neither animation
+    repeats when its effect is inactive — both fall back to a settled state. */
+const MeadowFlower: React.FC<MeadowFlowerProps> = ({ grown, swaying, stormy }) => {
+  const stem = stormy ? '#14532d' : '#16a34a';
+  const leaf = stormy ? '#166534' : '#22c55e';
+  const petal = stormy ? '#475569' : '#f472b6';
+  const petalAlt = stormy ? '#334155' : '#fbcfe8';
+  const heart = stormy ? '#64748b' : '#fbbf24';
+
+  return (
+    <div className="absolute bottom-2 left-1 z-15 pointer-events-none">
+      {/* Wind sway lives on the OUTER group so the growth scale below is not
+          compounded by it, and it only repeats while `swaying` is true. */}
+      <motion.div
+        className="origin-bottom"
+        animate={swaying ? { rotate: [-3, 3.5, -3] } : { rotate: 0 }}
+        transition={
+          swaying
+            ? { duration: 3.4, repeat: Infinity, ease: 'easeInOut' }
+            : { duration: 0.45, ease: 'easeOut' }
+        }
+      >
+        <motion.div
+          className="origin-bottom"
+          initial={false}
+          animate={{ scale: grown ? 1 : 0.28, y: grown ? 0 : 22 }}
+          transition={{ type: 'spring', stiffness: 110, damping: 13 }}
+        >
+          <svg viewBox="0 0 64 100" className="h-24 sm:h-28 w-auto">
+            {/* Stem, rooted at the bottom of the viewBox */}
+            <path
+              d="M32 98 C 29 74 35 52 32 28"
+              stroke={stem}
+              strokeWidth="4"
+              fill="none"
+              strokeLinecap="round"
+            />
+            {/* Two leaves off the stem */}
+            <path d="M32 70 C 21 68 14 60 12 51 C 25 53 31 62 32 70 Z" fill={leaf} />
+            <path
+              d="M32 58 C 43 56 50 48 52 40 C 39 42 33 50 32 58 Z"
+              fill={leaf}
+              opacity="0.85"
+            />
+            {/* Petals radiating from the head */}
+            {[0, 72, 144, 216, 288].map((angle) => (
+              <ellipse
+                key={angle}
+                cx="32"
+                cy="14"
+                rx="6"
+                ry="10.5"
+                fill={angle % 144 === 0 ? petalAlt : petal}
+                transform={`rotate(${angle} 32 24)`}
+              />
+            ))}
+            {/* Centre disc */}
+            <circle cx="32" cy="24" r="5.5" fill={heart} />
+            <circle cx="30" cy="22" r="1.6" fill={stormy ? '#94a3b8' : '#fde68a'} />
+          </svg>
+        </motion.div>
+      </motion.div>
+    </div>
+  );
+};
+
+interface BlowerProps {
+  isRunning: boolean;
+}
+
+/** Lucide has no soap glyph, so this composes one from the Lucide `Droplet`
+    outline sitting on a rounded bar — same visual meaning, still no emoji. */
+const SoapBarIcon: React.FC<{ className?: string }> = ({ className = '' }) => (
+  <svg
+    viewBox="0 0 24 24"
+    className={className}
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.7"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    <path d="M12 2.6c2.3 2.5 3.5 4.2 3.5 5.5a3.5 3.5 0 0 1-7 0c0-1.3 1.2-3 3.5-5.5Z" />
+    <rect x="3" y="11.6" width="18" height="9.2" rx="3.2" />
+  </svg>
+);
+
+/** Wall-hung pet blower / hair dryer.
+    The barrel, nozzle and handle are drawn as an SVG so it reads as a real
+    handheld dryer rather than an icon pasted onto the tiles. The `Fan` rotor
+    inside the barrel only spins while it is running, and the air streaks off
+    the nozzle are only mounted while it is running — so switching it off
+    leaves nothing moving. The nozzle also lights up to show the active state. */
+const PetBlower: React.FC<BlowerProps> = ({ isRunning }) => (
+  <div className="absolute left-3 top-40 z-10">
+    {/* Wall hook the dryer hangs from */}
+    <div className="absolute -top-1.5 left-3 w-2.5 h-1.5 rounded-sm bg-slate-400 shadow-xs" />
+
+    <motion.div
+      className="relative origin-top-left"
+      /* the dryer itself jitters slightly while the motor is on */
+      animate={isRunning ? { rotate: [0, -2.5, 0, 2.5, 0] } : { rotate: 0 }}
+      transition={
+        isRunning
+          ? { duration: 0.16, repeat: Infinity, ease: 'easeInOut' }
+          : { duration: 0.25, ease: 'easeOut' }
+      }
+    >
+      {/* Air streaks blowing toward the pet — active state only */}
+      {isRunning &&
+        [...Array(3)].map((_, i) => (
+          <motion.span
+            key={i}
+            initial={{ opacity: 0, x: 0 }}
+            animate={{ opacity: [0, 0.85, 0], x: [0, 54] }}
+            transition={{
+              duration: 0.9,
+              repeat: Infinity,
+              delay: i * 0.3,
+              ease: 'easeOut',
+            }}
+            className="absolute top-[14px] h-0.5 w-5 rounded-full bg-sky-300/90"
+            style={{ left: 48 }}
+          />
+        ))}
+
+      <svg viewBox="0 0 60 46" className="h-12 w-auto">
+        {/* Handle */}
+        <path
+          d="M13 30 L11 45 L22 45 L21 30 Z"
+          className="fill-slate-300 dark:fill-slate-600 stroke-slate-500 dark:stroke-slate-400"
+          strokeWidth="1.4"
+          strokeLinejoin="round"
+        />
+        {/* Barrel */}
+        <rect
+          x="3"
+          y="7"
+          width="34"
+          height="23"
+          rx="9"
+          className="fill-slate-100 dark:fill-slate-700 stroke-slate-400 dark:stroke-slate-500"
+          strokeWidth="1.4"
+        />
+        {/* Barrel vent slots */}
+        <path
+          d="M8 13 L8 24 M13 12.5 L13 24.5"
+          className="stroke-slate-300 dark:stroke-slate-500"
+          strokeWidth="1.6"
+          strokeLinecap="round"
+        />
+        {/* Nozzle — glows while running */}
+        <rect
+          x="35"
+          y="12"
+          width="16"
+          height="13"
+          rx="4"
+          className={
+            isRunning
+              ? 'fill-sky-300 dark:fill-sky-500 stroke-sky-500'
+              : 'fill-slate-200 dark:fill-slate-600 stroke-slate-400 dark:stroke-slate-500'
+          }
+          strokeWidth="1.4"
+        />
+      </svg>
+
+      {/* Rotor inside the barrel */}
+      <div className="absolute left-[8px] top-[13px]">
+        <motion.div
+          animate={isRunning ? { rotate: 360 } : { rotate: 0 }}
+          transition={
+            isRunning
+              ? { duration: 0.4, repeat: Infinity, ease: 'linear' }
+              : { duration: 0.3, ease: 'easeOut' }
+          }
+        >
+          <Fan
+            className={`w-4 h-4 ${
+              isRunning
+                ? 'text-sky-600 dark:text-sky-300'
+                : 'text-slate-400 dark:text-slate-500'
+            }`}
+          />
+        </motion.div>
+      </div>
+    </motion.div>
+  </div>
+);
+
+/** Lucide glyph for each bathroom item. Soap is the composed SoapBarIcon
+    (Lucide has no soap glyph), the shower reuses the `ShowerHead` already drawn
+    in the scene, and the blower is `Wind` — the same icon the dryer's reaction
+    bubble uses. No emoji is rendered for any of them. */
+const BATHROOM_ITEM_ICONS: Record<string, React.ElementType> = {
+  soap: SoapBarIcon,
+  shower: ShowerHead,
+  blower: Wind,
+};
+
 interface DraggableTool {
   id: string;
   name: string;
-  icon: string;
-  type: 'food' | 'soap' | 'shower' | 'medicine' | 'toy' | 'thermometer';
+  /** Lucide glyph for the item. Left unset for items that resolve their mark from
+      a lookup instead (the bathroom set). */
+  icon?: IconComponent;
+  /** Tailwind text-color classes matching this item's real-world colour, carried
+      over from KitchenItem when the item is a kitchen food/drink. Optional
+      because non-kitchen tools (soap, thermometer, toys...) don't need one. */
+  color?: string;
+  type: 'food' | 'drink' | 'soap' | 'shower' | 'blower' | 'medicine' | 'toy' | 'thermometer';
   inventoryKey?: keyof Inventory;
   amount?: number;
+  xp?: number;
+}
+
+/** The exact item the pet is currently consuming, so the scene never falls back to a hardcoded food. */
+interface ConsumedItem {
+  name: string;
+  icon: IconComponent;
+  /** Carried from the item's own KitchenItem.color, so the food resting on the
+      rug is tinted like that real food/drink rather than a flat generic brown. */
+  color: string;
+  kind: 'food' | 'drink';
 }
 
 export const PouWellnessTab: React.FC<PouWellnessTabProps> = ({
@@ -67,26 +463,85 @@ export const PouWellnessTab: React.FC<PouWellnessTabProps> = ({
 }) => {
   const [activeRoom, setActiveRoom] = useState<CareRoom>('kitchen');
   const [roomMood, setRoomMood] = useState<PetAnimationMood>(stats.isSleeping ? 'sleeping' : 'idle');
-  const [interactionToast, setInteractionToast] = useState<string | null>(null);
+  // Held as a node, not a string, so a toast can inline Lucide icons alongside
+  // its text instead of trailing emoji.
+  const [interactionToast, setInteractionToast] = useState<React.ReactNode>(null);
 
-  // Fridge door open state in kitchen
-  const [isFridgeOpen, setIsFridgeOpen] = useState(false);
+  // Pantry shelf door open state in kitchen
+  const [isPantryOpen, setIsPantryOpen] = useState(false);
 
   // Outside stormy weather state ("the outside its stormy so sad")
   const [isOutsideStormy, setIsOutsideStormy] = useState(true);
+
+  // The meadow flower only grows once the rainy season has held for 5s.
+  const [hasFlowerGrown, setHasFlowerGrown] = useState(false);
 
   // Dragging interaction state
   const [activeDragItem, setActiveDragItem] = useState<DraggableTool | null>(null);
   const [isHoveringPet, setIsHoveringPet] = useState(false);
   const [isShowerRunning, setIsShowerRunning] = useState(false);
+  const [isBlowerRunning, setIsBlowerRunning] = useState(false);
+  // Held so a second blow cancels the first one's timer, instead of the older
+  // timeout switching the dryer off while a newer one is still going.
+  const blowerTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [soapBubbles, setSoapBubbles] = useState<{ id: number; x: number; y: number }[]>([]);
 
   // Ball bouncing in outside room
   const [isBallThrown, setIsBallThrown] = useState(false);
 
+  // Mindful Mini-Games modal
+  const [showGamesModal, setShowGamesModal] = useState(false);
+
+  // Scene place rail: icon-only until an icon is tapped (one label at a time)
+  const [revealedPlace, setRevealedPlace] = useState<ScenePlaceId | null>(null);
+
+  // Item currently being eaten or drunk (drives the on-bowl visual + copy)
+  const [consumedItem, setConsumedItem] = useState<ConsumedItem | null>(null);
+
+  // The mark for whatever is being consumed right now — shown both on the rug and
+  // in the eating bubble. Falls back to a plain bowl only if the mood is 'eating'
+  // with no item recorded, so the bubble is never left without a glyph.
+  const ConsumedIcon: IconComponent = consumedItem?.icon ?? Soup;
+
   const petAreaRef = useRef<HTMLDivElement>(null);
 
-  const showToast = (msg: string) => {
+  // Set the moment a drag actually begins, cleared on the next pointerdown.
+  // Lets a tap serve an item while still ignoring the synthetic click that
+  // browsers fire at the end of a drag.
+  const dragJustHappenedRef = useRef(false);
+
+  // The kitchen's own food + drink list, shared with the in-scene pantry shelf.
+  const kitchenItems = kitchenItemsFor(species);
+
+  // While the pet is being bathed or rinsed it walks over to the shower head
+  // (mounted top-right) so the water visibly falls ON it.
+  const isPetAtShower = isShowerRunning || roomMood === 'bathing';
+  // The blower hangs on the LEFT wall, so it gets its own spot for the pet.
+  // Showering wins if both were somehow live at once, so the established
+  // bathing behaviour is never overridden.
+  const petSceneLeft = isPetAtShower
+    ? 'calc(100% - 8rem)'
+    : isBlowerRunning
+      ? '9rem'
+      : '50%';
+
+  // Clear the blower on unmount so a pending timeout can't set state after the
+  // tab has gone.
+  useEffect(() => {
+    return () => {
+      if (blowerTimerRef.current) clearTimeout(blowerTimerRef.current);
+    };
+  }, []);
+
+  // Rain has to hold for a full 5s before the flower grows. Growth is never
+  // taken away once earned, so switching seasons does not undo it.
+  useEffect(() => {
+    if (!isOutsideStormy) return;
+    const growTimer = setTimeout(() => setHasFlowerGrown(true), 5000);
+    return () => clearTimeout(growTimer);
+  }, [isOutsideStormy]);
+
+  const showToast = (msg: React.ReactNode) => {
     setInteractionToast(msg);
     setTimeout(() => setInteractionToast(null), 2400);
   };
@@ -125,30 +580,118 @@ export const PouWellnessTab: React.FC<PouWellnessTabProps> = ({
     setIsHoveringPet(false);
   };
 
+  // Tap-to-serve on a kitchen item. Serving a tap has to bring the pet back into
+  // view, because reaching the pantry means scrolling the stage off screen and the
+  // user would otherwise never see the meal they just started. Drag-to-feed is
+  // untouched: it already happens with the pet on screen, so it never scrolls.
+  const handleKitchenItemTap = (item: DraggableTool, isOutOfStock: boolean) => {
+    // Swallow the click that a completed drag emits.
+    if (dragJustHappenedRef.current) {
+      dragJustHappenedRef.current = false;
+      return;
+    }
+    if (isOutOfStock) return;
+
+    applyItemAction(item);
+
+    // Next frame, so the eating state has painted and the pet's final on-screen
+    // box is the one we scroll to.
+    requestAnimationFrame(() => {
+      petAreaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+  };
+
   const applyItemAction = (item: DraggableTool) => {
-    if (item.type === 'food' && item.inventoryKey) {
+    if (item.type === 'food' && item.inventoryKey && item.icon) {
       if ((inventory[item.inventoryKey] || 0) <= 0) {
-        showToast(`No ${item.name} left in pantry! Get more at Market 🛍️`);
+        showToast(
+          <>
+            No {item.name} left in pantry! Get more at Market
+            <ShoppingCart className="w-3.5 h-3.5 shrink-0" />
+          </>
+        );
         return;
       }
       const success = onUseInventory(item.inventoryKey);
       if (!success) return;
 
+      setConsumedItem({
+        name: item.name,
+        icon: item.icon,
+        color: item.color ?? 'text-amber-800 dark:text-amber-300',
+        kind: 'food',
+      });
       setRoomMood('eating');
       onUpdateStats({
         hunger: Math.min(100, stats.hunger + 24),
         happiness: Math.min(100, stats.happiness + 8),
         health: Math.min(100, stats.health + 4),
       });
+      if (item.xp) {
+        onAddPoints(item.xp);
+      }
       confetti({ particleCount: 22, spread: 50, origin: { y: 0.65 } });
-      showToast(`*crunch nom nom* ${companionName} loved the tasty ${item.name}! 😋`);
+      showToast(
+        <>
+          *crunch nom nom* {companionName} loved the tasty {item.name}!
+          <Smile className="w-3.5 h-3.5 shrink-0" />
+        </>
+      );
+      // Straight back to idle: no lingering 'happy' phase, so no interaction
+      // animation or movement survives the end of the meal.
       setTimeout(() => {
-        setRoomMood('happy');
-        setTimeout(() => setRoomMood('idle'), 1400);
+        setConsumedItem(null);
+        setRoomMood('idle');
       }, 2200);
+    } else if (item.type === 'drink' && item.inventoryKey && item.icon) {
+      if ((inventory[item.inventoryKey] || 0) <= 0) {
+        showToast(
+          <>
+            No {item.name} left in the cooler! Get more at Market
+            <ShoppingCart className="w-3.5 h-3.5 shrink-0" />
+          </>
+        );
+        return;
+      }
+      const success = onUseInventory(item.inventoryKey);
+      if (!success) return;
+
+      setConsumedItem({
+        name: item.name,
+        icon: item.icon,
+        color: item.color ?? 'text-sky-600 dark:text-sky-300',
+        kind: 'drink',
+      });
+      // Reuses the existing head-down-to-bowl animation; the lapping motion,
+      // droplets and copy are layered on by the scene below.
+      setRoomMood('eating');
+      onUpdateStats({
+        hunger: Math.min(100, stats.hunger + 6),
+        cleanliness: Math.min(100, stats.cleanliness + 4),
+        happiness: Math.min(100, stats.happiness + 4),
+      });
+      if (item.xp) {
+        onAddPoints(item.xp);
+      }
+      showToast(
+        <>
+          *lap lap lap* {companionName} sipped the {item.name}!
+          <Droplet className="w-3.5 h-3.5 shrink-0" />
+        </>
+      );
+      // Straight back to idle — the drinking animation stops the moment it ends.
+      setTimeout(() => {
+        setConsumedItem(null);
+        setRoomMood('idle');
+      }, 1800);
     } else if (item.type === 'soap') {
       if (inventory.soap <= 0) {
-        showToast(`Out of gentle soap! Pick some up in the Market 🫧`);
+        showToast(
+          <>
+            Out of gentle soap! Pick some up in the Market
+            <Sparkles className="w-3.5 h-3.5 shrink-0" />
+          </>
+        );
         return;
       }
       // Generate bubbles on pet
@@ -164,7 +707,12 @@ export const PouWellnessTab: React.FC<PouWellnessTabProps> = ({
         happiness: Math.min(100, stats.happiness + 5),
         isSoapy: true,
       });
-      showToast(`Lathered ${companionName} with warm foamy bubbles! 🫧`);
+      showToast(
+        <>
+          Lathered {companionName} with warm foamy bubbles!
+          <Sparkles className="w-3.5 h-3.5 shrink-0" />
+        </>
+      );
     } else if (item.type === 'shower') {
       setIsShowerRunning(true);
       setSoapBubbles([]);
@@ -174,14 +722,49 @@ export const PouWellnessTab: React.FC<PouWellnessTabProps> = ({
         happiness: Math.min(100, stats.happiness + 8),
         isSoapy: false,
       });
-      showToast(`Warm water rinsed ${companionName} sparkling fresh and clean! ✨`);
+      showToast(
+        <>
+          Warm water rinsed {companionName} sparkling fresh and clean!
+          <Sparkles className="w-3.5 h-3.5 shrink-0" />
+        </>
+      );
       setTimeout(() => {
         setIsShowerRunning(false);
         setRoomMood('idle');
       }, 2500);
+    } else if (item.type === 'blower') {
+      // A blow replaces any blow already in progress, so the older timer can
+      // never switch the dryer off mid-session.
+      if (blowerTimerRef.current) clearTimeout(blowerTimerRef.current);
+      setIsBlowerRunning(true);
+      setSoapBubbles([]);
+      setRoomMood('happy');
+      onUpdateStats({
+        cleanliness: 100,
+        happiness: Math.min(100, stats.happiness + 4),
+        isSoapy: false,
+      });
+      showToast(
+        <>
+          *whoooosh* {companionName}'s fur is dry and fluffy!
+          <Wind className="w-3.5 h-3.5 shrink-0" />
+        </>
+      );
+      blowerTimerRef.current = setTimeout(() => {
+        // Clearing the flag stops the rotor, the air streaks, the dryer jitter
+        // and the pet's shake in the same tick — nothing is left running.
+        setIsBlowerRunning(false);
+        setRoomMood('idle');
+        blowerTimerRef.current = null;
+      }, 2800);
     } else if (item.type === 'medicine') {
       if (inventory.medicine <= 0) {
-        showToast(`No animal vitamins left in medicine kit! 💊`);
+        showToast(
+          <>
+            No animal vitamins left in medicine kit!
+            <Pill className="w-3.5 h-3.5 shrink-0" />
+          </>
+        );
         return;
       }
       onUseInventory('medicine');
@@ -191,41 +774,27 @@ export const PouWellnessTab: React.FC<PouWellnessTabProps> = ({
         energy: Math.min(100, stats.energy + 20),
         isSick: false,
       });
-      showToast(`Administered gentle wellness vitamins to ${companionName}! ❤️🩹`);
+      showToast(
+        <>
+          Administered gentle wellness vitamins to {companionName}!
+          <Heart className="w-3.5 h-3.5 shrink-0" />
+          <Bandage className="w-3.5 h-3.5 shrink-0" />
+        </>
+      );
       setTimeout(() => setRoomMood('idle'), 2000);
     } else if (item.type === 'thermometer') {
       setRoomMood('happy');
-      showToast(`Checked temperature: 38.5°C Normal! ${companionName} is comfortable 🌡️✨`);
+      showToast(
+        <>
+          Checked temperature: 38.5&deg;C Normal! {companionName} is comfortable
+          <Thermometer className="w-3.5 h-3.5 shrink-0" />
+          <Sparkle className="w-3.5 h-3.5 shrink-0" />
+        </>
+      );
       setTimeout(() => setRoomMood('idle'), 1800);
     } else if (item.type === 'toy') {
       triggerBallPlay();
     }
-  };
-
-  // Kitchen Bowl Click Handlers (Activates 3D Ceramic Bowl & 3D Eating Animation!)
-  const handleEatFromBowl = () => {
-    setRoomMood('eating');
-    onUpdateStats({
-      hunger: Math.min(100, stats.hunger + 18),
-      happiness: Math.min(100, stats.happiness + 6),
-    });
-    confetti({ particleCount: 20, spread: 50, origin: { y: 0.65 } });
-    showToast(`*crunch crunch* ${companionName} is enjoying their 3D fresh food bowl! 🥣😋`);
-    setTimeout(() => {
-      setRoomMood('happy');
-      setTimeout(() => setRoomMood('idle'), 1400);
-    }, 2200);
-  };
-
-  const handleDrinkWater = () => {
-    setRoomMood('happy');
-    onUpdateStats({
-      hunger: Math.min(100, stats.hunger + 8),
-      cleanliness: Math.min(100, stats.cleanliness + 5),
-      happiness: Math.min(100, stats.happiness + 5),
-    });
-    showToast(`*slurp slurp* ${companionName} drank cool refreshing water! 💧✨`);
-    setTimeout(() => setRoomMood('idle'), 1200);
   };
 
   // Outside Toy Play
@@ -236,7 +805,12 @@ export const PouWellnessTab: React.FC<PouWellnessTabProps> = ({
       happiness: Math.min(100, stats.happiness + 15),
       energy: Math.max(10, stats.energy - 8),
     });
-    showToast(`*squeak!* ${companionName} caught the bouncing tennis ball! 🎾`);
+    showToast(
+      <>
+        *squeak!* {companionName} caught the bouncing tennis ball!
+        <Volleyball className="w-3.5 h-3.5 shrink-0" />
+      </>
+    );
     setTimeout(() => {
       setIsBallThrown(false);
       setRoomMood('idle');
@@ -248,11 +822,22 @@ export const PouWellnessTab: React.FC<PouWellnessTabProps> = ({
     if (stats.isSleeping) {
       onUpdateStats({ isSleeping: false });
       setRoomMood('idle');
-      showToast(`${companionName} woke up well-rested and happy! ☀️`);
+      showToast(
+        <>
+          {companionName} woke up well-rested and happy!
+          <Sun className="w-3.5 h-3.5 shrink-0" />
+        </>
+      );
     } else {
       onUpdateStats({ isSleeping: true, energy: Math.min(100, stats.energy + 40) });
       setRoomMood('sleeping');
-      showToast(`Lights dimmed. ${companionName} is tucked into bed... 🌙💤`);
+      showToast(
+        <>
+          Lights dimmed. {companionName} is tucked into bed...
+          <Moon className="w-3.5 h-3.5 shrink-0" />
+          <Bed className="w-3.5 h-3.5 shrink-0" />
+        </>
+      );
     }
   };
 
@@ -264,36 +849,45 @@ export const PouWellnessTab: React.FC<PouWellnessTabProps> = ({
 
   return (
     <div className="w-full flex flex-col items-center space-y-4 select-none pb-8">
-      {/* POU STATUS METRICS BAR */}
-      <div className="w-full rounded-2xl bg-white dark:bg-[#122218] border border-emerald-100 dark:border-emerald-800/60 p-3 shadow-xs">
-        <div className="flex items-center justify-between pb-2 mb-2 border-b border-emerald-100 dark:border-emerald-800/50">
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-black text-emerald-950 dark:text-emerald-100">
-              {companionName} ({species === 'dog' ? '🐶 Dog' : '🐱 Cat'})
-            </span>
-            <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold">
-              Wellness Level: Active
-            </span>
+      {/* =========================================================
+          COMPANION HEADER: Avatar, Name, Wellness Level, Switch Icon
+          ========================================================= */}
+      <div className="w-full rounded-2xl bg-white dark:bg-[#182a22] border border-emerald-100 dark:border-emerald-800/60 p-3 shadow-xs">
+        <div className="flex items-center justify-between pb-3 mb-3 border-b border-emerald-100 dark:border-emerald-800/50">
+          <div className="flex items-center gap-2.5">
+            {/* Companion Avatar Circle */}
+            <div className="w-11 h-11 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-xl shadow-sm border-2 border-white dark:border-emerald-900 shrink-0">
+              {species === 'dog' ? (
+                <Dog className="w-6 h-6 text-white" />
+              ) : (
+                <Cat className="w-6 h-6 text-white" />
+              )}
+            </div>
+            <div className="flex flex-col">
+              <span className="text-xs font-black text-emerald-950 dark:text-emerald-100 leading-tight">
+                {companionName}
+              </span>
+              <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold leading-tight">
+                {species === 'dog' ? 'Dog' : 'Cat'} &bull; Wellness: Active
+              </span>
+            </div>
           </div>
 
           {onChangeSpecies && (
             <button
               onClick={toggleSpecies}
-              className="flex items-center gap-1 text-[11px] font-bold text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/60 hover:bg-amber-100 px-2.5 py-1 rounded-full border border-amber-200 dark:border-amber-800/60 cursor-pointer transition-colors"
+              title={`Switch to ${species === 'dog' ? 'Cat' : 'Dog'}`}
+              className="flex items-center justify-center w-8 h-8 rounded-full bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 border border-emerald-200 dark:border-emerald-800/60 text-emerald-700 dark:text-emerald-300 cursor-pointer transition-colors shrink-0"
             >
-              <Repeat className="w-3 h-3" />
-              <span>Switch to {species === 'dog' ? 'Cat 🐱' : 'Dog 🐶'}</span>
+              <Repeat className="w-4 h-4" />
             </button>
           )}
         </div>
 
-        <div className="grid grid-cols-4 gap-2 text-center text-xs">
-          <div>
-            <div className="flex items-center justify-between text-[11px] font-bold text-emerald-950 dark:text-emerald-100 mb-1">
-              <span>Hunger</span>
-              <span>{stats.hunger}%</span>
-            </div>
-            <div className="h-2 rounded-full bg-emerald-100 dark:bg-emerald-900 overflow-hidden">
+        <div className="grid grid-cols-4 gap-2.5 text-center">
+          <div className="flex flex-col items-center gap-1" title="Hunger">
+            <Utensils className="w-3.5 h-3.5 text-amber-500" />
+            <div className="w-full h-1.5 rounded-full bg-emerald-100 dark:bg-emerald-900 overflow-hidden">
               <div
                 className={`h-full transition-all duration-500 ${
                   stats.hunger > 40 ? 'bg-amber-500' : 'bg-rose-500'
@@ -301,45 +895,48 @@ export const PouWellnessTab: React.FC<PouWellnessTabProps> = ({
                 style={{ width: `${stats.hunger}%` }}
               />
             </div>
+            <span className="text-[10px] font-bold text-emerald-950 dark:text-emerald-100">
+              {stats.hunger}%
+            </span>
           </div>
 
-          <div>
-            <div className="flex items-center justify-between text-[11px] font-bold text-emerald-950 dark:text-emerald-100 mb-1">
-              <span>Clean</span>
-              <span>{stats.cleanliness}%</span>
-            </div>
-            <div className="h-2 rounded-full bg-emerald-100 dark:bg-emerald-900 overflow-hidden">
+          <div className="flex flex-col items-center gap-1" title="Cleanliness">
+            <Droplets className="w-3.5 h-3.5 text-sky-500" />
+            <div className="w-full h-1.5 rounded-full bg-emerald-100 dark:bg-emerald-900 overflow-hidden">
               <div
                 className="h-full bg-sky-500 transition-all duration-500"
                 style={{ width: `${stats.cleanliness}%` }}
               />
             </div>
+            <span className="text-[10px] font-bold text-emerald-950 dark:text-emerald-100">
+              {stats.cleanliness}%
+            </span>
           </div>
 
-          <div>
-            <div className="flex items-center justify-between text-[11px] font-bold text-emerald-950 dark:text-emerald-100 mb-1">
-              <span>Energy</span>
-              <span>{stats.energy}%</span>
-            </div>
-            <div className="h-2 rounded-full bg-emerald-100 dark:bg-emerald-900 overflow-hidden">
+          <div className="flex flex-col items-center gap-1" title="Energy">
+            <Zap className="w-3.5 h-3.5 text-indigo-500" />
+            <div className="w-full h-1.5 rounded-full bg-emerald-100 dark:bg-emerald-900 overflow-hidden">
               <div
                 className="h-full bg-indigo-500 transition-all duration-500"
                 style={{ width: `${stats.energy}%` }}
               />
             </div>
+            <span className="text-[10px] font-bold text-emerald-950 dark:text-emerald-100">
+              {stats.energy}%
+            </span>
           </div>
 
-          <div>
-            <div className="flex items-center justify-between text-[11px] font-bold text-emerald-950 dark:text-emerald-100 mb-1">
-              <span>Happy</span>
-              <span>{stats.happiness}%</span>
-            </div>
-            <div className="h-2 rounded-full bg-emerald-100 dark:bg-emerald-900 overflow-hidden">
+          <div className="flex flex-col items-center gap-1" title="Happiness">
+            <Smile className="w-3.5 h-3.5 text-emerald-500" />
+            <div className="w-full h-1.5 rounded-full bg-emerald-100 dark:bg-emerald-900 overflow-hidden">
               <div
                 className="h-full bg-emerald-500 transition-all duration-500"
                 style={{ width: `${stats.happiness}%` }}
               />
             </div>
+            <span className="text-[10px] font-bold text-emerald-950 dark:text-emerald-100">
+              {stats.happiness}%
+            </span>
           </div>
         </div>
       </div>
@@ -356,8 +953,8 @@ export const PouWellnessTab: React.FC<PouWellnessTabProps> = ({
             {/* Kitchen Wallpaper Pattern */}
             <div className="absolute inset-0 opacity-15 pointer-events-none bg-[radial-gradient(#d97706_1.5px,transparent_1.5px)] [background-size:18px_18px]" />
 
-            {/* Top Cabinets & Wall Clock */}
-            <div className="flex justify-between items-start p-4 z-10">
+            {/* Top Cabinets */}
+            <div className="flex justify-start items-start p-4 z-10">
               <div className="flex gap-2">
                 <div className="w-24 h-12 rounded-b-xl bg-amber-900/90 border-b-2 border-amber-950 shadow-sm flex items-end justify-center pb-1">
                   <div className="w-5 h-1 bg-amber-300/80 rounded-full" />
@@ -366,64 +963,133 @@ export const PouWellnessTab: React.FC<PouWellnessTabProps> = ({
                   <div className="w-5 h-1 bg-amber-300/80 rounded-full" />
                 </div>
               </div>
-
-              {/* Kitchen Clock */}
-              <div className="w-10 h-10 rounded-full bg-white dark:bg-amber-950 border-2 border-amber-700 shadow-xs flex items-center justify-center font-mono text-[10px] font-bold text-amber-900 dark:text-amber-200">
-                12:00
-              </div>
             </div>
 
-            {/* Realistic Refrigerator on the Left with Open/Close Toggle */}
-            <div
-              onClick={() => setIsFridgeOpen(!isFridgeOpen)}
-              className="absolute left-3 bottom-14 w-28 sm:w-32 h-56 sm:h-64 rounded-t-2xl bg-gradient-to-r from-[#e2e8f0] via-[#f8fafc] to-[#cbd5e1] border-2 border-slate-300 shadow-xl z-10 flex flex-col cursor-pointer transition-transform hover:scale-[1.02]"
-              title="Click to open/close fridge"
-            >
-              {/* Freezer Door */}
-              <div className="h-20 border-b-2 border-slate-300 relative p-2 flex flex-col justify-between">
-                <div className="text-[9px] font-black text-slate-500 uppercase tracking-wider">
-                  HANGIN FREEZE
+            {/* =========================================================
+                REFRIGERATOR. A real stainless-steel fridge standing on the
+                kitchen floor — freezer strip on top, a door handle bar, feet
+                and a floor contact shadow — rather than a wall-hung pantry
+                cabinet. Opening the door reveals the SAME three stocked
+                shelves as before, read from the SAME kitchenItems list the
+                tray below uses, now tinted with each food/drink's own colour
+                instead of a single flat tone.
+                ========================================================= */}
+            <div className="absolute left-3 bottom-14 w-28 sm:w-32 z-10">
+              {/* Feet + floor contact shadow — a fridge stands on the floor,
+                  it does not hang off the wall */}
+              <div className="absolute inset-x-2 -bottom-1.5 h-2 rounded-full bg-slate-900/25 dark:bg-[#0b1411]/40 blur-[2px]" />
+              <div className="absolute -bottom-1 left-3 w-1.5 h-2 rounded-sm bg-slate-500 dark:bg-slate-400 shadow-xs" />
+              <div className="absolute -bottom-1 right-3 w-1.5 h-2 rounded-sm bg-slate-500 dark:bg-slate-400 shadow-xs" />
+
+              {/* Carcass — brushed stainless-steel body */}
+              <div className="rounded-xl bg-gradient-to-b from-slate-100 via-white to-slate-200 dark:from-slate-500 dark:via-slate-600 dark:to-slate-700 border-2 border-slate-300 dark:border-slate-600 p-1.5 shadow-lg">
+                {/* Freezer compartment strip on top, with its own small handle */}
+                <div className="relative h-7 mb-1 rounded-md bg-gradient-to-b from-slate-200 to-slate-300 dark:from-slate-600 dark:to-slate-700 border border-slate-300 dark:border-slate-500 shadow-inner flex items-center px-2">
+                  <span className="text-[7px] font-black uppercase tracking-wider text-slate-500 dark:text-slate-300">
+                    Freezer
+                  </span>
+                  <div className="absolute right-1.5 top-1/2 -translate-y-1/2 w-1 h-4 rounded-full bg-slate-400 dark:bg-slate-300 shadow-xs" />
                 </div>
-                {/* Ice Cubes inside or magnet on outside */}
-                <div className="text-[11px] opacity-70">🧊 🍨</div>
-                <div className="absolute right-2.5 top-5 w-2 h-10 rounded-full bg-slate-400 shadow-inner" />
+
+                <div className="relative h-44 sm:h-52 rounded-lg overflow-hidden bg-gradient-to-b from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900">
+                  <AnimatePresence mode="wait" initial={false}>
+                    {isPantryOpen ? (
+                      /* ---- OPEN: three stocked shelves, glass-shelf look ---- */
+                      <motion.div
+                        key="fridge-open"
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        transition={{ duration: 0.28, ease: 'easeOut' }}
+                        className="relative h-full flex flex-col justify-between py-1"
+                      >
+                        {/* Soft interior light glow, since a real fridge lights up when open */}
+                        <div className="absolute inset-x-2 top-0 h-8 rounded-full bg-white/70 dark:bg-white/10 blur-md pointer-events-none" />
+                        {[0, 1, 2].map((shelf) => (
+                          <div key={shelf} className="relative">
+                            {/* Stock sitting ON the shelf, each icon tinted like the
+                                real food/drink it represents */}
+                            <div className="grid grid-cols-2 gap-1 px-2">
+                              {kitchenItems.slice(shelf * 2, shelf * 2 + 2).map((item) => {
+                                const count = inventory[item.inventoryKey] || 0;
+                                const StockIcon = item.icon;
+                                return (
+                                  <div
+                                    key={item.id}
+                                    title={item.name}
+                                    className="flex flex-col items-center"
+                                  >
+                                    <StockIcon
+                                      className={`w-4 h-4 drop-shadow-sm ${item.color} ${
+                                        count <= 0 ? 'opacity-30' : ''
+                                      }`}
+                                    />
+                                    <span
+                                      className={`text-[7px] font-black leading-tight ${
+                                        count <= 0
+                                          ? 'text-slate-400/60 dark:text-slate-400/40'
+                                          : 'text-slate-600 dark:text-slate-200'
+                                      }`}
+                                    >
+                                      x{count}
+                                    </span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                            {/* Glass shelf board */}
+                            <div className="h-1 rounded-full bg-gradient-to-r from-slate-300 via-slate-100 to-slate-300 dark:from-slate-600 dark:via-slate-400 dark:to-slate-600 shadow-sm" />
+                          </div>
+                        ))}
+                      </motion.div>
+                    ) : (
+                      /* ---- CLOSED: a real fridge door, not a flat sticker ---- */
+                      <motion.div
+                        key="fridge-closed"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.2 }}
+                        className="h-full flex flex-col items-center justify-center gap-1.5 bg-gradient-to-b from-slate-100 via-white to-slate-200 dark:from-slate-600 dark:via-slate-700 dark:to-slate-800"
+                      >
+                        <Refrigerator className="w-6 h-6 text-slate-500 dark:text-slate-300" />
+                        <span className="text-[9px] font-black uppercase tracking-wider text-slate-500 dark:text-slate-300">
+                          Fridge
+                        </span>
+                        <span className="text-[7px] font-bold text-slate-400 dark:text-slate-400/70">
+                          Tap to open
+                        </span>
+                        {/* Door handle bar + hinges, so the door reads as a door */}
+                        <div className="absolute right-1.5 top-1/2 -translate-y-1/2 w-1.5 h-16 rounded-full bg-slate-400 dark:bg-slate-300 shadow-inner" />
+                        <div className="absolute left-0.5 top-1.5 w-1 h-2 rounded-full bg-slate-400/70 dark:bg-slate-500/70" />
+                        <div className="absolute left-0.5 bottom-1.5 w-1 h-2 rounded-full bg-slate-400/70 dark:bg-slate-500/70" />
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+
+                  {/* Inner shadow so the cavity has depth in both states */}
+                  <div className="absolute inset-0 pointer-events-none shadow-[inset_0_2px_6px_rgba(0,0,0,0.25)]" />
+                </div>
               </div>
 
-              {/* Fridge Main Door / Open Pantry View */}
-              <div className="flex-1 relative p-2 flex flex-col justify-between bg-gradient-to-b from-[#f8fafc] to-[#e2e8f0]">
-                {isFridgeOpen ? (
-                  <div className="flex flex-col gap-1 text-[11px] bg-white/80 p-1.5 rounded-lg border border-slate-200">
-                    <span className="font-bold text-[9px] text-slate-600">PANTRY SHELF</span>
-                    <div className="flex justify-around">
-                      <span>🍎</span>
-                      <span>🍌</span>
-                      <span>🥛</span>
-                    </div>
-                    <div className="flex justify-around">
-                      <span>🍪</span>
-                      <span>🍚</span>
-                      <span>🍵</span>
-                    </div>
-                  </div>
+              {/* Control: the one control for the fridge door, using a Lucide icon */}
+              <button
+                type="button"
+                onClick={() => setIsPantryOpen((open) => !open)}
+                aria-expanded={isPantryOpen}
+                aria-label={isPantryOpen ? 'Close fridge' : 'Open fridge'}
+                title={isPantryOpen ? 'Close fridge' : 'Open fridge'}
+                className="mt-1.5 w-full flex items-center justify-center gap-1 rounded-lg py-1 bg-slate-500 dark:bg-slate-600 border border-slate-600 dark:border-slate-500 shadow-sm active:scale-95 transition-transform cursor-pointer"
+              >
+                {isPantryOpen ? (
+                  <PackageOpen className="w-3 h-3 text-white" />
                 ) : (
-                  <>
-                    {/* Cute Fridge Magnets */}
-                    <div className="flex flex-col gap-1.5 pt-1">
-                      <div className="w-5 h-5 rounded-md bg-rose-400 shadow-xs flex items-center justify-center text-[10px]">
-                        ❤️
-                      </div>
-                      <div className="w-10 h-3 rounded-xs bg-amber-200 border border-amber-300 text-[7px] font-bold text-amber-900 px-1">
-                        GROCERY
-                      </div>
-                    </div>
-                    <div className="text-[9px] text-slate-400 font-bold text-center pb-1">
-                      Tap to open
-                    </div>
-                  </>
+                  <Package className="w-3 h-3 text-white" />
                 )}
-                {/* Main Handle */}
-                <div className="absolute right-2.5 top-6 w-2 h-16 rounded-full bg-slate-400 shadow-inner" />
-              </div>
+                <span className="text-[8px] font-black uppercase tracking-wider text-white">
+                  {isPantryOpen ? 'Close' : 'Open'}
+                </span>
+              </button>
             </div>
 
             {/* Kitchen Floor: Warm Checkerboard tiles */}
@@ -434,32 +1100,94 @@ export const PouWellnessTab: React.FC<PouWellnessTabProps> = ({
             {/* Woven Kitchen Floor Rug (Grounded beneath the pet!) */}
             <div className="absolute bottom-3 left-1/2 -translate-x-1/2 w-56 sm:w-64 h-16 rounded-full bg-gradient-to-r from-[#b5763b] via-[#cf9358] to-[#b5763b] border-2 border-[#8c4f1c] shadow-inner z-10 flex items-center justify-around px-4 opacity-90">
               <div className="w-48 h-12 rounded-full border border-dashed border-[#fef3c7]/40" />
+
+              {/* What the pet is actually consuming, resting on the rug.
+                  This is a CHILD of the rug element, so it inherits the rug's
+                  responsive geometry (w-56 -> sm:w-64) and stays centred on it at
+                  every breakpoint. No hardcoded scene offsets to drift out of
+                  alignment when the scene or resolution scales. */}
+              <AnimatePresence>
+                {consumedItem && (
+                  <motion.div
+                    key={`${consumedItem.kind}-${consumedItem.name}`}
+                    initial={{ opacity: 0, y: 8, scale: 0.7 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 8, scale: 0.7 }}
+                    transition={{ type: 'spring', stiffness: 260, damping: 18 }}
+                    className="absolute left-1/2 bottom-4 -translate-x-1/2 flex flex-col items-center pointer-events-none"
+                  >
+                    {/* Consumable itself — the exact item picked by the user */}
+                    <motion.span
+                      animate={
+                        consumedItem.kind === 'drink'
+                          ? { y: [0, 1.5, 0], rotate: [0, -7, 0] }
+                          : { y: [0, -2, 0], scale: [1, 1.06, 1] }
+                      }
+                      transition={
+                        consumedItem.kind === 'drink'
+                          ? { duration: 0.42, repeat: Infinity, ease: 'easeInOut' }
+                          : { duration: 0.3, repeat: Infinity, ease: 'easeInOut' }
+                      }
+                      className="leading-none"
+                    >
+                      <ConsumedIcon className={`w-6 h-6 ${consumedItem.color} drop-shadow-sm`} />
+                    </motion.span>
+
+                    <span className="mt-0.5 text-[9px] font-black text-amber-950/80 whitespace-nowrap">
+                      {consumedItem.name}
+                    </span>
+
+                    {/* Kind-specific garnish: crumbs when eating, droplets when drinking */}
+                    {consumedItem.kind === 'drink' ? (
+                      <span className="absolute -top-1 left-1/2 -translate-x-1/2 text-sky-500/80">
+                        {[...Array(3)].map((_, i) => (
+                          <motion.span
+                            key={i}
+                            className="absolute"
+                            animate={{ y: [0, -10, 0], opacity: [0.9, 0, 0.9] }}
+                            transition={{
+                              duration: 0.8,
+                              repeat: Infinity,
+                              delay: i * 0.26,
+                            }}
+                            style={{ left: i * 5 - 5 }}
+                          >
+                            <Droplet className="w-2.5 h-2.5" />
+                          </motion.span>
+                        ))}
+                      </span>
+                    ) : (
+                      <span className="absolute -top-1 left-1/2 -translate-x-1/2 text-amber-600/80">
+                        {[...Array(3)].map((_, i) => (
+                          <motion.span
+                            key={i}
+                            className="absolute"
+                            animate={{ y: [0, -9, 0], opacity: [0.9, 0, 0.9] }}
+                            transition={{
+                              duration: 0.7,
+                              repeat: Infinity,
+                              delay: i * 0.22,
+                            }}
+                            style={{ left: i * 5 - 5 }}
+                          >
+                            <Sparkle className="w-2.5 h-2.5" />
+                          </motion.span>
+                        ))}
+                      </span>
+                    )}
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
 
-            {/* Quick Kitchen Hydration & Food Station on Wall Shelf (Cleanly elevated to avoid floor collision - Image 2 Fix) */}
-            <div className="absolute top-14 right-3.5 z-20 flex flex-col gap-2">
-              <button
-                onClick={handleEatFromBowl}
-                className="h-8 px-3 rounded-full bg-white/95 dark:bg-amber-950/90 border border-amber-300 dark:border-amber-700/60 shadow-sm hover:scale-105 active:scale-95 transition-all cursor-pointer flex items-center gap-1.5"
-                title={`Feed ${companionName} from the 3D ceramic bowl`}
-              >
-                <span className="text-sm">🥣</span>
-                <span className="text-[10px] font-black text-amber-900 dark:text-amber-200 whitespace-nowrap">
-                  {species === 'dog' ? 'Dog Bowl' : 'Cat Bowl'}
-                </span>
-              </button>
-
-              <button
-                onClick={handleDrinkWater}
-                className="h-8 px-3 rounded-full bg-white/95 dark:bg-sky-950/90 border border-sky-300 dark:border-sky-700/60 shadow-sm hover:scale-105 active:scale-95 transition-all cursor-pointer flex items-center gap-1.5"
-                title={`Give fresh water to ${companionName}`}
-              >
-                <span className="text-sm">💧</span>
-                <span className="text-[10px] font-black text-sky-900 dark:text-sky-200 whitespace-nowrap">
-                  Fresh Water
-                </span>
-              </button>
-            </div>
+            <ScenePlaceRail
+              activeRoom={activeRoom}
+              isGamesOpen={showGamesModal}
+              revealedPlace={revealedPlace}
+              onReveal={setRevealedPlace}
+              onSelectRoom={setActiveRoom}
+              onOpenGames={() => setShowGamesModal(true)}
+            />
           </div>
         )}
 
@@ -498,15 +1226,39 @@ export const PouWellnessTab: React.FC<PouWellnessTabProps> = ({
               )}
             </div>
 
-            {/* Bathroom Mirror / Medicine Cabinet on Left */}
-            <div className="absolute top-4 left-4 w-24 h-28 rounded-2xl bg-sky-50/90 dark:bg-sky-950/80 border-2 border-sky-300 shadow-md p-2 flex flex-col items-center justify-between z-10">
-              <span className="text-[10px] font-bold text-sky-800 dark:text-sky-200">
-                Bath Sanctuary
-              </span>
-              <div className="w-full border-t border-sky-200 pt-1 flex justify-center gap-1.5">
-                <span className="text-xs">🫧</span>
-                <span className="text-xs">🧼</span>
-                <span className="text-xs">🧽</span>
+            {/* Wall-mounted mirrored medicine cabinet + towel rail on the left.
+                Framed and screwed to the tiled wall with its own cast shadow, and
+                a towel actually hanging off the rail, so it reads as bathroom
+                furniture rather than a floating label card. */}
+            <div className="absolute top-3 left-3 z-10">
+              {/* Cast shadow on the tiles behind the cabinet */}
+              <div className="absolute -bottom-1 -right-1 w-full h-full rounded-lg bg-sky-900/25 blur-[2px]" />
+              <div className="relative w-24 rounded-lg bg-gradient-to-b from-slate-200 via-slate-100 to-slate-300 dark:from-slate-600 dark:via-slate-700 dark:to-slate-800 border-2 border-slate-400 shadow-md p-1.5">
+                {/* Mirror glass with a diagonal sheen */}
+                <div className="w-full h-[62%] rounded-md bg-gradient-to-br from-sky-100 via-white to-sky-200 dark:from-sky-900 dark:via-slate-600 dark:to-sky-800 border border-slate-300 dark:border-slate-500 shadow-inner overflow-hidden">
+                  <div className="w-full h-full bg-[linear-gradient(115deg,transparent_35%,rgba(255,255,255,0.55)_45%,transparent_55%)]" />
+                </div>
+                {/* Two cabinet doors under the mirror */}
+                <div className="mt-1 grid grid-cols-2 gap-1">
+                  <div className="h-4 rounded-sm bg-gradient-to-b from-amber-600 to-amber-700 border border-amber-800 shadow-xs" />
+                  <div className="h-4 rounded-sm bg-gradient-to-b from-amber-600 to-amber-700 border border-amber-800 shadow-xs" />
+                </div>
+                {/* Door knobs */}
+                <div className="mt-0.5 flex justify-around">
+                  <span className="w-1 h-1 rounded-full bg-amber-900/70" />
+                  <span className="w-1 h-1 rounded-full bg-amber-900/70" />
+                </div>
+              </div>
+
+              {/* Towel rail with a towel draped over it */}
+              <div className="relative mt-1.5 flex flex-col items-center">
+                <div className="w-full h-1 rounded-full bg-gradient-to-r from-slate-300 to-slate-500 shadow-xs" />
+                <div className="w-9 h-7 rounded-b-md bg-gradient-to-b from-teal-300 to-teal-500 border border-teal-600 shadow-xs">
+                  <div className="h-full w-px ml-2.5 bg-teal-600/30" />
+                </div>
+                {/* Rail end mounts */}
+                <div className="absolute -left-1 top-0 w-1 h-1.5 rounded-full bg-slate-400" />
+                <div className="absolute -right-1 top-0 w-1 h-1.5 rounded-full bg-slate-400" />
               </div>
             </div>
 
@@ -515,7 +1267,11 @@ export const PouWellnessTab: React.FC<PouWellnessTabProps> = ({
 
             {/* Plush Fluffy Bath Rug in front of Tub */}
             <div className="absolute bottom-2 left-1/2 -translate-x-1/2 w-64 h-12 rounded-full bg-sky-200/80 border border-sky-300 shadow-sm z-10 flex items-center justify-center">
-              <span className="text-[10px] text-sky-700 font-bold">🐾 Warm Bath Mat 🐾</span>
+              <span className="flex items-center gap-1.5 text-[10px] text-sky-700 font-bold">
+                <PawPrint className="w-3 h-3" />
+                Warm Bath Mat
+                <PawPrint className="w-3 h-3" />
+              </span>
             </div>
 
             {/* REALISTIC PORCELAIN BATHTUB:
@@ -528,14 +1284,51 @@ export const PouWellnessTab: React.FC<PouWellnessTabProps> = ({
             <div className="absolute bottom-4 left-1/2 -translate-x-1/2 w-68 sm:w-76 h-14 rounded-t-3xl bg-gradient-to-t from-[#f8fafc] to-[#e2e8f0] border-t-4 border-sky-200 shadow-md z-25 pointer-events-none flex flex-col justify-start overflow-hidden">
               {/* Warm Bubbly Water Surface Line */}
               <div className="w-full h-3 bg-gradient-to-r from-sky-300 via-sky-200 to-sky-300 flex items-center justify-around px-4">
-                <span className="text-[9px]">🫧</span>
-                <span className="text-[8px]">🫧</span>
-                <span className="text-[9px]">🫧</span>
-                <span className="text-[8px]">🫧</span>
+                <Sparkles className="w-2.5 h-2.5 text-white/90" />
+                <Sparkles className="w-2 h-2 text-white/80" />
+                <Sparkles className="w-2.5 h-2.5 text-white/90" />
+                <Sparkles className="w-2 h-2 text-white/80" />
               </div>
               {/* Soap Bar resting on Tub Rim */}
               <div className="absolute right-4 top-1 w-6 h-3 rounded-md bg-amber-200 border border-amber-300 shadow-xs" />
             </div>
+
+            {/* Wooden bath caddy sitting in the tub, holding a bath brush, a soap
+                bar and a rolled towel. Wrapped in a copy of the tub's own
+                responsive geometry (w-68 sm:w-76, same centring) so it always
+                tracks the tub it belongs to at any breakpoint. z-20 puts it behind
+                the front rim (z-25), so the rim laps its base and it reads as
+                resting inside the tub rather than pasted over it. */}
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 w-68 sm:w-76 h-28 z-20 pointer-events-none">
+              <div className="absolute left-2 top-3 flex items-end">
+                {/* Rolled towel at the back of the caddy */}
+                <div className="w-2.5 h-2.5 rounded-full bg-gradient-to-br from-teal-200 to-teal-400 border border-teal-500 shadow-xs -translate-y-1" />
+                {/* Caddy tray the items rest in */}
+                <div className="relative w-12 h-2.5 rounded-sm bg-gradient-to-b from-amber-600 to-amber-800 border border-amber-900 shadow-sm">
+                  {/* Tray slats */}
+                  <div className="absolute inset-x-0 top-1/2 h-px bg-amber-900/50" />
+                </div>
+                {/* Bath brush, leaning out of the tray (Lucide icon) */}
+                <div className="absolute left-1 -top-3 flex flex-col items-center">
+                  <Brush className="w-2.5 h-2.5 text-amber-700" />
+                  <div className="w-0.5 h-2 rounded-full bg-amber-700" />
+                </div>
+                {/* Soap bar in the tray */}
+                <div className="absolute left-7 -top-1.5 w-3 h-1.5 rounded-sm bg-gradient-to-b from-pink-200 to-pink-300 border border-pink-400 shadow-xs" />
+              </div>
+            </div>
+
+            {/* Wall-hung pet blower on the left, nozzle pointing at the pet */}
+            <PetBlower isRunning={isBlowerRunning} />
+
+            <ScenePlaceRail
+              activeRoom={activeRoom}
+              isGamesOpen={showGamesModal}
+              revealedPlace={revealedPlace}
+              onReveal={setRevealedPlace}
+              onSelectRoom={setActiveRoom}
+              onOpenGames={() => setShowGamesModal(true)}
+            />
           </div>
         )}
 
@@ -552,13 +1345,9 @@ export const PouWellnessTab: React.FC<PouWellnessTabProps> = ({
           >
             {/* Arched Window with Moon & Stars */}
             <div className="absolute top-4 left-6 w-20 h-28 rounded-t-full border-2 border-indigo-300/70 bg-[#090f26] overflow-hidden shadow-inner z-10">
-              <div className="absolute top-3 right-3 text-sm">🌙</div>
-              <div className="absolute top-8 left-4 text-[8px] text-amber-200 animate-ping">
-                ✦
-              </div>
-              <div className="absolute top-14 right-5 text-[9px] text-amber-100 animate-pulse">
-                ✦
-              </div>
+              <Moon className="absolute top-3 right-3 w-4 h-4 text-amber-200" />
+              <Sparkle className="absolute top-8 left-4 w-2.5 h-2.5 text-amber-200 animate-ping" />
+              <Sparkle className="absolute top-14 right-5 w-2 h-2 text-amber-100 animate-pulse" />
               <div className="absolute inset-x-0 top-14 h-0.5 bg-indigo-300/40" />
               <div className="absolute inset-y-0 left-10 w-0.5 bg-indigo-300/40" />
             </div>
@@ -581,8 +1370,18 @@ export const PouWellnessTab: React.FC<PouWellnessTabProps> = ({
                 />
                 <div className="w-1.5 h-6 bg-amber-800" />
                 <div className="w-8 h-2 rounded-full bg-amber-900" />
-                <span className="text-[10px] font-bold text-amber-950 dark:text-amber-200 mt-1 bg-white/80 dark:bg-black/60 px-2 py-0.5 rounded-full shadow-xs">
-                  {stats.isSleeping ? 'Turn Lamp On ☀️' : 'Sleep Lamp 🌙'}
+                <span className="text-[10px] font-bold text-amber-950 dark:text-amber-200 mt-1 bg-white/80 dark:bg-[#0b1411]/60 px-2 py-0.5 rounded-full shadow-xs inline-flex items-center gap-1">
+                  {stats.isSleeping ? (
+                    <>
+                      Turn Lamp On
+                      <Sun className="w-3 h-3" />
+                    </>
+                  ) : (
+                    <>
+                      Sleep Lamp
+                      <Moon className="w-3 h-3" />
+                    </>
+                  )}
                 </span>
               </button>
             </div>
@@ -604,11 +1403,21 @@ export const PouWellnessTab: React.FC<PouWellnessTabProps> = ({
               <div className="absolute bottom-4 left-1/2 -translate-x-1/2 w-64 sm:w-72 h-18 rounded-t-3xl bg-gradient-to-t from-[#1e1b4b] to-[#3730a3] border-t-4 border-indigo-200 shadow-2xl z-25 pointer-events-none flex flex-col items-center pt-1">
                 {/* Blanket Pattern Trim */}
                 <div className="w-full h-3 bg-indigo-300/30 border-b border-indigo-200/40" />
-                <span className="text-[10px] text-indigo-200 font-bold mt-2">
-                  Tucked in &bull; Sleeping soundly 💤
+                <span className="mt-2 text-[10px] text-indigo-200 font-bold inline-flex items-center gap-1">
+                  Tucked in &bull; Sleeping soundly
+                  <Bed className="w-3 h-3" />
                 </span>
               </div>
             )}
+
+            <ScenePlaceRail
+              activeRoom={activeRoom}
+              isGamesOpen={showGamesModal}
+              revealedPlace={revealedPlace}
+              onReveal={setRevealedPlace}
+              onSelectRoom={setActiveRoom}
+              onOpenGames={() => setShowGamesModal(true)}
+            />
           </div>
         )}
 
@@ -623,16 +1432,36 @@ export const PouWellnessTab: React.FC<PouWellnessTabProps> = ({
                 : 'bg-gradient-to-b from-[#bae6fd] via-[#7dd3fc] to-[#86efac] dark:from-[#0d2818] dark:to-[#1a4a28]'
             }`}
           >
-            {/* Top Weather Toggle: Stormy vs Sunny */}
+            {/* Season control: two separate icon buttons instead of one toggle.
+                Both stay in place at all times; only the active one is filled, so
+                choosing a season never shifts the other control. */}
             <div className="absolute top-3 right-3 z-30 flex items-center gap-1.5">
-              <button
-                onClick={() => setIsOutsideStormy(!isOutsideStormy)}
-                className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-black/60 hover:bg-black/80 text-white backdrop-blur-md border border-white/20 shadow-md cursor-pointer transition-colors flex items-center gap-1"
-                title="Toggle Stormy Rain / Sunny Meadow"
-              >
-                <span>{isOutsideStormy ? '⛈️ Stormy (So sad)' : '☀️ Sunny Meadow'}</span>
-                <span className="text-[9px] text-emerald-300 underline">toggle</span>
-              </button>
+              {(
+                [
+                  { id: 'rainy', label: 'Rainy season', icon: CloudRain },
+                  { id: 'sunny', label: 'Sunny season', icon: Sun },
+                ] as const
+              ).map((season) => {
+                const SeasonIcon = season.icon;
+                const isActive = isOutsideStormy === (season.id === 'rainy');
+                return (
+                  <button
+                    key={season.id}
+                    type="button"
+                    onClick={() => setIsOutsideStormy(season.id === 'rainy')}
+                    aria-pressed={isActive}
+                    aria-label={season.label}
+                    title={season.label}
+                    className={`h-8 w-8 flex items-center justify-center rounded-full border shadow-md backdrop-blur-md transition-all active:scale-95 cursor-pointer ${
+                      isActive
+                        ? 'bg-emerald-500 border-emerald-600 text-white'
+                        : 'bg-[#0b1411]/50 hover:bg-[#0b1411]/70 text-white/80 border-white/20'
+                    }`}
+                  >
+                    <SeasonIcon className="w-4 h-4" />
+                  </button>
+                );
+              })}
             </div>
 
             {/* Stormy Raindrop Simulation */}
@@ -727,13 +1556,25 @@ export const PouWellnessTab: React.FC<PouWellnessTabProps> = ({
               </svg>
             </div>
 
-            {/* Wildflowers on the Meadow Hill */}
-            <div className="absolute bottom-4 inset-x-8 flex justify-between pointer-events-none z-15 text-sm sm:text-base">
-              <span>🌼</span>
-              <span>🌸</span>
-              <span>🌻</span>
-              <span>🌷</span>
-              <span>🌼</span>
+            {/* Meadow planting. The old floating emoji flowers are replaced by a
+                rooted SVG flower — it springs up after the rain has held for 5s
+                and sways in the wind on a sunny day — plus static grass tufts.
+                Nothing here loops unless its own effect is active. */}
+            <MeadowFlower
+              grown={hasFlowerGrown}
+              swaying={!isOutsideStormy}
+              stormy={isOutsideStormy}
+            />
+
+            {/* Grass tufts along the near edge of the mound */}
+            <div className="absolute bottom-1 right-3 flex items-end gap-1 opacity-70 pointer-events-none z-15">
+              {[0, 1, 2, 3, 4, 5].map((i) => (
+                <span
+                  key={i}
+                  className="w-1 rounded-t-full bg-emerald-600 dark:bg-emerald-400"
+                  style={{ height: `${7 + (i % 3) * 4}px` }}
+                />
+              ))}
             </div>
 
             {/* Thrown Play Ball Animation */}
@@ -746,11 +1587,20 @@ export const PouWellnessTab: React.FC<PouWellnessTabProps> = ({
                   rotate: [0, 360, 720],
                 }}
                 transition={{ duration: 1.6, ease: 'easeOut' }}
-                className="absolute z-30 text-3xl pointer-events-none"
+                className="absolute z-30 pointer-events-none"
               >
-                🎾
+                <Volleyball className="w-7 h-7 text-lime-500 drop-shadow-sm" />
               </motion.div>
             )}
+
+            <ScenePlaceRail
+              activeRoom={activeRoom}
+              isGamesOpen={showGamesModal}
+              revealedPlace={revealedPlace}
+              onReveal={setRevealedPlace}
+              onSelectRoom={setActiveRoom}
+              onOpenGames={() => setShowGamesModal(true)}
+            />
           </div>
         )}
 
@@ -759,34 +1609,104 @@ export const PouWellnessTab: React.FC<PouWellnessTabProps> = ({
             ========================================================= */}
         {activeRoom === 'clinic' && (
           <div className="absolute inset-0 bg-gradient-to-b from-[#ecfdf5] via-[#d1fae5] to-[#a7f3d0] dark:from-[#062c20] dark:to-[#041a13] flex flex-col justify-between overflow-hidden">
-            {/* Top Clinic Cross Banner */}
-            <div className="p-3.5 flex items-center justify-between z-10">
-              <div className="flex items-center gap-2 bg-white/90 dark:bg-emerald-950/80 px-3 py-1.5 rounded-2xl border border-emerald-300 dark:border-emerald-700 shadow-xs">
-                <div className="w-6 h-6 rounded-md bg-rose-500 text-white font-black flex items-center justify-center text-xs">
-                  ✚
+            {/* Health status, centre-left. The old "Sanctuary Clinic" card and the
+                stethoscope / note icons are gone; the pet's live health reading
+                now lives here as a wall-mounted vitals panel, styled with a
+                bezel and a bracket so it belongs to the clinic wall. Reads the
+                same stats.health as before. */}
+            <div className="absolute top-3 left-[26%] z-10">
+              {/* Mounting bracket behind the panel */}
+              <div className="absolute -bottom-1 left-3 w-1 h-2 rounded-full bg-emerald-700/50" />
+              <div className="relative w-40 sm:w-48 rounded-xl bg-gradient-to-b from-slate-200 via-slate-100 to-slate-300 dark:from-slate-700 dark:via-slate-800 dark:to-slate-900 border-2 border-slate-400 shadow-md p-2">
+                {/* Screen */}
+                <div className="rounded-lg bg-gradient-to-br from-emerald-950 to-emerald-900 border border-emerald-700/70 px-2 py-1.5 shadow-inner">
+                  <div className="flex items-center gap-1.5">
+                    <HeartPulse className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                    <span className="text-[8px] font-black uppercase tracking-wider text-emerald-300/90">
+                      Health Status
+                    </span>
+                    <span className="ml-auto text-[11px] font-black text-emerald-300 tabular-nums">
+                      {stats.health}%
+                    </span>
+                  </div>
+                  {/* Vitals bar, driven by the same stats.health value */}
+                  <div className="mt-1 h-1.5 w-full rounded-full bg-emerald-950 overflow-hidden">
+                    <motion.div
+                      className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-teal-300"
+                      animate={{ width: `${stats.health}%` }}
+                      transition={{ duration: 0.6, ease: 'easeOut' }}
+                    />
+                  </div>
                 </div>
-                <div className="text-left">
-                  <div className="text-[10px] font-black text-emerald-950 dark:text-emerald-100">
-                    SANCTUARY CLINIC
-                  </div>
-                  <div className="text-[8px] text-emerald-700 dark:text-emerald-300 font-semibold">
-                    Health: {stats.health}%
-                  </div>
+                {/* Bezel controls so the panel reads as a fitted device */}
+                <div className="mt-1 flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-rose-400/80" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-300/80" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400/80" />
+                  <span className="ml-auto text-[7px] font-black uppercase tracking-wider text-slate-600 dark:text-slate-300">
+                    Sanctuary Vitals
+                  </span>
                 </div>
               </div>
-
-              <div className="text-xl">🩺 📋</div>
             </div>
 
             {/* Clinic Floor */}
-            <div className="absolute bottom-0 inset-x-0 h-20 bg-gradient-to-b from-[#059669] to-[#047857] border-t-4 border-emerald-600 shadow-inner" />
+            <div className="absolute bottom-0 inset-x-0 h-20 bg-gradient-to-b from-[#256049] to-[#047857] border-t-4 border-emerald-600 shadow-inner" />
+
+            {/* First-aid / medical kit standing on the clinic floor at the left.
+                Replaces the old card. Built as a real case — lid seam, handle,
+                two clasps, cross emblem — resting on a contact shadow so it sits
+                on the floorboards instead of floating over them. */}
+            <div className="absolute left-4 bottom-16 z-10">
+              {/* Contact shadow grounding the case to the floor */}
+              <div className="absolute -bottom-1 left-0 w-full h-2 rounded-full bg-emerald-950/45 blur-[2px]" />
+              <div className="relative w-20">
+                {/* Carry handle */}
+                <div className="mx-auto w-9 h-2.5 rounded-t-lg border-2 border-b-0 border-rose-800 bg-rose-200" />
+                {/* Case body */}
+                <div className="relative rounded-lg bg-gradient-to-b from-rose-200 via-rose-300 to-rose-400 border-2 border-rose-500 shadow-md px-1.5 pt-2 pb-1.5">
+                  {/* Lid seam */}
+                  <div className="absolute inset-x-0 top-4 h-px bg-rose-500/60" />
+                  {/* Cross emblem, the kit's own marking */}
+                  <div className="flex items-center justify-center h-7">
+                    <div className="relative w-6 h-6">
+                      <div className="absolute inset-y-0 left-1/2 w-2 -translate-x-1/2 rounded-sm bg-white shadow-sm" />
+                      <div className="absolute inset-x-0 top-1/2 h-2 -translate-y-1/2 rounded-sm bg-white shadow-sm" />
+                    </div>
+                  </div>
+                  {/* Clasps */}
+                  <div className="mt-1 flex justify-around">
+                    <span className="w-2 h-1.5 rounded-sm bg-rose-600/80" />
+                    <span className="w-2 h-1.5 rounded-sm bg-rose-600/80" />
+                  </div>
+                </div>
+              </div>
+              {/* Kit label — a Lucide medical case icon, since one exists */}
+              <div className="mt-1 flex items-center justify-center gap-1 text-white-900/80">
+                <BriefcaseMedical className="w-3 h-3" />
+                <span className="text-[7px] font-black uppercase tracking-wider">
+                  Medical Kit
+                </span>
+              </div>
+            </div>
 
             {/* Clean Medical Examination Mat under pet */}
-            <div className="absolute bottom-3 left-1/2 -translate-x-1/2 w-64 h-16 rounded-full bg-white/90 dark:bg-emerald-900/80 border-2 border-emerald-400 shadow-md z-10 flex items-center justify-center">
-              <span className="text-[10px] font-black text-emerald-800 dark:text-emerald-200">
-                ✦ Examination Table ✦
+            <div className="absolute bottom-3 left-1/2 -translate-x-1/2 w-64 h-16 rounded-full bg-white/90 dark:bg-emerald-900/80 border border-emerald-400/60 shadow-md z-10 flex items-center justify-center">
+              <span className="text-[10px] font-black text-emerald-800 dark:text-emerald-200 inline-flex items-center gap-1">
+                <Sparkle className="w-2.5 h-2.5" />
+                Examination Table
+                <Sparkle className="w-2.5 h-2.5" />
               </span>
             </div>
+
+            <ScenePlaceRail
+              activeRoom={activeRoom}
+              isGamesOpen={showGamesModal}
+              revealedPlace={revealedPlace}
+              onReveal={setRevealedPlace}
+              onSelectRoom={setActiveRoom}
+              onOpenGames={() => setShowGamesModal(true)}
+            />
           </div>
         )}
 
@@ -795,8 +1715,24 @@ export const PouWellnessTab: React.FC<PouWellnessTabProps> = ({
             ========================================================= */}
         <div
           ref={petAreaRef}
-          className={`absolute bottom-4 sm:bottom-6 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center transition-transform ${
-            isHoveringPet ? 'scale-105' : ''
+          style={{
+            // Normally dead-centre. While bathing, the pet walks over to sit under
+            // the shower head, which is mounted top-right and throws water from
+            // 2.25rem to 5.75rem in from the right edge. While the blower runs it
+            // moves to the dryer's spot on the LEFT wall instead. Anchoring the
+            // pet's CENTRE on those points puts the water / airflow squarely on its
+            // body at every stage width, unlike a fixed percentage which would
+            // drift away from the fixtures on wide screens. -translate-x-1/2 still
+            // centres the pet on that point, and `left` is animatable, so the walk
+            // is smooth.
+            left: petSceneLeft,
+          }}
+          className={`absolute bottom-4 sm:bottom-6 -translate-x-1/2 z-20 flex flex-col items-center transition-[transform,left] duration-500 ease-out ${
+            // A modest one-shot scale-up while consuming makes the pet easy to read.
+            // Deliberately NOT raised above z-20: the served item sits inside the rug's
+            // own z-10 stacking context, so lifting the pet higher would hide the food.
+            // Item identity is carried above everything by the z-40 eating bubble.
+            roomMood === 'eating' ? 'scale-110' : isHoveringPet ? 'scale-105' : ''
           }`}
         >
           {/* Soapy Suds on Pet */}
@@ -805,10 +1741,10 @@ export const PouWellnessTab: React.FC<PouWellnessTabProps> = ({
               key={b.id}
               initial={{ scale: 0 }}
               animate={{ scale: [0.8, 1.2, 1] }}
-              className="absolute z-30 pointer-events-none text-xl"
+              className="absolute z-30 pointer-events-none"
               style={{ left: `${b.x}%`, top: `${b.y}%` }}
             >
-              🫧
+              <Sparkles className="w-5 h-5 text-white/95 drop-shadow-sm" />
             </motion.div>
           ))}
 
@@ -819,23 +1755,37 @@ export const PouWellnessTab: React.FC<PouWellnessTabProps> = ({
                 initial={{ opacity: 0, y: 12, scale: 0.85 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: -8, scale: 0.85 }}
-                className="absolute -top-16 z-40 bg-white/95 dark:bg-[#122218]/95 px-3.5 py-1.5 rounded-2xl border-2 border-emerald-400 shadow-xl backdrop-blur-md flex items-center gap-2 pointer-events-none whitespace-nowrap"
+                className="absolute -top-16 z-40 bg-white/95 dark:bg-[#182a22]/95 px-3.5 py-1.5 rounded-2xl border border-emerald-400/60 shadow-lg backdrop-blur-md flex items-center gap-2 pointer-events-none whitespace-nowrap"
               >
-                <span className="text-xl animate-bounce">
-                  {isHoveringPet ? '😋' : '👃'}
+                <span className="text-emerald-600 dark:text-emerald-300 animate-bounce">
+                  {isHoveringPet ? (
+                    <Smile className="w-5 h-5" />
+                  ) : (
+                    <Search className="w-5 h-5" />
+                  )}
                 </span>
                 <div className="flex flex-col text-left">
-                  <span className="text-[11px] font-black text-emerald-950 dark:text-emerald-50">
-                    {isHoveringPet
-                      ? `Subuan mo na ako ng ${activeDragItem.name}! 👅✨`
-                      : `*Sniff sniff...* Amoy ${activeDragItem.name}! 🤤`}
+                  <span className="text-[11px] font-black text-emerald-950 dark:text-emerald-50 inline-flex items-center gap-1">
+                    {isHoveringPet ? (
+                      <>
+                        Subuan mo na ako ng {activeDragItem.name}!
+                        <Utensils className="w-3 h-3 shrink-0" />
+                        <Sparkle className="w-2.5 h-2.5 shrink-0" />
+                      </>
+                    ) : (
+                      <>
+                        *Sniff sniff...* Amoy {activeDragItem.name}!
+                        <Droplet className="w-3 h-3 shrink-0" />
+                      </>
+                    )}
                   </span>
-                  <span className="text-[9px] font-semibold text-emerald-600 dark:text-emerald-400">
-                    {isHoveringPet ? 'Bitawan dito para kainin! 🐾' : 'I-drag palapit sa akin 🐾'}
+                  <span className="text-[9px] font-semibold text-emerald-600 dark:text-emerald-400 inline-flex items-center gap-1">
+                    {isHoveringPet ? 'Bitawan dito para kainin!' : 'I-drag palapit sa akin'}
+                    <PawPrint className="w-2.5 h-2.5 shrink-0" />
                   </span>
                 </div>
                 {/* Speech bubble arrow pointer */}
-                <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-white dark:bg-[#122218] border-b-2 border-r-2 border-emerald-400 rotate-45" />
+                <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-white dark:bg-[#182a22] border-b-2 border-r-2 border-emerald-400 rotate-45" />
               </motion.div>
             )}
 
@@ -844,10 +1794,34 @@ export const PouWellnessTab: React.FC<PouWellnessTabProps> = ({
                 initial={{ opacity: 0, scale: 0.8, y: 8 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.8, y: -8 }}
-                className="absolute -top-14 z-40 bg-gradient-to-r from-amber-500 to-orange-500 text-white px-3.5 py-1.5 rounded-2xl shadow-xl font-black text-xs flex items-center gap-2 border-2 border-amber-300 pointer-events-none whitespace-nowrap"
+                className={`absolute -top-14 z-40 text-white px-3.5 py-1.5 rounded-2xl shadow-xl font-black text-xs flex items-center gap-2 border-2 pointer-events-none whitespace-nowrap ${
+                  consumedItem?.kind === 'drink'
+                    ? 'bg-gradient-to-r from-sky-500 to-teal-500 border-sky-300'
+                    : 'bg-gradient-to-r from-amber-500 to-orange-500 border-amber-300'
+                }`}
               >
-                <span className="text-sm">🥣✨</span>
-                <span>*Crunch crunch nom nom!* Ang sarap! 😋❤️</span>
+                {/* Name the item actually being consumed, never a hardcoded fish */}
+                <ConsumedIcon className="w-4 h-4 shrink-0" />
+                <span className="inline-flex items-center gap-1">
+                  {consumedItem?.kind === 'drink' ? (
+                    <>
+                      *Lap lap lap!* Inuman ng {consumedItem.name}!
+                      <Droplet className="w-3.5 h-3.5 shrink-0" />
+                    </>
+                  ) : consumedItem ? (
+                    <>
+                      *Crunch crunch!* Sarap ang {consumedItem.name}!
+                      <Smile className="w-3.5 h-3.5 shrink-0" />
+                      <Heart className="w-3.5 h-3.5 shrink-0" />
+                    </>
+                  ) : (
+                    <>
+                      *Crunch crunch nom nom!* Ang sarap!
+                      <Smile className="w-3.5 h-3.5 shrink-0" />
+                      <Heart className="w-3.5 h-3.5 shrink-0" />
+                    </>
+                  )}
+                </span>
               </motion.div>
             )}
 
@@ -855,57 +1829,91 @@ export const PouWellnessTab: React.FC<PouWellnessTabProps> = ({
               <motion.div
                 initial={{ opacity: 0, scale: 0.8, y: 8 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.8, y: -8 }}
+                exit={{ opacity: 0, scale: .8, y: -8 }}
                 className="absolute -top-14 z-40 bg-gradient-to-r from-sky-500 to-teal-500 text-white px-3.5 py-1.5 rounded-2xl shadow-xl font-black text-xs flex items-center gap-2 border-2 border-sky-300 pointer-events-none whitespace-nowrap"
               >
-                <span className="text-sm animate-pulse">🫧✨</span>
-                <span>Mabangong ligo! Tanggal pagod! 🧼💚</span>
+                <Sparkles className="w-3.5 h-3.5 shrink-0" />
+                <span className="inline-flex items-center gap-1">
+                  Mabangong ligo! Tanggal pagod!
+                  <Heart className="w-3.5 h-3.5 shrink-0" />
+                </span>
+              </motion.div>
+            )}
+
+            {/* Drying reaction bubble, shown only while the blower is running */}
+            {isBlowerRunning && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.8, y: 8 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.8, y: -8 }}
+                className="absolute -top-14 z-40 bg-gradient-to-r from-cyan-500 to-sky-500 text-white px-3.5 py-1.5 rounded-2xl shadow-xl font-black text-xs flex items-center gap-2 border-2 border-cyan-300 pointer-events-none whitespace-nowrap"
+              >
+                <Wind className="w-3.5 h-3.5 shrink-0" />
+                <span>Tufty at na buhok ni {companionName}!</span>
               </motion.div>
             )}
           </AnimatePresence>
 
-          <CuteCompanion
-            species={species}
-            mood={roomMood}
-            equipped={equipped}
-            size="lg"
-            interactive={true}
-            showBowl={activeRoom === 'kitchen' || roomMood === 'eating'}
-            isEating={roomMood === 'eating'}
-            isSniffing={activeDragItem !== null && (activeDragItem.type === 'food' || isHoveringPet)}
-            onPet={() => {
-              if (stats.isSleeping) {
-                showToast(`${companionName} is sleeping soundly... 💤`);
-                return;
-              }
-              setRoomMood('happy');
-              onUpdateStats({ happiness: Math.min(100, stats.happiness + 5) });
-              showToast(`${companionName} purrs happily! 💚`);
-              setTimeout(() => setRoomMood('idle'), 1800);
-            }}
-          />
+          {/* The pet is wrapped in its own motion group so the airflow can shake
+              it independently of the container's own centring and eating-scale
+              transforms — otherwise the two would fight over `transform`.
+              The shake is a short repeat ONLY while the blower runs; otherwise it
+              settles to rest, so nothing keeps moving after the blow ends. */}
+          <motion.div
+            className="flex flex-col items-center"
+            animate={
+              isBlowerRunning
+                ? {
+                    rotate: [0, 2.5, -2.5, 1.5, 0],
+                    x: [0, -3, 3, -1, 0],
+                    y: [0, -1.5, 0, -0.5, 0],
+                  }
+                : { rotate: 0, x: 0, y: 0 }
+            }
+            transition={
+              isBlowerRunning
+                ? { duration: 0.44, repeat: Infinity, ease: 'easeInOut' }
+                : { duration: 0.28, ease: 'easeOut' }
+            }
+          >
+            <CuteCompanion
+              species={species}
+              mood={roomMood}
+              equipped={equipped}
+              size="lg"
+              interactive={true}
+              showBowl={activeRoom === 'kitchen' || roomMood === 'eating'}
+              isEating={roomMood === 'eating'}
+              isSniffing={activeDragItem !== null && (activeDragItem.type === 'food' || isHoveringPet)}
+              consumedItemIcon={consumedItem?.icon}
+              consumedItemKind={consumedItem?.kind}
+              onPet={() => {
+                if (stats.isSleeping) {
+                  showToast(
+                    <>
+                      {companionName} is sleeping soundly...
+                      <Bed className="w-3.5 h-3.5 shrink-0" />
+                    </>
+                  );
+                  return;
+                }
+                setRoomMood('happy');
+                onUpdateStats({ happiness: Math.min(100, stats.happiness + 5) });
+                showToast(
+                  <>
+                    {companionName} purrs happily!
+                    <Heart className="w-3.5 h-3.5 shrink-0" />
+                  </>
+                );
+                setTimeout(() => setRoomMood('idle'), 1800);
+              }}
+            />
+          </motion.div>
 
           {/* Companion Name Tag (Clean & Proportionate) */}
-          <div className="flex items-center gap-2 mt-2 bg-white/95 dark:bg-emerald-950/95 backdrop-blur-md px-3.5 py-1 rounded-full border border-emerald-200/80 dark:border-emerald-800 shadow-sm z-30">
-            <span className="text-xs font-black text-emerald-950 dark:text-emerald-100">
-              {companionName}
-            </span>
-            {onOpenChat && (
-              <button
-                onClick={onOpenChat}
-                className="text-[10px] font-bold text-emerald-700 dark:text-emerald-300 hover:text-emerald-900 dark:hover:text-emerald-100 underline cursor-pointer flex items-center gap-0.5"
-              >
-                <span>Chat</span>
-                <span>&rarr;</span>
-              </button>
-            )}
-          </div>
         </div>
 
         {/* Drop Instruction Hint */}
-        <div className="absolute top-3 left-1/2 -translate-x-1/2 z-30 px-3.5 py-1 rounded-full bg-black/55 text-white text-[11px] font-semibold backdrop-blur-md pointer-events-none border border-white/20 shadow-sm text-center whitespace-nowrap">
-          Drag any item from below with your finger onto {companionName}!
-        </div>
 
         {/* Interaction Toast Alert */}
         <AnimatePresence>
@@ -914,7 +1922,7 @@ export const PouWellnessTab: React.FC<PouWellnessTabProps> = ({
               initial={{ opacity: 0, y: 10, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -6, scale: 0.95 }}
-              className="absolute top-12 left-1/2 -translate-x-1/2 z-30 px-4 py-2 rounded-xl bg-emerald-950/95 text-white text-xs font-bold backdrop-blur-md shadow-lg border border-emerald-700/50 pointer-events-none text-center whitespace-nowrap"
+              className="absolute top-12 left-1/2 -translate-x-1/2 z-30 px-4 py-2 rounded-xl bg-emerald-950/95 text-white text-xs font-bold backdrop-blur-md shadow-lg border border-emerald-700/50 pointer-events-none whitespace-nowrap inline-flex items-center justify-center gap-1"
             >
               {interactionToast}
             </motion.div>
@@ -922,161 +1930,111 @@ export const PouWellnessTab: React.FC<PouWellnessTabProps> = ({
         </AnimatePresence>
       </div>
 
-      {/* =========================================================
-          POU ROOM SWITCHER DOCK (Kitchen / Bath / Bed / Outside / Clinic)
-          ========================================================= */}
-      <div className="w-full grid grid-cols-5 gap-1.5 sm:gap-2">
-        <button
-          onClick={() => setActiveRoom('kitchen')}
-          className={`flex flex-col items-center justify-center py-2 px-1 rounded-2xl border transition-all cursor-pointer ${
-            activeRoom === 'kitchen'
-              ? 'bg-amber-600 text-white border-amber-700 shadow-sm'
-              : 'bg-white dark:bg-[#14241a] text-emerald-950 dark:text-emerald-100 border-emerald-100 dark:border-emerald-800 hover:bg-emerald-50'
-          }`}
-        >
-          <Utensils className="w-4 h-4 sm:w-5 sm:h-5 mb-1 text-amber-500" />
-          <span className="text-[10px] sm:text-xs font-bold">Kitchen</span>
-        </button>
-
-        <button
-          onClick={() => setActiveRoom('bathroom')}
-          className={`flex flex-col items-center justify-center py-2 px-1 rounded-2xl border transition-all cursor-pointer ${
-            activeRoom === 'bathroom'
-              ? 'bg-sky-600 text-white border-sky-700 shadow-sm'
-              : 'bg-white dark:bg-[#14241a] text-emerald-950 dark:text-emerald-100 border-emerald-100 dark:border-emerald-800 hover:bg-emerald-50'
-          }`}
-        >
-          <Bath className="w-4 h-4 sm:w-5 sm:h-5 mb-1 text-sky-500" />
-          <span className="text-[10px] sm:text-xs font-bold">Bathroom</span>
-        </button>
-
-        <button
-          onClick={() => setActiveRoom('bedroom')}
-          className={`flex flex-col items-center justify-center py-2 px-1 rounded-2xl border transition-all cursor-pointer ${
-            activeRoom === 'bedroom'
-              ? 'bg-indigo-600 text-white border-indigo-700 shadow-sm'
-              : 'bg-white dark:bg-[#14241a] text-emerald-950 dark:text-emerald-100 border-emerald-100 dark:border-emerald-800 hover:bg-emerald-50'
-          }`}
-        >
-          <Moon className="w-4 h-4 sm:w-5 sm:h-5 mb-1 text-indigo-400" />
-          <span className="text-[10px] sm:text-xs font-bold">Bedroom</span>
-        </button>
-
-        <button
-          onClick={() => setActiveRoom('outside')}
-          className={`flex flex-col items-center justify-center py-2 px-1 rounded-2xl border transition-all cursor-pointer ${
-            activeRoom === 'outside'
-              ? 'bg-emerald-700 text-white border-emerald-800 shadow-sm'
-              : 'bg-white dark:bg-[#14241a] text-emerald-950 dark:text-emerald-100 border-emerald-100 dark:border-emerald-800 hover:bg-emerald-50'
-          }`}
-        >
-          <Trees className="w-4 h-4 sm:w-5 sm:h-5 mb-1 text-emerald-500" />
-          <span className="text-[10px] sm:text-xs font-bold">Outside</span>
-        </button>
-
-        <button
-          onClick={() => setActiveRoom('clinic')}
-          className={`flex flex-col items-center justify-center py-2 px-1 rounded-2xl border transition-all cursor-pointer ${
-            activeRoom === 'clinic'
-              ? 'bg-rose-600 text-white border-rose-700 shadow-sm'
-              : 'bg-white dark:bg-[#14241a] text-emerald-950 dark:text-emerald-100 border-emerald-100 dark:border-emerald-800 hover:bg-emerald-50'
-          }`}
-        >
-          <Pill className="w-4 h-4 sm:w-5 sm:h-5 mb-1 text-rose-500" />
-          <span className="text-[10px] sm:text-xs font-bold">Clinic</span>
-        </button>
-      </div>
-
-      {/* =========================================================
-          DRAGGABLE INTERACTIVE ITEM TRAY (Feed, Bathe, Meds, Play)
-          ========================================================= */}
-      <div className="w-full p-3.5 sm:p-4 rounded-3xl bg-white dark:bg-[#122218] border border-emerald-100 dark:border-emerald-800/60 shadow-xs">
+      <div className="w-full p-3.5 sm:p-4 rounded-3xl bg-white dark:bg-[#182a22] border border-emerald-100 dark:border-emerald-800/60 shadow-xs">
         <div className="flex justify-between items-center mb-3">
           <span className="text-xs font-black uppercase tracking-wider text-emerald-900 dark:text-emerald-200 flex items-center gap-1.5">
-            <span>🐾 KITCHEN PANTRY &bull; Drag to Feed or Tap to Serve</span>
+            <span className="inline-flex items-center gap-1.5">
+              <PawPrint className="w-3.5 h-3.5" />
+              KITCHEN PANTRY
+            </span>
           </span>
+          {/* Shop button — same onOpenMarket navigation as the old "Market" text
+              button, presented as a single icon in the scene's visual language. */}
           <button
+            type="button"
             onClick={onOpenMarket}
-            className="text-[11px] font-bold text-emerald-700 dark:text-emerald-300 hover:underline cursor-pointer flex items-center gap-1"
+            aria-label="Shop"
+            title="Shop"
+            className="h-8 w-8 flex items-center justify-center rounded-full bg-white/95 dark:bg-emerald-950/90 border border-emerald-200 dark:border-[#2d4d41]/75 shadow-sm hover:shadow-md active:scale-95 transition-all cursor-pointer"
           >
-            <span>Market</span>
-            <span>&rarr;</span>
+            <ShoppingBag className="w-4 h-4 text-emerald-600 dark:text-emerald-300" />
           </button>
         </div>
 
         {/* Room Specific Draggables */}
         {activeRoom === 'kitchen' && (
           <div className="flex flex-col gap-3">
+            {/* Feeding Note */}
+            <div className="flex items-center gap-2 text-[11px] font-semibold text-emerald-800 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/50 rounded-xl px-3 py-2">
+              <Utensils className="w-3.5 h-3.5 shrink-0" />
+              <span>Drag food or a drink onto {companionName} to serve it, or tap Serve below!</span>
+            </div>
+
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-              {(species === 'dog'
-                ? [
-                    { id: 'kibble', name: 'Beef Kibble', icon: '🥩', type: 'food' as const, inventoryKey: 'kibble' as keyof Inventory },
-                    { id: 'bone', name: 'Puppy Bone', icon: '🦴', type: 'food' as const, inventoryKey: 'bone' as keyof Inventory },
-                    { id: 'treat', name: 'Bickie Treat', icon: '🍪', type: 'food' as const, inventoryKey: 'treat' as keyof Inventory },
-                    { id: 'apple', name: 'Apple Slice', icon: '🍎', type: 'food' as const, inventoryKey: 'apple' as keyof Inventory },
-                  ]
-                : [
-                    { id: 'salmon', name: 'Steamed Salmon', icon: '🐟', type: 'food' as const, inventoryKey: 'salmon' as keyof Inventory },
-                    { id: 'catKibble', name: 'Tuna Kibble', icon: '🍣', type: 'food' as const, inventoryKey: 'catKibble' as keyof Inventory },
-                    { id: 'catnip', name: 'Catnip Herb', icon: '🌿', type: 'food' as const, inventoryKey: 'catnip' as keyof Inventory },
-                    { id: 'catMilk', name: 'Cat Milk', icon: '🥛', type: 'food' as const, inventoryKey: 'catMilk' as keyof Inventory },
-                  ]
-              ).map((item) => {
+              {kitchenItems.map((item) => {
                 const count = inventory[item.inventoryKey] || 0;
                 const isOutOfStock = count <= 0;
+                const FoodIcon = item.icon;
                 return (
                   <div
                     key={item.id}
-                    className={`flex flex-col items-center justify-between p-3 rounded-2xl border transition-all ${
+                    className={`relative flex flex-col items-center p-3 rounded-2xl border transition-all ${
                       isOutOfStock
-                        ? 'bg-amber-50/40 dark:bg-[#1a211b] border-amber-200/40 opacity-70'
-                        : 'bg-amber-50/80 dark:bg-[#1e271f] border-amber-200 dark:border-amber-900/50 shadow-2xs hover:border-amber-400 hover:shadow-xs'
+                        ? 'bg-white dark:bg-[#182a22] border-emerald-100/60 dark:border-emerald-900/40 opacity-70'
+                        : 'bg-white dark:bg-[#182a22] border-emerald-200 dark:border-emerald-800/60 shadow-2xs hover:border-emerald-400 hover:shadow-xs'
                     }`}
                   >
                     <motion.div
                       drag={!isOutOfStock}
                       dragSnapToOrigin
                       whileDrag={{ scale: 1.25, zIndex: 50 }}
-                      onDragStart={() => setActiveDragItem(item)}
+                      onPointerDown={() => {
+                        // A new interaction starts: drop any stale drag flag.
+                        dragJustHappenedRef.current = false;
+                      }}
+                      onDragStart={() => {
+                        setActiveDragItem(item);
+                        dragJustHappenedRef.current = true;
+                      }}
                       onDrag={(e, info) => setIsHoveringPet(checkHitPet(info.point.x, info.point.y))}
                       onDragEnd={(e, info) => handleDragEnd(e, info, item)}
-                      className={`flex flex-col items-center touch-none w-full ${
+                      onClick={() => handleKitchenItemTap(item, isOutOfStock)}
+                      role="button"
+                      tabIndex={isOutOfStock ? -1 : 0}
+                      onKeyDown={(e) => {
+                        if (isOutOfStock) return;
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          handleKitchenItemTap(item, isOutOfStock);
+                        }
+                      }}
+                      aria-label={`Serve ${item.name}`}
+                      className={`relative flex flex-col items-center touch-none w-full ${
                         isOutOfStock ? 'cursor-not-allowed' : 'cursor-grab active:cursor-grabbing'
                       }`}
                     >
-                      <span className="text-3xl mb-1 filter drop-shadow-xs transition-transform group-hover:scale-110">
-                        {item.icon}
-                      </span>
+                      {/* Food Picture with Stock Badge */}
+                      <div className="relative w-14 h-14 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-100 dark:border-emerald-800/50 flex items-center justify-center mb-1.5">
+                        <FoodIcon className={`w-7 h-7 ${item.color}`} />
+                        <span className="absolute -top-2 -right-2 min-w-[20px] h-5 px-1 rounded-full bg-emerald-600 text-white text-[10px] font-black flex items-center justify-center leading-none shadow-sm border-2 border-white dark:border-[#182a22]">
+                          x{count}
+                        </span>
+                      </div>
+
                       <span className="text-xs font-bold text-emerald-950 dark:text-emerald-100 text-center leading-tight">
                         {item.name}
                       </span>
-                      <div className="flex items-center gap-1.5 mt-1">
-                        <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-amber-100 dark:bg-amber-950/70 text-amber-900 dark:text-amber-200 border border-amber-200/80 dark:border-amber-800">
-                          x{count}
-                        </span>
-                        {!isOutOfStock && (
-                          <span className="text-[9px] text-amber-700/80 dark:text-amber-300/80 font-medium">
-                            Drag 👆
-                          </span>
-                        )}
-                      </div>
+                      <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 mt-0.5">
+                        +{item.xp} XP
+                      </span>
                     </motion.div>
 
                     {/* Direct Feed / Restock Button */}
                     {isOutOfStock ? (
                       <button
                         onClick={onOpenMarket}
-                        className="mt-2 w-full py-1.5 rounded-xl bg-slate-100 hover:bg-amber-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold text-[10px] cursor-pointer transition-colors shadow-2xs"
+                        className="mt-2 w-full py-1.5 rounded-xl bg-slate-100 hover:bg-emerald-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold text-[10px] cursor-pointer transition-colors shadow-2xs flex items-center justify-center gap-1"
                       >
-                        + Restock 🛍️
+                        <ShoppingBag className="w-3 h-3" />
+                        <span>Restock</span>
                       </button>
                     ) : (
                       <button
-                        onClick={() => applyItemAction(item)}
-                        className="mt-2 w-full py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-extrabold text-[10px] shadow-xs cursor-pointer active:scale-95 transition-all text-center flex items-center justify-center gap-1"
+                        onClick={() => handleKitchenItemTap(item, isOutOfStock)}
+                        className="mt-2 w-full py-1.5 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-extrabold text-[10px] shadow-xs cursor-pointer active:scale-95 transition-all text-center flex items-center justify-center gap-1"
                       >
-                        <span>Pakainin</span>
-                        <span>{item.icon}</span>
+                        <Send className="w-3 h-3" />
+                        <span>Serve</span>
                       </button>
                     )}
                   </div>
@@ -1086,7 +2044,7 @@ export const PouWellnessTab: React.FC<PouWellnessTabProps> = ({
 
             {/* Vet-Approved Nutrition Safety Card */}
             <div className="flex items-center gap-2.5 p-2.5 rounded-2xl bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-200/60 dark:border-emerald-800/40 text-[11px] text-emerald-900 dark:text-emerald-300">
-              <span className="text-lg">🛡️</span>
+              <Shield className="w-[18px] h-[18px] text-emerald-600 dark:text-emerald-400 shrink-0" />
               <div className="flex flex-col text-left">
                 <span className="font-bold">
                   {species === 'dog' ? 'Vet-Approved Canine Nutrition' : 'Vet-Approved Feline Nutrition'}
@@ -1104,10 +2062,15 @@ export const PouWellnessTab: React.FC<PouWellnessTabProps> = ({
         {activeRoom === 'bathroom' && (
           <div className="grid grid-cols-3 gap-3">
             {[
-              { id: 'soap', name: 'Bath Soap', icon: '🧼', type: 'soap' as const, inventoryKey: 'soap' as keyof Inventory },
-              { id: 'shower', name: 'Rinse Shower', icon: '🚿', type: 'shower' as const },
-              { id: 'brush', name: 'Soft Sponge', icon: '🧽', type: 'soap' as const, inventoryKey: 'soap' as keyof Inventory },
-            ].map((item) => (
+              // No `icon` on any of these: each renders a real Lucide glyph below.
+              { id: 'soap', name: 'Bath Soap', type: 'soap' as const, inventoryKey: 'soap' as keyof Inventory },
+              { id: 'shower', name: 'Rinse Shower', type: 'shower' as const },
+              { id: 'blower', name: 'Pet Blower', type: 'blower' as const },
+            ].map((item) => {
+              // Every bathroom item renders a real Lucide glyph — no emoji. The
+              // old sponge has been replaced outright by the pet blower.
+              const ItemIcon = BATHROOM_ITEM_ICONS[item.id];
+              return (
               <motion.div
                 key={item.id}
                 drag
@@ -1116,9 +2079,9 @@ export const PouWellnessTab: React.FC<PouWellnessTabProps> = ({
                 onDragStart={() => setActiveDragItem(item)}
                 onDrag={(e, info) => setIsHoveringPet(checkHitPet(info.point.x, info.point.y))}
                 onDragEnd={(e, info) => handleDragEnd(e, info, item)}
-                className="flex flex-col items-center justify-center p-3 rounded-2xl bg-sky-50/80 dark:bg-[#15252b] border border-sky-200 dark:border-sky-900/50 cursor-grab active:cursor-grabbing shadow-2xs hover:bg-sky-100 transition-colors touch-none"
+                className="flex flex-col items-center justify-center p-3 rounded-2xl bg-sky-50/80 dark:bg-[#182a22] border border-sky-200 dark:border-sky-900/50 cursor-grab active:cursor-grabbing shadow-2xs hover:bg-sky-100 transition-colors touch-none"
               >
-                <span className="text-3xl mb-1">{item.icon}</span>
+                <ItemIcon className="w-7 h-7 mb-1 text-sky-600 dark:text-sky-300" />
                 <span className="text-xs font-bold text-emerald-950 dark:text-emerald-100">
                   {item.name}
                 </span>
@@ -1126,7 +2089,8 @@ export const PouWellnessTab: React.FC<PouWellnessTabProps> = ({
                   {item.inventoryKey ? `x${inventory[item.inventoryKey] || 0}` : 'Unlimited'}
                 </span>
               </motion.div>
-            ))}
+              );
+            })}
           </div>
         )}
 
@@ -1140,7 +2104,7 @@ export const PouWellnessTab: React.FC<PouWellnessTabProps> = ({
                 setActiveDragItem({
                   id: 'tea',
                   name: 'Bedtime Chamomile',
-                  icon: '🍵',
+                  icon: Leaf,
                   type: 'food',
                   inventoryKey: 'herbalTea',
                 })
@@ -1150,14 +2114,14 @@ export const PouWellnessTab: React.FC<PouWellnessTabProps> = ({
                 handleDragEnd(e, info, {
                   id: 'tea',
                   name: 'Bedtime Chamomile',
-                  icon: '🍵',
+                  icon: Leaf,
                   type: 'food',
                   inventoryKey: 'herbalTea',
                 })
               }
               className="flex flex-col items-center justify-center p-3 rounded-2xl bg-teal-50 dark:bg-teal-950/40 border border-teal-200 dark:border-teal-800/50 cursor-grab active:cursor-grabbing shadow-2xs touch-none"
             >
-              <span className="text-3xl mb-1">🍵</span>
+              <Leaf className="w-7 h-7 mb-1 text-teal-600 dark:text-teal-300" />
               <span className="text-xs font-bold text-emerald-950 dark:text-emerald-100">
                 Chamomile Tea
               </span>
@@ -1170,7 +2134,11 @@ export const PouWellnessTab: React.FC<PouWellnessTabProps> = ({
               onClick={handleToggleBed}
               className="flex flex-col items-center justify-center p-3 rounded-2xl bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800/50 cursor-pointer shadow-2xs hover:bg-indigo-100"
             >
-              <span className="text-3xl mb-1">{stats.isSleeping ? '☀️' : '🌙'}</span>
+              {stats.isSleeping ? (
+                <Sun className="w-7 h-7 mb-1 text-amber-500 dark:text-amber-300" />
+              ) : (
+                <Moon className="w-7 h-7 mb-1 text-indigo-500 dark:text-indigo-300" />
+              )}
               <span className="text-xs font-bold text-emerald-950 dark:text-emerald-100">
                 {stats.isSleeping ? 'Turn Lamp On (Wake)' : 'Bedside Lamp (Sleep)'}
               </span>
@@ -1191,7 +2159,7 @@ export const PouWellnessTab: React.FC<PouWellnessTabProps> = ({
                 setActiveDragItem({
                   id: 'ball',
                   name: 'Tennis Ball',
-                  icon: '🎾',
+                  icon: Volleyball,
                   type: 'toy',
                 })
               }
@@ -1200,13 +2168,13 @@ export const PouWellnessTab: React.FC<PouWellnessTabProps> = ({
                 handleDragEnd(e, info, {
                   id: 'ball',
                   name: 'Tennis Ball',
-                  icon: '🎾',
+                  icon: Volleyball,
                   type: 'toy',
                 })
               }
               className="flex flex-col items-center justify-center p-3 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/50 cursor-grab active:cursor-grabbing shadow-2xs touch-none"
             >
-              <span className="text-3xl mb-1">🎾</span>
+              <Volleyball className="w-7 h-7 mb-1 text-lime-600 dark:text-lime-400" />
               <span className="text-xs font-bold text-emerald-950 dark:text-emerald-100">
                 Drag to Throw Ball
               </span>
@@ -1223,7 +2191,7 @@ export const PouWellnessTab: React.FC<PouWellnessTabProps> = ({
                 setActiveDragItem({
                   id: 'tea',
                   name: 'Herbal Tea',
-                  icon: '🍵',
+                  icon: Leaf,
                   type: 'food',
                   inventoryKey: 'herbalTea',
                 })
@@ -1233,14 +2201,14 @@ export const PouWellnessTab: React.FC<PouWellnessTabProps> = ({
                 handleDragEnd(e, info, {
                   id: 'tea',
                   name: 'Herbal Tea',
-                  icon: '🍵',
+                  icon: Leaf,
                   type: 'food',
                   inventoryKey: 'herbalTea',
                 })
               }
               className="flex flex-col items-center justify-center p-3 rounded-2xl bg-teal-50 dark:bg-teal-950/40 border border-teal-200 dark:border-teal-800/50 cursor-grab active:cursor-grabbing shadow-2xs touch-none"
             >
-              <span className="text-3xl mb-1">🍵</span>
+              <Leaf className="w-7 h-7 mb-1 text-teal-600 dark:text-teal-300" />
               <span className="text-xs font-bold text-emerald-950 dark:text-emerald-100">
                 Warm Tea
               </span>
@@ -1261,7 +2229,7 @@ export const PouWellnessTab: React.FC<PouWellnessTabProps> = ({
                 setActiveDragItem({
                   id: 'thermometer',
                   name: 'Clinical Thermometer',
-                  icon: '🌡️',
+                  icon: Thermometer,
                   type: 'thermometer',
                 })
               }
@@ -1270,13 +2238,13 @@ export const PouWellnessTab: React.FC<PouWellnessTabProps> = ({
                 handleDragEnd(e, info, {
                   id: 'thermometer',
                   name: 'Clinical Thermometer',
-                  icon: '🌡️',
+                  icon: Thermometer,
                   type: 'thermometer',
                 })
               }
               className="flex flex-col items-center justify-center p-3 rounded-2xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/50 cursor-grab active:cursor-grabbing shadow-2xs touch-none"
             >
-              <span className="text-3xl mb-1">🌡️</span>
+              <Thermometer className="w-7 h-7 mb-1 text-rose-600 dark:text-rose-300" />
               <span className="text-xs font-bold text-emerald-950 dark:text-emerald-100">
                 Thermometer
               </span>
@@ -1293,7 +2261,7 @@ export const PouWellnessTab: React.FC<PouWellnessTabProps> = ({
                 setActiveDragItem({
                   id: 'meds',
                   name: 'Vitamins',
-                  icon: '💊',
+                  icon: Pill,
                   type: 'medicine',
                   inventoryKey: 'medicine',
                 })
@@ -1303,14 +2271,14 @@ export const PouWellnessTab: React.FC<PouWellnessTabProps> = ({
                 handleDragEnd(e, info, {
                   id: 'meds',
                   name: 'Vitamins',
-                  icon: '💊',
+                  icon: Pill,
                   type: 'medicine',
                   inventoryKey: 'medicine',
                 })
               }
               className="flex flex-col items-center justify-center p-3 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/50 cursor-grab active:cursor-grabbing shadow-2xs touch-none"
             >
-              <span className="text-3xl mb-1">💊</span>
+              <Pill className="w-7 h-7 mb-1 text-emerald-600 dark:text-emerald-300" />
               <span className="text-xs font-bold text-emerald-950 dark:text-emerald-100">
                 Vitamins
               </span>
@@ -1327,7 +2295,7 @@ export const PouWellnessTab: React.FC<PouWellnessTabProps> = ({
                 setActiveDragItem({
                   id: 'tonic',
                   name: 'Herbal Tonic',
-                  icon: '🧪',
+                  icon: FlaskConical,
                   type: 'medicine',
                   inventoryKey: 'medicine',
                 })
@@ -1337,14 +2305,14 @@ export const PouWellnessTab: React.FC<PouWellnessTabProps> = ({
                 handleDragEnd(e, info, {
                   id: 'tonic',
                   name: 'Herbal Tonic',
-                  icon: '🧪',
+                  icon: FlaskConical,
                   type: 'medicine',
                   inventoryKey: 'medicine',
                 })
               }
               className="flex flex-col items-center justify-center p-3 rounded-2xl bg-cyan-50 dark:bg-cyan-950/40 border border-cyan-200 dark:border-cyan-800/50 cursor-grab active:cursor-grabbing shadow-2xs touch-none"
             >
-              <span className="text-3xl mb-1">🧪</span>
+              <FlaskConical className="w-7 h-7 mb-1 text-cyan-600 dark:text-cyan-300" />
               <span className="text-xs font-bold text-emerald-950 dark:text-emerald-100">
                 Healing Tonic
               </span>
@@ -1357,73 +2325,56 @@ export const PouWellnessTab: React.FC<PouWellnessTabProps> = ({
       </div>
 
       {/* =========================================================
-          2 RECTANGLE BOXES: TALK WITH COMPANION & SANCTUARY MARKETPLACE
+          MINDFUL MINI-GAMES MODAL (Triggered from Room Dock)
           ========================================================= */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full">
-        {/* Box 1: Talk with [animal name] */}
-        <button
-          onClick={onOpenChat}
-          className="w-full p-4 rounded-3xl bg-gradient-to-br from-emerald-800 via-emerald-900 to-teal-950 text-white shadow-md hover:shadow-lg border border-emerald-600/50 flex items-center justify-between text-left transition-all cursor-pointer group hover:scale-[1.01] active:scale-98"
-        >
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-2xl bg-white/15 backdrop-blur-md border border-white/20 flex items-center justify-center text-2xl group-hover:scale-110 transition-transform shrink-0">
-              💬
-            </div>
-            <div>
-              <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-300 block">
-                Intelligent Companion AI
-              </span>
-              <h4 className="text-sm font-black text-white">
-                Talk with {companionName}
-              </h4>
-              <p className="text-[11px] text-emerald-100/85 line-clamp-1">
-                Ask how {companionName} is feeling or share your thoughts
-              </p>
-            </div>
-          </div>
-          <span className="text-emerald-300 font-black text-base group-hover:translate-x-1 transition-transform pl-2">
-            &rarr;
-          </span>
-        </button>
+      <AnimatePresence>
+        {showGamesModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-[#0b1411]/75 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4"
+          >
+            <motion.div
+              initial={{ scale: 0.94, y: 15 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.94, y: 15 }}
+              className="w-full max-w-lg max-h-[85vh] bg-white dark:bg-[#182a22] rounded-3xl border border-emerald-200/80 dark:border-emerald-800/70 shadow-2xl flex flex-col overflow-hidden"
+            >
+              {/* Modal Header */}
+              <div className="p-4 bg-emerald-50 dark:bg-[#182a22] border-b border-emerald-100 dark:border-emerald-800/60 flex items-center justify-between shrink-0">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-xl bg-emerald-500 text-white flex items-center justify-center shadow-xs">
+                    <Gamepad2 className="w-4 h-4" />
+                  </div>
+                  <h3 className="text-sm font-black text-slate-800 dark:text-emerald-100">
+                    Mindful Mini-Games
+                  </h3>
+                </div>
 
-        {/* Box 2: Sanctuary Marketplace */}
-        <button
-          onClick={onOpenMarket}
-          className="w-full p-4 rounded-3xl bg-gradient-to-br from-amber-600 via-amber-700 to-orange-800 text-white shadow-md hover:shadow-lg border border-amber-400/50 flex items-center justify-between text-left transition-all cursor-pointer group hover:scale-[1.01] active:scale-98"
-        >
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-2xl bg-white/15 backdrop-blur-md border border-white/20 flex items-center justify-center text-2xl group-hover:scale-110 transition-transform shrink-0">
-              🛍️
-            </div>
-            <div>
-              <span className="text-[10px] font-bold uppercase tracking-wider text-amber-200 block">
-                Wardrobe, Food &amp; Points
-              </span>
-              <h4 className="text-sm font-black text-white">
-                Sanctuary Marketplace
-              </h4>
-              <p className="text-[11px] text-amber-100/85 line-clamp-1">
-                {points} WP &bull; Hats, treats, care supplies &amp; top-up
-              </p>
-            </div>
-          </div>
-          <span className="text-amber-200 font-black text-base group-hover:translate-x-1 transition-transform pl-2">
-            &rarr;
-          </span>
-        </button>
-      </div>
+                <button
+                  onClick={() => setShowGamesModal(false)}
+                  className="p-1.5 rounded-full hover:bg-slate-200 dark:hover:bg-emerald-900 text-slate-500 dark:text-emerald-400 cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
 
-      {/* =========================================================
-          6 WORKING MINDFUL MINI-GAMES BELOW CARE FEATURES
-          ========================================================= */}
-      <WellnessMiniGames
-        species={species}
-        companionName={companionName}
-        onAddPoints={onAddPoints}
-        onBoostHappiness={(amt) =>
-          onUpdateStats({ happiness: Math.min(100, stats.happiness + amt) })
-        }
-      />
+              {/* Modal Body */}
+              <div className="flex-1 p-4 overflow-y-auto">
+                <WellnessMiniGames
+                  species={species}
+                  companionName={companionName}
+                  onAddPoints={onAddPoints}
+                  onBoostHappiness={(amt) =>
+                    onUpdateStats({ happiness: Math.min(100, stats.happiness + amt) })
+                  }
+                />
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

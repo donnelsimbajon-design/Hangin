@@ -178,7 +178,7 @@ export const ModernOnboarding: React.FC<ModernOnboardingProps> = ({ onComplete }
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-md select-none overflow-y-auto">
       {/* Container matching mobile / Duolingo-style dialog */}
-      <div className="relative w-full max-w-md bg-white dark:bg-[#0f1d14] rounded-3xl p-6 sm:p-7 shadow-2xl border-2 border-emerald-500/40 flex flex-col my-auto max-h-[95vh] overflow-y-auto scrollbar-none">
+      <div className="relative w-full max-w-md bg-white dark:bg-[#13221b] rounded-3xl p-6 sm:p-7 shadow-2xl border border-emerald-200 dark:border-emerald-800/70 flex flex-col my-auto max-h-[95vh] overflow-y-auto scrollbar-none">
         
         {/* Top Stepper Indicator (when step > 0) */}
         {step > 0 && (
@@ -194,7 +194,7 @@ export const ModernOnboarding: React.FC<ModernOnboardingProps> = ({ onComplete }
                 <div
                   key={s}
                   className={`h-2 rounded-full transition-all duration-300 ${
-                    step === s ? 'w-7 bg-[#58cc02]' : step > s ? 'w-2 bg-[#58cc02]' : 'w-2 bg-slate-200 dark:bg-emerald-900'
+                    step === s ? 'w-7 bg-[#35805a]' : step > s ? 'w-2 bg-[#35805a]' : 'w-2 bg-slate-200 dark:bg-emerald-900'
                   }`}
                 />
               ))}
@@ -212,9 +212,9 @@ export const ModernOnboarding: React.FC<ModernOnboardingProps> = ({ onComplete }
               initial={{ scale: 0.85, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               transition={{ type: 'spring', damping: 15 }}
-              className="w-24 h-24 mb-5 rounded-3xl bg-gradient-to-tr from-[#58cc02] via-emerald-500 to-teal-600 p-1.5 shadow-[0_12px_28px_rgba(88,204,2,0.35)] flex items-center justify-center ring-4 ring-emerald-500/20"
+              className="w-24 h-24 mb-5 rounded-3xl bg-gradient-to-tr from-emerald-600 via-emerald-500 to-teal-600 p-1.5 shadow-lg flex items-center justify-center ring-4 ring-emerald-500/12"
             >
-              <div className="w-full h-full rounded-[20px] bg-gradient-to-br from-emerald-600/90 to-[#4cae02] flex items-center justify-center shadow-inner">
+              <div className="w-full h-full rounded-[20px] bg-gradient-to-br from-emerald-600/90 to-[#35805a] flex items-center justify-center shadow-inner">
                 <span className="text-4xl filter drop-shadow-md">🌿</span>
               </div>
             </motion.div>
@@ -241,7 +241,7 @@ export const ModernOnboarding: React.FC<ModernOnboardingProps> = ({ onComplete }
             <div className="w-full">
               <button
                 onClick={() => setStep(1)}
-                className="w-full py-4 rounded-2xl bg-[#58cc02] hover:bg-[#46a302] text-white font-black text-sm uppercase tracking-wider shadow-[0_4px_0_#46a302] active:translate-y-0.5 cursor-pointer flex items-center justify-center gap-2 transition-all"
+                className="w-full py-4 rounded-2xl bg-[#35805a] hover:bg-[#2a6b4b] text-white font-black text-sm uppercase tracking-wider shadow-[0_2px_0_#2a6b4b] active:translate-y-0.5 cursor-pointer flex items-center justify-center gap-2 transition-all"
               >
                 <span>GET STARTED</span>
                 <ArrowRight className="w-4 h-4" />
@@ -277,8 +277,8 @@ export const ModernOnboarding: React.FC<ModernOnboardingProps> = ({ onComplete }
                 onClick={() => handleSelectSpecies('dog')}
                 className={`p-3.5 rounded-2xl border-2 text-center transition-all cursor-pointer flex flex-col items-center ${
                   species === 'dog'
-                    ? 'border-[#58cc02] bg-emerald-50 dark:bg-emerald-950/60 shadow-md ring-2 ring-[#58cc02]/30'
-                    : 'border-slate-200 dark:border-emerald-800/80 bg-white dark:bg-[#112017] hover:border-slate-300'
+                    ? 'border-[#35805a] bg-emerald-50 dark:bg-emerald-950/60 shadow-md ring-2 ring-[#35805a]/30'
+                    : 'border-slate-200 dark:border-emerald-800/80 bg-white dark:bg-[#13221b] hover:border-slate-300'
                 }`}
               >
                 <span className="text-3xl mb-1">🐶</span>
@@ -289,7 +289,7 @@ export const ModernOnboarding: React.FC<ModernOnboardingProps> = ({ onComplete }
                   Loyal, warm & encouraging
                 </span>
                 {species === 'dog' && (
-                  <span className="mt-1.5 px-2 py-0.5 rounded-full bg-[#58cc02] text-white text-[10px] font-extrabold uppercase">
+                  <span className="mt-1.5 px-2 py-0.5 rounded-full bg-[#35805a] text-white text-[10px] font-extrabold uppercase">
                     Selected
                   </span>
                 )}
@@ -300,8 +300,8 @@ export const ModernOnboarding: React.FC<ModernOnboardingProps> = ({ onComplete }
                 onClick={() => handleSelectSpecies('cat')}
                 className={`p-3.5 rounded-2xl border-2 text-center transition-all cursor-pointer flex flex-col items-center ${
                   species === 'cat'
-                    ? 'border-[#58cc02] bg-emerald-50 dark:bg-emerald-950/60 shadow-md ring-2 ring-[#58cc02]/30'
-                    : 'border-slate-200 dark:border-emerald-800/80 bg-white dark:bg-[#112017] hover:border-slate-300'
+                    ? 'border-[#35805a] bg-emerald-50 dark:bg-emerald-950/60 shadow-md ring-2 ring-[#35805a]/30'
+                    : 'border-slate-200 dark:border-emerald-800/80 bg-white dark:bg-[#13221b] hover:border-slate-300'
                 }`}
               >
                 <span className="text-3xl mb-1">🐱</span>
@@ -312,7 +312,7 @@ export const ModernOnboarding: React.FC<ModernOnboardingProps> = ({ onComplete }
                   Calm, playful & observant
                 </span>
                 {species === 'cat' && (
-                  <span className="mt-1.5 px-2 py-0.5 rounded-full bg-[#58cc02] text-white text-[10px] font-extrabold uppercase">
+                  <span className="mt-1.5 px-2 py-0.5 rounded-full bg-[#35805a] text-white text-[10px] font-extrabold uppercase">
                     Selected
                   </span>
                 )}
@@ -321,7 +321,7 @@ export const ModernOnboarding: React.FC<ModernOnboardingProps> = ({ onComplete }
 
             <button
               onClick={handleNext}
-              className="w-full py-4 rounded-2xl bg-[#58cc02] hover:bg-[#46a302] text-white font-black text-sm uppercase tracking-wider shadow-[0_4px_0_#46a302] active:translate-y-0.5 cursor-pointer flex items-center justify-center gap-2 transition-all mt-auto"
+              className="w-full py-4 rounded-2xl bg-[#35805a] hover:bg-[#2a6b4b] text-white font-black text-sm uppercase tracking-wider shadow-[0_2px_0_#2a6b4b] active:translate-y-0.5 cursor-pointer flex items-center justify-center gap-2 transition-all mt-auto"
             >
               <span>CONTINUE WITH {species === 'dog' ? 'HABI' : 'MUNING'}</span>
               <ArrowRight className="w-4 h-4" />
@@ -349,8 +349,8 @@ export const ModernOnboarding: React.FC<ModernOnboardingProps> = ({ onComplete }
                     onClick={() => setDailyPace(pace.id)}
                     className={`w-full p-4 rounded-2xl border-2 text-left transition-all cursor-pointer flex items-start gap-3.5 ${
                       isSelected
-                        ? 'border-[#58cc02] bg-emerald-50/70 dark:bg-emerald-950/50 shadow-md ring-2 ring-[#58cc02]/30'
-                        : 'border-slate-200 dark:border-emerald-800/80 bg-white dark:bg-[#112017] hover:border-slate-300'
+                        ? 'border-[#35805a] bg-emerald-50/70 dark:bg-emerald-950/50 shadow-md ring-2 ring-[#35805a]/30'
+                        : 'border-slate-200 dark:border-emerald-800/80 bg-white dark:bg-[#13221b] hover:border-slate-300'
                     }`}
                   >
                     <span className="text-2xl mt-0.5">{pace.icon}</span>
@@ -365,7 +365,7 @@ export const ModernOnboarding: React.FC<ModernOnboardingProps> = ({ onComplete }
                               {pace.tag}
                             </span>
                           )}
-                          <span className="text-[11px] font-bold text-[#58cc02]">
+                          <span className="text-[11px] font-bold text-[#35805a]">
                             {pace.duration}
                           </span>
                         </div>
@@ -381,7 +381,7 @@ export const ModernOnboarding: React.FC<ModernOnboardingProps> = ({ onComplete }
 
             <button
               onClick={handleNext}
-              className="w-full py-4 rounded-2xl bg-[#58cc02] hover:bg-[#46a302] text-white font-black text-sm uppercase tracking-wider shadow-[0_4px_0_#46a302] active:translate-y-0.5 cursor-pointer flex items-center justify-center gap-2 transition-all mt-auto"
+              className="w-full py-4 rounded-2xl bg-[#35805a] hover:bg-[#2a6b4b] text-white font-black text-sm uppercase tracking-wider shadow-[0_2px_0_#2a6b4b] active:translate-y-0.5 cursor-pointer flex items-center justify-center gap-2 transition-all mt-auto"
             >
               <span>CONFIRM PACE</span>
               <ArrowRight className="w-4 h-4" />
@@ -416,15 +416,15 @@ export const ModernOnboarding: React.FC<ModernOnboardingProps> = ({ onComplete }
                     onClick={() => handleToggleGoal(goal.id)}
                     className={`p-3 rounded-2xl border-2 transition-all cursor-pointer flex items-start gap-3 ${
                       isChecked
-                        ? 'border-[#58cc02] bg-emerald-50/70 dark:bg-emerald-950/50 shadow-xs'
-                        : 'border-slate-200 dark:border-emerald-800/80 bg-white dark:bg-[#112017]'
+                        ? 'border-[#35805a] bg-emerald-50/70 dark:bg-emerald-950/50 shadow-xs'
+                        : 'border-slate-200 dark:border-emerald-800/80 bg-white dark:bg-[#13221b]'
                     }`}
                   >
                     <div
                       className={`w-5 h-5 rounded-md mt-0.5 flex items-center justify-center text-xs font-bold transition-colors ${
                         isChecked
-                          ? 'bg-[#58cc02] text-white'
-                          : 'border-2 border-slate-300 dark:border-emerald-700'
+                          ? 'bg-[#35805a] text-white'
+                          : 'border-2 border-slate-300 dark:border-[#2d4d41]'
                       }`}
                     >
                       {isChecked && <Check className="w-3.5 h-3.5 stroke-[3]" />}
@@ -446,7 +446,7 @@ export const ModernOnboarding: React.FC<ModernOnboardingProps> = ({ onComplete }
 
             <button
               onClick={handleNext}
-              className="w-full py-4 rounded-2xl bg-[#58cc02] hover:bg-[#46a302] text-white font-black text-sm uppercase tracking-wider shadow-[0_4px_0_#46a302] active:translate-y-0.5 cursor-pointer flex items-center justify-center gap-2 transition-all mt-auto"
+              className="w-full py-4 rounded-2xl bg-[#35805a] hover:bg-[#2a6b4b] text-white font-black text-sm uppercase tracking-wider shadow-[0_2px_0_#2a6b4b] active:translate-y-0.5 cursor-pointer flex items-center justify-center gap-2 transition-all mt-auto"
             >
               <span>CONTINUE ({selectedGoals.length} SELECTED)</span>
               <ArrowRight className="w-4 h-4" />
@@ -464,7 +464,7 @@ export const ModernOnboarding: React.FC<ModernOnboardingProps> = ({ onComplete }
               Decide your personal name, pet's name, and your own private 4-digit PIN:
             </p>
 
-            <div className="space-y-3.5 bg-white dark:bg-[#112017] p-4 rounded-2xl border-2 border-slate-200 dark:border-emerald-800 mb-4 shadow-sm">
+            <div className="space-y-3.5 bg-white dark:bg-[#13221b] p-4 rounded-2xl border border-slate-200 dark:border-emerald-800 mb-4 shadow-sm">
               {/* Display Name */}
               <div>
                 <label className="text-xs font-bold text-slate-700 dark:text-emerald-200 flex items-center gap-1.5 mb-1">
@@ -476,7 +476,7 @@ export const ModernOnboarding: React.FC<ModernOnboardingProps> = ({ onComplete }
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   placeholder="e.g. Rhonzo, GentleWanderer"
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-emerald-700 bg-slate-50 dark:bg-emerald-950/60 text-slate-900 dark:text-emerald-100 text-xs font-medium focus:ring-2 focus:ring-[#58cc02] focus:outline-none"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-[#2d4d41] bg-slate-50 dark:bg-emerald-950/60 text-slate-900 dark:text-emerald-100 text-xs font-medium focus:ring-2 focus:ring-[#35805a] focus:outline-none"
                 />
               </div>
 
@@ -490,7 +490,7 @@ export const ModernOnboarding: React.FC<ModernOnboardingProps> = ({ onComplete }
                   value={companionName}
                   onChange={(e) => setCompanionName(e.target.value)}
                   placeholder={species === 'dog' ? 'Habi' : 'Muning'}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-emerald-700 bg-slate-50 dark:bg-emerald-950/60 text-slate-900 dark:text-emerald-100 text-xs font-medium focus:ring-2 focus:ring-[#58cc02] focus:outline-none"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-[#2d4d41] bg-slate-50 dark:bg-emerald-950/60 text-slate-900 dark:text-emerald-100 text-xs font-medium focus:ring-2 focus:ring-[#35805a] focus:outline-none"
                 />
               </div>
 
@@ -514,7 +514,7 @@ export const ModernOnboarding: React.FC<ModernOnboardingProps> = ({ onComplete }
                     setPin(e.target.value.replace(/\D/g, ''));
                   }}
                   placeholder="Choose your 4 digits (e.g. 7824)"
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-emerald-700 bg-slate-50 dark:bg-emerald-950/60 text-slate-900 dark:text-emerald-100 text-xs font-mono tracking-widest text-center focus:ring-2 focus:ring-[#58cc02] focus:outline-none font-bold"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-[#2d4d41] bg-slate-50 dark:bg-emerald-950/60 text-slate-900 dark:text-emerald-100 text-xs font-mono tracking-widest text-center focus:ring-2 focus:ring-[#35805a] focus:outline-none font-bold"
                 />
               </div>
 
@@ -559,7 +559,7 @@ export const ModernOnboarding: React.FC<ModernOnboardingProps> = ({ onComplete }
 
             <button
               onClick={handleNext}
-              className="w-full py-4 rounded-2xl bg-[#58cc02] hover:bg-[#46a302] text-white font-black text-sm uppercase tracking-wider shadow-[0_4px_0_#46a302] active:translate-y-0.5 cursor-pointer flex items-center justify-center gap-2 transition-all mt-auto"
+              className="w-full py-4 rounded-2xl bg-[#35805a] hover:bg-[#2a6b4b] text-white font-black text-sm uppercase tracking-wider shadow-[0_2px_0_#2a6b4b] active:translate-y-0.5 cursor-pointer flex items-center justify-center gap-2 transition-all mt-auto"
             >
               <span>ENTER SANCTUARY</span>
               <ArrowRight className="w-4 h-4" />

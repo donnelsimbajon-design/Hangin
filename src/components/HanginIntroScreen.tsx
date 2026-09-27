@@ -81,7 +81,7 @@ export const HanginIntroScreen: React.FC<HanginIntroScreenProps> = ({
   };
 
   return (
-    <div className="relative min-h-screen w-full bg-gradient-to-b from-[#0a1810] via-[#09150e] to-[#040906] text-white flex flex-col justify-between p-4 sm:p-6 md:p-10 select-none overflow-x-hidden font-sans">
+    <div className="relative min-h-screen w-full bg-gradient-to-b from-[#13221b] via-[#0e1a15] to-[#0b1411] text-emerald-50 flex flex-col justify-between p-4 sm:p-6 md:p-10 select-none overflow-x-hidden font-sans">
       {/* Organic Ambient Breathing Glows */}
       <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[520px] h-[520px] rounded-full bg-emerald-500/12 blur-[120px] pointer-events-none" />
       <div className="absolute bottom-10 right-10 w-[380px] h-[380px] rounded-full bg-teal-500/10 blur-[100px] pointer-events-none" />
@@ -89,7 +89,7 @@ export const HanginIntroScreen: React.FC<HanginIntroScreenProps> = ({
       {/* Top Bar: Brand, Quick Crisis Indicator & PWA Install */}
       <header className="relative z-20 w-full max-w-4xl mx-auto flex items-center justify-between">
         <div className="flex items-center gap-2.5">
-          <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-[#10b981] to-emerald-400 p-0.5 shadow-lg shadow-emerald-500/20 flex items-center justify-center">
+          <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-[#2f7a56] to-emerald-400 p-0.5 shadow-lg shadow-emerald-500/20 flex items-center justify-center">
             <span className="text-xl">🍃</span>
           </div>
           <div>
@@ -155,7 +155,7 @@ export const HanginIntroScreen: React.FC<HanginIntroScreenProps> = ({
                     opacity: isBreatheIn ? 0.9 : 0.65,
                   }}
                   transition={{ duration: 4, ease: 'easeInOut' }}
-                  className="w-28 h-28 rounded-full bg-gradient-to-tr from-emerald-500/30 to-teal-400/20 border-2 border-emerald-400/40 flex flex-col items-center justify-center p-3 shadow-2xl backdrop-blur-lg"
+                  className="w-28 h-28 rounded-full bg-gradient-to-tr from-emerald-500/25 to-teal-400/15 border border-emerald-400/30 flex flex-col items-center justify-center p-3 shadow-2xl backdrop-blur-lg"
                 >
                   <Wind className="w-8 h-8 text-emerald-300 animate-pulse mb-1" />
                   <span className="text-[10px] font-bold text-emerald-200 uppercase tracking-widest">
@@ -189,7 +189,7 @@ export const HanginIntroScreen: React.FC<HanginIntroScreenProps> = ({
 
               {/* Dedicated PWA Mobile App Card on Intro Page */}
               {onInstallPWA && (
-                <div className="w-full max-w-md mx-auto mb-6 p-4 rounded-3xl bg-gradient-to-r from-emerald-950/80 via-[#0d261a]/90 to-teal-950/80 border-2 border-emerald-400/40 backdrop-blur-md flex items-center justify-between gap-3 text-left shadow-2xl">
+                <div className="w-full max-w-md mx-auto mb-6 p-4 rounded-3xl bg-gradient-to-r from-[#13221b]/85 via-[#182a22]/90 to-[#14251b]/85 border border-emerald-400/25 backdrop-blur-md flex items-center justify-between gap-3 text-left shadow-2xl">
                   <div className="flex items-center gap-3">
                     <div className="w-11 h-11 rounded-2xl bg-emerald-500/20 border border-emerald-400/40 flex items-center justify-center text-xl flex-shrink-0">
                       📲
@@ -248,7 +248,7 @@ export const HanginIntroScreen: React.FC<HanginIntroScreenProps> = ({
               <div className="flex flex-col sm:flex-row items-center gap-3 w-full max-w-md">
                 <button
                   onClick={onStartOnboarding}
-                  className="w-full sm:flex-1 py-4 px-6 rounded-2xl bg-gradient-to-r from-emerald-500 to-[#10b981] hover:from-emerald-400 hover:to-[#059669] text-white font-black text-sm uppercase tracking-wider shadow-lg shadow-emerald-500/25 active:scale-[0.98] transition-all cursor-pointer flex items-center justify-center gap-2"
+                  className="w-full sm:flex-1 py-4 px-6 rounded-2xl bg-gradient-to-r from-emerald-500 to-[#2f7a56] hover:from-emerald-400 hover:to-[#256049] text-white font-black text-sm uppercase tracking-wider shadow-lg shadow-emerald-500/25 active:scale-[0.98] transition-all cursor-pointer flex items-center justify-center gap-2"
                 >
                   <span>Mag-umpisa (Get Started)</span>
                   <ArrowRight className="w-4 h-4" />
@@ -280,7 +280,7 @@ export const HanginIntroScreen: React.FC<HanginIntroScreenProps> = ({
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.96 }}
               transition={{ duration: 0.25 }}
-              className="w-full max-w-md mx-auto p-6 sm:p-8 rounded-3xl bg-white/10 dark:bg-[#0f2117]/85 border border-white/15 dark:border-emerald-500/30 backdrop-blur-2xl shadow-2xl flex flex-col"
+              className="w-full max-w-md mx-auto p-6 sm:p-8 rounded-3xl bg-white/10 dark:bg-[#182a22]/85 border border-white/15 dark:border-emerald-500/30 backdrop-blur-2xl shadow-2xl flex flex-col"
             >
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
@@ -346,7 +346,7 @@ export const HanginIntroScreen: React.FC<HanginIntroScreenProps> = ({
                     value={inputUserName}
                     onChange={(e) => setInputUserName(e.target.value)}
                     placeholder="e.g. Guardian, Rhonzo"
-                    className="w-full px-4 py-3 rounded-2xl bg-black/40 border border-white/15 text-white text-sm placeholder-slate-400 focus:outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 transition-colors"
+                    className="w-full px-4 py-3 rounded-2xl bg-[#0b1411]/40 border border-white/15 text-white text-sm placeholder-slate-400 focus:outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 transition-colors"
                   />
                 </div>
 
@@ -372,7 +372,7 @@ export const HanginIntroScreen: React.FC<HanginIntroScreenProps> = ({
                     value={inputPin}
                     onChange={(e) => setInputPin(e.target.value.replace(/\D/g, ''))}
                     placeholder="1234"
-                    className="w-full px-4 py-3 rounded-2xl bg-black/40 border border-white/15 text-white text-lg font-mono tracking-widest text-center focus:outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 transition-colors font-bold"
+                    className="w-full px-4 py-3 rounded-2xl bg-[#0b1411]/40 border border-white/15 text-white text-lg font-mono tracking-widest text-center focus:outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 transition-colors font-bold"
                   />
                   <p className="text-[10px] text-emerald-300/70 mt-1 text-center">
                     Tip: Kung default ang iyong setup, ang PIN ay <strong>1234</strong>.
@@ -383,7 +383,7 @@ export const HanginIntroScreen: React.FC<HanginIntroScreenProps> = ({
               {/* Main Login Button */}
               <button
                 onClick={() => handleDoLogin()}
-                className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-[#10b981] hover:from-emerald-400 hover:to-[#059669] text-white font-black text-sm uppercase tracking-wider shadow-lg shadow-emerald-500/25 active:scale-[0.98] transition-all cursor-pointer flex items-center justify-center gap-2 mb-4"
+                className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-[#2f7a56] hover:from-emerald-400 hover:to-[#256049] text-white font-black text-sm uppercase tracking-wider shadow-lg shadow-emerald-500/25 active:scale-[0.98] transition-all cursor-pointer flex items-center justify-center gap-2 mb-4"
               >
                 <span>Pumasok sa Sanctuary</span>
                 <ArrowRight className="w-4 h-4" />

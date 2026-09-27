@@ -11,12 +11,12 @@ export const CrisisModal: React.FC<CrisisModalProps> = ({ isOpen, onClose }) => 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#0b1411]/60 backdrop-blur-xs">
       <motion.div
         initial={{ opacity: 0, scale: 0.95, y: 15 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 15 }}
-        className="w-full max-w-md rounded-3xl bg-white dark:bg-[#121f17] border border-rose-200 dark:border-rose-900/60 p-6 shadow-2xl overflow-y-auto max-h-[90vh]"
+        className="w-full max-w-md rounded-3xl bg-white dark:bg-[#182a22] border border-rose-200 dark:border-rose-900/60 p-6 shadow-2xl overflow-y-auto max-h-[90vh]"
       >
         <div className="flex items-start justify-between pb-3 border-b border-rose-100 dark:border-rose-900/40">
           <div className="flex items-center gap-3">
@@ -61,7 +61,7 @@ export const CrisisModal: React.FC<CrisisModalProps> = ({ isOpen, onClose }) => 
               </a>
               <a
                 href="tel:+639178998727"
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white dark:bg-[#1c2e22] text-rose-700 dark:text-rose-200 border border-rose-200 text-xs font-semibold hover:bg-rose-50 transition-colors"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white dark:bg-[#182a22] text-rose-700 dark:text-rose-200 border border-rose-200 text-xs font-semibold hover:bg-rose-50 transition-colors"
               >
                 <span>0917-899-8727</span>
               </a>
@@ -69,7 +69,7 @@ export const CrisisModal: React.FC<CrisisModalProps> = ({ isOpen, onClose }) => 
           </div>
 
           {/* In Touch Community */}
-          <div className="p-3.5 rounded-2xl bg-emerald-50/80 dark:bg-[#172b1f] border border-emerald-200/80 dark:border-emerald-800/40">
+          <div className="p-3.5 rounded-2xl bg-emerald-50/80 dark:bg-[#182a22] border border-emerald-200/80 dark:border-emerald-800/40">
             <span className="text-[11px] font-bold text-emerald-900 dark:text-emerald-200 block uppercase tracking-wide">
               In Touch Community Services (Crisis Line)
             </span>
@@ -83,7 +83,7 @@ export const CrisisModal: React.FC<CrisisModalProps> = ({ isOpen, onClose }) => 
               </a>
               <a
                 href="tel:+639178001123"
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white dark:bg-[#1c2e22] text-emerald-800 dark:text-emerald-200 border border-emerald-200 text-xs font-semibold"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white dark:bg-[#182a22] text-emerald-800 dark:text-emerald-200 border border-emerald-200 text-xs font-semibold"
               >
                 <span>0917-800-1123</span>
               </a>

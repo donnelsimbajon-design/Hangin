@@ -11,6 +11,15 @@ import {
   Repeat,
   X,
   Target,
+  Smartphone,
+  Wind,
+  Droplet,
+  Lock,
+  Smile,
+  Leaf,
+  CloudRain,
+  Zap,
+  Quote,
 } from 'lucide-react';
 import { CuteCompanion } from './CuteCompanion';
 import { PetSpecies, PetAnimationMood, EquippedAccessories, MoodLog } from '../types';
@@ -38,12 +47,12 @@ const motivationalQuotes = [
   "You are stronger and softer than you give yourself credit for. 💚",
 ];
 
-const goalLabels: Record<string, { icon: string; label: string }> = {
-  screentime: { icon: '📵', label: 'Reduce Doomscrolling' },
-  stress: { icon: '🧘', label: 'Relieve Stress & Anxiety' },
-  habits: { icon: '💧', label: 'Self-Care Habits' },
-  journal: { icon: '🔒', label: 'Private Journaling' },
-  sleep: { icon: '🌙', label: 'Rest & Sleep Hygiene' },
+const goalLabels: Record<string, { icon: React.ElementType; label: string }> = {
+  screentime: { icon: Smartphone, label: 'Reduce Doomscrolling' },
+  stress: { icon: Wind, label: 'Relieve Stress & Anxiety' },
+  habits: { icon: Droplet, label: 'Self-Care Habits' },
+  journal: { icon: Lock, label: 'Private Journaling' },
+  sleep: { icon: Moon, label: 'Rest & Sleep Hygiene' },
 };
 
 export const HomeScenicStage: React.FC<HomeScenicStageProps> = ({
@@ -104,15 +113,40 @@ export const HomeScenicStage: React.FC<HomeScenicStageProps> = ({
       setCompanionMood('happy');
     }
 
-    const responses: Record<string, string> = {
-      happy: `Seeing you smile makes my heart flutter! Let's cherish this gentle joy today. ☀️`,
-      calm: `That steady calm is such a gift. Let's hold onto this quiet peace together. 🌿`,
-      sad: `I'm sitting right here beside you. It's okay to feel sad. You don't have to face it alone. 🫂`,
-      tired: `You've been carrying so much. Please rest your eyes and breathe softly with me. 🌙`,
-      overwhelmed: `Let's pause. Listen to the gentle breeze (Hangin). Right here, right now, you are safe. 🌬️`,
+    const responseVariants: Record<string, string[]> = {
+      happy: [
+        `Seeing you smile makes my heart flutter! Let's cherish this gentle joy today. ☀️`,
+        `Your happiness is contagious right now. I'm soaking it in with you. 🌼`,
+        `This lightness in you is worth noticing. Let's hold onto it a little longer. 🌸`,
+      ],
+      calm: [
+        `That steady calm is such a gift. Let's hold onto this quiet peace together. 🌿`,
+        `Calm looks good on you. Let's stay in this stillness a little longer. 🍃`,
+        `Nothing urgent right now. Just this quiet, and you're safe in it. 🌊`,
+      ],
+      sad: [
+        `I'm sitting right here beside you. It's okay to feel sad. You don't have to face it alone. 🫂`,
+        `Whatever this sadness is carrying, you don't have to carry it alone right now. 💛`,
+        `You don't need to explain it. I'm just staying close while you feel it. 🫂`,
+      ],
+      tired: [
+        `You've been carrying so much. Please rest your eyes and breathe softly with me. 🌙`,
+        `Tired is your body asking for gentleness. Let's slow down together. 😴`,
+        `Rest isn't something you have to earn. Let today be enough. 🌙`,
+      ],
+      overwhelmed: [
+        `Let's pause. Listen to the gentle breeze (Hangin). Right here, right now, you are safe. 🌬️`,
+        `One thing at a time. We don't have to hold it all at once. ⚓`,
+        `Let's shrink this moment down to just one breath. You're safe with me. ⚓`,
+      ],
     };
 
-    setReactionText(responses[mood] || "Thank you for checking in with me! 💚");
+    const variants = responseVariants[mood] ?? [];
+    const chosenResponse =
+      variants[Math.floor(Math.random() * variants.length)] ??
+      'Thank you for checking in with me! 💚';
+
+    setReactionText(chosenResponse);
     setShowMoodSelector(false);
 
     setTimeout(() => {
@@ -484,7 +518,7 @@ export const HomeScenicStage: React.FC<HomeScenicStageProps> = ({
           ========================================================= */}
       <div className="absolute top-3 inset-x-3 sm:inset-x-5 z-30 flex items-center justify-between pointer-events-auto">
         {/* Real Philippine Time Badge */}
-        <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/40 backdrop-blur-md border border-white/20 text-white text-[11px] font-semibold shadow-md">
+        <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#0b1411]/40 backdrop-blur-md border border-white/20 text-white text-[11px] font-semibold shadow-md">
           <span className="text-xs">🇵🇭</span>
           <span className="font-mono">{phTime.timeFullStr}</span>
           <span className="hidden sm:inline text-emerald-300 font-bold">&bull; {phTime.phaseLabel}</span>
@@ -496,7 +530,7 @@ export const HomeScenicStage: React.FC<HomeScenicStageProps> = ({
           {mindfulGoals && mindfulGoals.length > 0 && (
             <button
               onClick={() => setShowGoalsDrawer(!showGoalsDrawer)}
-              className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-black/40 backdrop-blur-md border border-emerald-400/40 text-emerald-200 hover:bg-black/60 cursor-pointer shadow-xs flex items-center gap-1"
+              className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-[#0b1411]/40 backdrop-blur-md border border-emerald-400/40 text-emerald-200 hover:bg-[#0b1411]/60 cursor-pointer shadow-xs flex items-center gap-1"
               title="View your active mindful goals"
             >
               <Target className="w-3 h-3 text-emerald-400" />
@@ -505,7 +539,7 @@ export const HomeScenicStage: React.FC<HomeScenicStageProps> = ({
           )}
 
           {/* Time of Day Switcher */}
-          <div className="flex items-center gap-1 bg-black/45 backdrop-blur-md p-0.5 rounded-full border border-white/20 text-xs">
+          <div className="flex items-center gap-1 bg-[#0b1411]/45 backdrop-blur-md p-0.5 rounded-full border border-white/20 text-xs">
             <button
               onClick={() => setTimeOverride('day')}
               className={`p-1.5 rounded-full cursor-pointer transition-colors ${
@@ -546,44 +580,77 @@ export const HomeScenicStage: React.FC<HomeScenicStageProps> = ({
         </div>
       </div>
 
-      {/* Mindful Goals Drawer Modal Overlay */}
+      {/* Mindful Goals Modal */}
       <AnimatePresence>
         {showGoalsDrawer && (
           <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: -10 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: -10 }}
-            className="absolute top-14 right-4 z-40 w-72 p-3.5 rounded-2xl bg-white/95 dark:bg-[#112017]/95 backdrop-blur-md shadow-2xl border-2 border-emerald-500/40 text-left"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setShowGoalsDrawer(false)}
+            className="fixed inset-0 z-50 bg-[#0b1411]/70 backdrop-blur-sm flex items-center justify-center p-4"
           >
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-black text-slate-800 dark:text-emerald-100 flex items-center gap-1.5">
-                <Target className="w-3.5 h-3.5 text-emerald-500" />
-                <span>Your Mindful Goals</span>
-              </span>
-              <button
-                onClick={() => setShowGoalsDrawer(false)}
-                className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
-              >
-                <X className="w-3 h-3" />
-              </button>
-            </div>
-            <p className="text-[11px] text-slate-600 dark:text-emerald-300/80 mb-2">
-              Chosen during your mindful survey:
-            </p>
-            <div className="space-y-1.5">
-              {mindfulGoals.map((gKey) => {
-                const gInfo = goalLabels[gKey] || { icon: '🌱', label: gKey };
-                return (
-                  <div
-                    key={gKey}
-                    className="flex items-center gap-2 px-2.5 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 text-xs font-bold text-slate-800 dark:text-emerald-100"
-                  >
-                    <span>{gInfo.icon}</span>
-                    <span>{gInfo.label}</span>
+            <motion.div
+              initial={{ scale: 0.94, y: 12 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.94, y: 12 }}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-sm bg-white dark:bg-[#13221b] rounded-3xl border border-emerald-200/80 dark:border-emerald-800/70 shadow-2xl overflow-hidden"
+            >
+              {/* Modal Header */}
+              <div className="p-4 bg-emerald-50 dark:bg-[#182a22] border-b border-emerald-100 dark:border-emerald-800/60 flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-emerald-500 text-white flex items-center justify-center shadow-xs">
+                    <Target className="w-4.5 h-4.5" />
                   </div>
-                );
-              })}
-            </div>
+                  <div>
+                    <h3 className="text-sm font-black text-slate-800 dark:text-emerald-100">
+                      Your Mindful Goals
+                    </h3>
+                    <p className="text-[11px] text-emerald-700 dark:text-emerald-400">
+                      Chosen during your mindful survey
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowGoalsDrawer(false)}
+                  className="p-1.5 rounded-full hover:bg-slate-200 dark:hover:bg-emerald-900 text-slate-500 dark:text-emerald-400 cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Modal Body */}
+              <div className="p-4 space-y-2">
+                {mindfulGoals.map((gKey) => {
+                  const gInfo = goalLabels[gKey] || { icon: Target, label: gKey };
+                  const GoalIcon = gInfo.icon;
+                  return (
+                    <div
+                      key={gKey}
+                      className="flex items-center gap-3 px-3 py-2.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800"
+                    >
+                      <span className="w-8 h-8 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-300 flex items-center justify-center shrink-0">
+                        <GoalIcon className="w-4 h-4" />
+                      </span>
+                      <span className="text-sm font-bold text-slate-800 dark:text-emerald-100">
+                        {gInfo.label}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Modal Footer */}
+              <div className="p-3 border-t border-emerald-100 dark:border-emerald-800/60 flex justify-end">
+                <button
+                  onClick={() => setShowGoalsDrawer(false)}
+                  className="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-black cursor-pointer shadow-xs"
+                >
+                  Done
+                </button>
+              </div>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
@@ -602,9 +669,11 @@ export const HomeScenicStage: React.FC<HomeScenicStageProps> = ({
                 initial={{ opacity: 0, y: -6, scale: 0.95 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}
-                className="relative max-w-md w-full p-3.5 rounded-2xl bg-white/95 dark:bg-[#122219]/95 backdrop-blur-md shadow-xl border-2 border-emerald-300 dark:border-emerald-700 text-center"
+                className="relative max-w-md w-full p-4 rounded-2xl bg-white/95 dark:bg-[#182a22]/95 backdrop-blur-md shadow-xl border-2 border-emerald-200 dark:border-emerald-800 text-center overflow-hidden"
               >
-                <div className="flex items-center justify-between mb-1 text-emerald-800 dark:text-emerald-300 text-xs font-bold">
+                <Heart className="absolute -right-2 -bottom-3 w-16 h-16 text-rose-500/10 dark:text-rose-400/10 pointer-events-none" />
+
+                <div className="flex items-center justify-between mb-1.5 text-emerald-800 dark:text-emerald-300 text-xs font-bold relative z-10">
                   <div className="flex items-center gap-1.5">
                     <Heart className="w-3.5 h-3.5 text-rose-500 fill-rose-500 animate-pulse" />
                     <span>{companionName}</span>
@@ -617,11 +686,11 @@ export const HomeScenicStage: React.FC<HomeScenicStageProps> = ({
                     <X className="w-3.5 h-3.5" />
                   </button>
                 </div>
-                <p className="text-xs sm:text-sm font-semibold text-emerald-950 dark:text-emerald-50 leading-relaxed">
+                <p className="text-xs sm:text-sm font-semibold text-emerald-950 dark:text-emerald-50 leading-relaxed relative z-10">
                   {reactionText}
                 </p>
                 {/* Aesthetic Pointer Tail directly over companion */}
-                <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-3.5 h-3.5 bg-white dark:bg-[#122219] rotate-45 border-r-2 border-b-2 border-emerald-300 dark:border-emerald-700" />
+                <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-3.5 h-3.5 bg-white dark:bg-[#182a22] rotate-45 border-r-2 border-b-2 border-emerald-200 dark:border-emerald-800" />
               </motion.div>
             ) : showMoodSelector ? (
               /* "How are you feeling right now?" Check-in */
@@ -630,15 +699,12 @@ export const HomeScenicStage: React.FC<HomeScenicStageProps> = ({
                 initial={{ opacity: 0, y: -6, scale: 0.95 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}
-                className="relative max-w-md w-full p-3.5 rounded-2xl bg-white/95 dark:bg-[#122219]/95 backdrop-blur-md shadow-xl border-2 border-emerald-200 dark:border-emerald-800 text-center"
+                className="relative max-w-md w-full p-3.5 rounded-2xl bg-white/95 dark:bg-[#182a22]/95 backdrop-blur-md shadow-xl border-2 border-emerald-200 dark:border-emerald-800 text-center"
               >
-                <div className="flex items-center justify-between mb-1">
-                  <div className="text-[11px] font-bold text-emerald-800 dark:text-emerald-300 uppercase tracking-wider flex items-center gap-1">
-                    <span>{phTime.greeting.tagalog}!</span>
-                    <span className="text-slate-600 dark:text-emerald-400 font-normal">
-                      {companionName} is glad to be with you
-                    </span>
-                  </div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider">
+                    {phTime.greeting.tagalog} &middot; {companionName}
+                  </span>
                   <button
                     onClick={() => setIsBubbleDismissed(true)}
                     className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
@@ -647,31 +713,34 @@ export const HomeScenicStage: React.FC<HomeScenicStageProps> = ({
                     <X className="w-3.5 h-3.5" />
                   </button>
                 </div>
-                <h3 className="text-xs sm:text-sm font-bold text-emerald-950 dark:text-emerald-50 mb-2.5">
+                <h3 className="text-sm sm:text-base font-bold text-emerald-950 dark:text-emerald-50 mb-3">
                   How are you feeling right now?
                 </h3>
 
-                <div className="flex flex-wrap items-center justify-center gap-1.5">
+                <div className="flex flex-wrap items-center justify-center gap-2">
                   {[
-                    { id: 'happy' as const, label: 'Happy', icon: '🌸' },
-                    { id: 'calm' as const, label: 'Calm', icon: '🌿' },
-                    { id: 'sad' as const, label: 'Sad', icon: '🌧️' },
-                    { id: 'tired' as const, label: 'Tired', icon: '🌙' },
-                    { id: 'overwhelmed' as const, label: 'Overwhelmed', icon: '⚡' },
-                  ].map((m) => (
-                    <button
-                      key={m.id}
-                      onClick={() => handleSelectMood(m.id, m.label)}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-50 dark:bg-emerald-900/40 hover:bg-emerald-100 dark:hover:bg-emerald-800/60 border border-emerald-200 dark:border-emerald-700/50 text-xs font-semibold text-emerald-950 dark:text-emerald-100 transition-all active:scale-95 cursor-pointer shadow-xs"
-                    >
-                      <span>{m.icon}</span>
-                      <span>{m.label}</span>
-                    </button>
-                  ))}
+                    { id: 'happy' as const, label: 'Happy', icon: Smile },
+                    { id: 'calm' as const, label: 'Calm', icon: Leaf },
+                    { id: 'sad' as const, label: 'Sad', icon: CloudRain },
+                    { id: 'tired' as const, label: 'Tired', icon: Moon },
+                    { id: 'overwhelmed' as const, label: 'Overwhelmed', icon: Zap },
+                  ].map((m) => {
+                    const MoodIcon = m.icon;
+                    return (
+                      <button
+                        key={m.id}
+                        onClick={() => handleSelectMood(m.id, m.label)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-50 dark:bg-emerald-900/40 hover:bg-emerald-100 dark:hover:bg-emerald-800/60 border border-emerald-200 dark:border-[#2d4d41]/50 text-xs font-semibold text-emerald-950 dark:text-emerald-100 transition-colors active:scale-95 cursor-pointer"
+                      >
+                        <MoodIcon className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-300" />
+                        <span>{m.label}</span>
+                      </button>
+                    );
+                  })}
                 </div>
 
                 {/* Aesthetic Pointer Tail */}
-                <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-3.5 h-3.5 bg-white dark:bg-[#122219] rotate-45 border-r-2 border-b-2 border-emerald-200 dark:border-emerald-800" />
+                <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-3.5 h-3.5 bg-white dark:bg-[#182a22] rotate-45 border-r-2 border-b-2 border-emerald-200 dark:border-emerald-800" />
               </motion.div>
             ) : (
               /* Daily Empathetic Quote */
@@ -681,16 +750,19 @@ export const HomeScenicStage: React.FC<HomeScenicStageProps> = ({
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}
                 onClick={handleNextQuote}
-                className="relative max-w-md w-full p-3.5 rounded-2xl bg-white/95 dark:bg-[#122219]/95 backdrop-blur-md shadow-xl border-2 border-emerald-200 dark:border-emerald-800 text-center cursor-pointer hover:border-emerald-400 transition-all group"
+                className="relative max-w-md w-full p-4 rounded-2xl bg-white/95 dark:bg-[#182a22]/95 backdrop-blur-md shadow-xl border-2 border-emerald-200 dark:border-emerald-800 text-center cursor-pointer hover:border-emerald-400 transition-all group overflow-hidden"
               >
-                <div className="flex items-center justify-between text-[11px] font-bold text-emerald-800 dark:text-emerald-300 mb-1">
-                  <span className="flex items-center gap-1">
-                    <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                <Quote className="absolute -right-2 -bottom-3 w-16 h-16 text-emerald-500/10 dark:text-emerald-400/10 pointer-events-none" />
+
+                <div className="flex items-center justify-between text-[11px] font-bold text-emerald-800 dark:text-emerald-300 mb-1.5 relative z-10">
+                  <span className="flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-emerald-500" />
                     <span>{companionName}'s Mindful Reflection</span>
                   </span>
-                  <div className="flex items-center gap-2">
-                    <span className="text-[10px] text-emerald-600 dark:text-emerald-400 group-hover:underline flex items-center gap-1">
-                      <RefreshCw className="w-2.5 h-2.5" /> next
+                  <div className="flex items-center gap-1.5">
+                    <span className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-900/40 group-hover:bg-emerald-100 dark:group-hover:bg-emerald-800/60 transition-colors">
+                      <RefreshCw className="w-2.5 h-2.5" />
+                      <span>Next</span>
                     </span>
                     <button
                       onClick={(e) => {
@@ -705,7 +777,7 @@ export const HomeScenicStage: React.FC<HomeScenicStageProps> = ({
                   </div>
                 </div>
 
-                <p className="text-xs sm:text-sm font-semibold text-emerald-950 dark:text-emerald-50 leading-relaxed italic">
+                <p className="text-xs sm:text-sm font-semibold text-emerald-950 dark:text-emerald-50 leading-relaxed italic relative z-10">
                   "{motivationalQuotes[currentQuoteIdx]}"
                 </p>
 
@@ -715,13 +787,14 @@ export const HomeScenicStage: React.FC<HomeScenicStageProps> = ({
                     e.stopPropagation();
                     setShowMoodSelector(true);
                   }}
-                  className="mt-1.5 text-[10px] font-semibold text-emerald-700 dark:text-emerald-300 underline hover:text-emerald-900 cursor-pointer"
+                  className="mt-2 flex items-center justify-center gap-1 mx-auto text-[10px] font-semibold text-emerald-700 dark:text-emerald-300 hover:text-emerald-900 dark:hover:text-emerald-100 cursor-pointer relative z-10"
                 >
-                  Log another mood check-in
+                  <Smile className="w-3 h-3" />
+                  <span>Log another mood check-in</span>
                 </button>
 
                 {/* Aesthetic Pointer Tail */}
-                <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-3.5 h-3.5 bg-white dark:bg-[#122219] rotate-45 border-r-2 border-b-2 border-emerald-200 dark:border-emerald-800" />
+                <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-3.5 h-3.5 bg-white dark:bg-[#182a22] rotate-45 border-r-2 border-b-2 border-emerald-200 dark:border-emerald-800" />
               </motion.div>
             )}
           </AnimatePresence>
@@ -747,22 +820,27 @@ export const HomeScenicStage: React.FC<HomeScenicStageProps> = ({
         />
 
         {/* Companion Name, Chat & Switch Button */}
-        <div className="text-center mt-1 flex flex-wrap items-center justify-center gap-2">
-          <span className="text-xs font-black tracking-wide text-emerald-100 bg-emerald-950/80 backdrop-blur-md px-3 py-1 rounded-full border border-emerald-600/40 shadow-xs">
-            {companionName} ({species === 'dog' ? '🐶 Dog' : '🐱 Cat'})
+        <div className="text-center mt-2 flex flex-wrap items-center justify-center gap-2">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-950/80 backdrop-blur-md border border-emerald-500/40 text-emerald-100 text-xs font-black tracking-wide shadow-sm">
+            <span className="text-sm">
+              {species === 'dog' ? '🐶' : '🐱'}
+            </span>
+            {companionName}
+            <span className="text-emerald-400">
+              {species === 'dog' ? 'Dog' : 'Cat'}
+            </span>
           </span>
 
           {onChangeSpecies && (
             <button
               onClick={toggleSpecies}
-              className="text-xs font-bold text-amber-200 bg-amber-950/80 hover:bg-amber-900/90 backdrop-blur-md px-2.5 py-1 rounded-full border border-amber-500/50 shadow-xs flex items-center gap-1 cursor-pointer transition-colors"
-              title="Toggle Dog / Cat Companion"
+              className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-emerald-700/80 hover:bg-emerald-600 text-emerald-100 border border-emerald-400/40 shadow-sm hover:shadow-md active:scale-90 cursor-pointer transition-all"
+              title={`Switch to ${species === 'dog' ? 'Cat' : 'Dog'}`}
+              aria-label={`Switch to ${species === 'dog' ? 'Cat' : 'Dog'}`}
             >
-              <Repeat className="w-3 h-3" />
-              <span>Switch to {species === 'dog' ? 'Cat 🐱' : 'Dog 🐶'}</span>
+              <Repeat className="w-3.5 h-3.5" />
             </button>
           )}
-
           {onOpenChat && (
             <button
               onClick={onOpenChat}
@@ -775,38 +853,61 @@ export const HomeScenicStage: React.FC<HomeScenicStageProps> = ({
         </div>
 
         {/* Real-time Emotional Feelings Animation Bar */}
-        <div className="mt-1.5 flex flex-wrap items-center justify-center gap-1 bg-black/45 backdrop-blur-md px-2.5 py-1 rounded-full border border-emerald-500/30 text-[11px] shadow-sm">
-          <span className="text-[10px] text-emerald-300 font-bold uppercase tracking-wider mr-1">Feeling:</span>
+        <div className="mt-1.5 w-full max-w-[94vw] sm:max-w-md mx-auto flex flex-nowrap items-center justify-center gap-2 sm:gap-3 bg-[#0b1411]/90 dark:bg-[#13221b]/90 backdrop-blur-md px-3 sm:px-4 py-1.5 sm:py-2 rounded-full border border-emerald-400/25 shadow-sm overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <span className="text-[9px] sm:text-[10px] text-emerald-400 font-bold uppercase tracking-wider whitespace-nowrap shrink-0">Feeling</span>
           {[
-            { id: 'happy' as const, label: 'Joyful', icon: '🌸' },
-            { id: 'calm' as const, label: 'Calm', icon: '🌿' },
-            { id: 'sad' as const, label: 'Comfort', icon: '🫂' },
-            { id: 'tired' as const, label: 'Sleepy', icon: '🌙' },
-            { id: 'overwhelmed' as const, label: 'Grounding', icon: '⚓' },
+            { id: 'happy' as const, label: 'Joyful' },
+            { id: 'calm' as const, label: 'Calm' },
+            { id: 'sad' as const, label: 'Comfort' },
+            { id: 'tired' as const, label: 'Sleepy' },
+            { id: 'overwhelmed' as const, label: 'Grounding' },
           ].map((f) => (
             <button
               key={f.id}
               onClick={() => {
                 setCompanionMood(f.id);
-                const msgs: Record<string, string> = {
-                  happy: `*wags tail happily and pants with soft joyful bounce* I love seeing you happy! ☀️`,
-                  calm: `*breathes slowly with you, ears relaxed* Peaceful moments are so restorative. 🍃`,
-                  sad: `*rests chin tenderly on your knee and gazes up warmly* I'm right here with you. It's okay. 🫂`,
-                  tired: `*yawns softly and snuggles down* Take gentle rest. You've done well today. 🌙`,
-                  overwhelmed: `*plants paws firmly, breathing in a steady 4-second box cadence* Breathe with me: in 2 3 4... out 2 3 4. You are safe. ⚓`,
+                const msgVariants: Record<string, string[]> = {
+                  happy: [
+                    `*wags tail happily and pants with soft joyful bounce* I love seeing you happy! ☀️`,
+                    `*does a little joyful spin* Your smile just made my whole day brighter! 🌞`,
+                    `*ears perked up, eyes sparkling* This happiness looks so good on you. Let's savor it. 🌼`,
+                  ],
+                  calm: [
+                    `*breathes slowly with you, ears relaxed* Peaceful moments are so restorative. 🍃`,
+                    `*settles down beside you, calm and steady* This quiet is a gift. Let's stay here a while. 🌿`,
+                    `*soft, even breathing* Nothing to fix, nowhere to be. Just this gentle now. 🌊`,
+                  ],
+                  sad: [
+                    `*rests chin tenderly on your knee and gazes up warmly* I'm right here with you. It's okay. 🫂`,
+                    `*curls up close, quiet and steady* You don't have to explain it. I'm just staying near. 💛`,
+                    `*nuzzles gently* Sadness can visit without you having to fix it right away. I've got you. 🫂`,
+                  ],
+                  tired: [
+                    `*yawns softly and snuggles down* Take gentle rest. You've done well today. 🌙`,
+                    `*curls into a soft ball nearby* Your body is asking for rest. That's worth listening to. 😴`,
+                    `*slows down, voice hushed* Let today be enough. Tomorrow can wait for you to rest first. 🌙`,
+                  ],
+                  overwhelmed: [
+                    `*plants paws firmly, breathing in a steady 4-second box cadence* Breathe with me: in 2 3 4... out 2 3 4. You are safe. ⚓`,
+                    `*stays low and grounded beside you* One breath at a time. We don't have to solve everything now. 🌬️`,
+                    `*presses gently against your side, steady and unhurried* Let's shrink the moment down to just this breath. ⚓`,
+                  ],
                 };
-                setReactionText(msgs[f.id]);
+                const variants = msgVariants[f.id] ?? [];
+                const nextMsg =
+                  variants[Math.floor(Math.random() * variants.length)] ??
+                  "Thank you for checking in with me! 💚";
+                setReactionText(nextMsg);
                 setIsBubbleDismissed(false);
               }}
-              className={`px-2 py-0.5 rounded-full font-bold transition-all cursor-pointer flex items-center gap-0.5 ${
+              className={`text-[11px] sm:text-sm font-bold whitespace-nowrap shrink-0 transition-all cursor-pointer ${
                 companionMood === f.id
-                  ? 'bg-emerald-500 text-black shadow-xs scale-105'
-                  : 'text-white/80 hover:text-white hover:bg-white/10'
+                  ? 'px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-full bg-emerald-400 text-emerald-950'
+                  : 'px-0.5 py-1 sm:py-1.5 text-slate-100 hover:text-emerald-300'
               }`}
               title={`Make ${companionName} express ${f.label}`}
             >
-              <span>{f.icon}</span>
-              <span>{f.label}</span>
+              {f.label}
             </button>
           ))}
         </div>

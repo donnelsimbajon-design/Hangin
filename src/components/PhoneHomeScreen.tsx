@@ -53,7 +53,7 @@ export const PhoneHomeScreen: React.FC<PhoneHomeScreenProps> = ({
   }, []);
 
   return (
-    <div className="relative w-full h-full min-h-[640px] bg-gradient-to-b from-[#0b141a] via-[#091815] to-[#040a08] text-white flex flex-col justify-between p-4 sm:p-5 select-none overflow-hidden font-sans">
+    <div className="relative w-full h-full min-h-[640px] bg-gradient-to-b from-[#13221b] via-[#0e1a15] to-[#0b1411] text-emerald-50 flex flex-col justify-between p-4 sm:p-5 select-none overflow-hidden font-sans">
       {/* Dynamic Background Organic Fluid Wallpaper (Photo 6 style) */}
       <div className="absolute -top-10 -left-10 w-96 h-96 rounded-full bg-emerald-600/15 blur-[80px] pointer-events-none" />
       <div className="absolute -bottom-10 -right-10 w-80 h-80 rounded-full bg-teal-700/15 blur-[70px] pointer-events-none" />
@@ -95,7 +95,7 @@ export const PhoneHomeScreen: React.FC<PhoneHomeScreenProps> = ({
             <div className="text-left">
               <div className="flex items-center gap-1.5 font-bold text-emerald-300">
                 <span>{companionName}</span>
-                <span className="text-[10px] bg-[#58cc02] text-black font-extrabold px-1.5 rounded-full">
+                <span className="text-[10px] bg-[#35805a] text-black font-extrabold px-1.5 rounded-full">
                   Waiting
                 </span>
               </div>
@@ -117,10 +117,10 @@ export const PhoneHomeScreen: React.FC<PhoneHomeScreenProps> = ({
           onClick={onLaunchHangin}
           className="flex flex-col items-center cursor-pointer group"
         >
-          <div className="relative w-14 h-14 rounded-2xl bg-gradient-to-br from-[#58cc02] via-[#46a302] to-emerald-800 text-white flex items-center justify-center shadow-[0_8px_25px_rgba(88,204,2,0.45)] border-2 border-emerald-300/40 group-hover:border-white transition-all">
+          <div className="relative w-14 h-14 rounded-2xl bg-gradient-to-br from-[#35805a] via-[#2a6b4b] to-emerald-800 text-white flex items-center justify-center shadow-[0_8px_25px_rgba(88,204,2,0.45)] border-2 border-emerald-300/40 group-hover:border-white transition-all">
             <span className="text-2xl">🌿</span>
             {/* Notification Badge */}
-            <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-rose-500 text-white text-[10px] font-black flex items-center justify-center border-2 border-[#091815]">
+            <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-rose-500 text-white text-[10px] font-black flex items-center justify-center border-2 border-[#13221b]">
               1
             </span>
           </div>
@@ -235,10 +235,10 @@ export const PhoneHomeScreen: React.FC<PhoneHomeScreenProps> = ({
 
         <button
           onClick={onLaunchHangin}
-          className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-[#58cc02] to-emerald-700 text-white flex items-center justify-center shadow-md cursor-pointer hover:scale-110 transition-transform relative"
+          className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-[#35805a] to-emerald-700 text-white flex items-center justify-center shadow-md cursor-pointer hover:scale-110 transition-transform relative"
         >
           <span className="text-2xl">🌿</span>
-          <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-rose-500 border border-[#091815]" />
+          <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-rose-500 border border-[#13221b]" />
         </button>
 
         <button

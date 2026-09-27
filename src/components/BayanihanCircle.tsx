@@ -86,9 +86,9 @@ export const BayanihanCircle: React.FC<BayanihanCircleProps> = ({
   });
 
   return (
-    <div className="w-full rounded-3xl bg-white dark:bg-[#132219] border border-[#dce8de] dark:border-[#223d2d] p-4 sm:p-6 shadow-sm">
+    <div className="w-full rounded-3xl bg-white dark:bg-[#182a22] border border-[#d7e6dc] dark:border-[#244137] p-4 sm:p-6 shadow-sm">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-[#e5efe7] dark:border-[#1e3828] gap-3">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-[#e4eee8] dark:border-[#244137] gap-3">
         <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-xl bg-teal-100 dark:bg-teal-950 flex items-center justify-center text-teal-700 dark:text-teal-300">
             <Users className="w-4 h-4" />
@@ -111,7 +111,7 @@ export const BayanihanCircle: React.FC<BayanihanCircleProps> = ({
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search circle..."
-            className="w-full sm:w-44 pl-8 pr-3 py-1.5 rounded-xl bg-emerald-50/70 dark:bg-[#18291e] border border-emerald-200/80 dark:border-emerald-800/40 text-xs text-emerald-950 dark:text-emerald-100 focus:outline-emerald-600"
+            className="w-full sm:w-44 pl-8 pr-3 py-1.5 rounded-xl bg-emerald-50/70 dark:bg-[#182a22] border border-emerald-200/80 dark:border-emerald-800/40 text-xs text-emerald-950 dark:text-emerald-100 focus:outline-emerald-600"
           />
         </div>
       </div>
@@ -125,7 +125,7 @@ export const BayanihanCircle: React.FC<BayanihanCircleProps> = ({
             className={`px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap transition-colors cursor-pointer border ${
               activeChannel === ch.id
                 ? 'bg-emerald-800 text-white border-emerald-900 shadow-xs'
-                : 'bg-emerald-50 dark:bg-[#18291e] text-emerald-900 dark:text-emerald-200 border-emerald-200 dark:border-emerald-800/40 hover:bg-emerald-100'
+                : 'bg-emerald-50 dark:bg-[#182a22] text-emerald-900 dark:text-emerald-200 border-emerald-200 dark:border-emerald-800/40 hover:bg-emerald-100'
             }`}
           >
             {ch.name}
@@ -134,13 +134,13 @@ export const BayanihanCircle: React.FC<BayanihanCircleProps> = ({
       </div>
 
       {/* Post Composer */}
-      <form onSubmit={handlePostSubmit} className="my-3 p-3.5 rounded-2xl bg-[#f5faf6] dark:bg-[#16271c] border border-emerald-200/70 dark:border-emerald-800/40">
+      <form onSubmit={handlePostSubmit} className="my-3 p-3.5 rounded-2xl bg-[#f4f8f5] dark:bg-[#182a22] border border-emerald-200/70 dark:border-emerald-800/40">
         <textarea
           rows={2}
           value={newPostText}
           onChange={(e) => setNewPostText(e.target.value)}
           placeholder="Share a gentle reflection or encouragement with the circle..."
-          className="w-full px-3 py-2 rounded-xl bg-white dark:bg-[#121f17] border border-emerald-200/80 dark:border-emerald-800/40 text-xs text-emerald-950 dark:text-emerald-100 placeholder:text-emerald-700/50 resize-none focus:outline-emerald-600"
+          className="w-full px-3 py-2 rounded-xl bg-white dark:bg-[#182a22] border border-emerald-200/80 dark:border-emerald-800/40 text-xs text-emerald-950 dark:text-emerald-100 placeholder:text-emerald-700/50 resize-none focus:outline-emerald-600"
         />
         <div className="flex items-center justify-between mt-2">
           <span className="text-[11px] text-emerald-700/80 dark:text-emerald-400/80">
@@ -162,7 +162,7 @@ export const BayanihanCircle: React.FC<BayanihanCircleProps> = ({
         {filteredPosts.map((post) => (
           <div
             key={post.id}
-            className="p-4 rounded-2xl bg-white dark:bg-[#16271c] border border-[#e0ece2] dark:border-[#1f3829] shadow-2xs"
+            className="p-4 rounded-2xl bg-white dark:bg-[#182a22] border border-[#e2ece6] dark:border-[#244137] shadow-2xs"
           >
             {/* Author bar */}
             <div className="flex items-center justify-between mb-2">
@@ -186,7 +186,7 @@ export const BayanihanCircle: React.FC<BayanihanCircleProps> = ({
             </p>
 
             {/* Action Bar */}
-            <div className="flex items-center gap-3 mt-3 pt-2.5 border-t border-[#eaf2eb] dark:border-[#1e3828]">
+            <div className="flex items-center gap-3 mt-3 pt-2.5 border-t border-[#e7efe9] dark:border-[#244137]">
               <button
                 onClick={() => onValidatePost(post.id)}
                 className={`flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-lg transition-colors ${
@@ -244,7 +244,7 @@ export const BayanihanCircle: React.FC<BayanihanCircleProps> = ({
                   value={commentInput}
                   onChange={(e) => setCommentInput(e.target.value)}
                   placeholder="Send a supportive message..."
-                  className="flex-1 px-3 py-1.5 rounded-xl bg-[#f5faf6] dark:bg-[#121f17] border border-emerald-200 dark:border-emerald-800 text-xs text-emerald-950 dark:text-emerald-100 focus:outline-emerald-600"
+                  className="flex-1 px-3 py-1.5 rounded-xl bg-[#f4f8f5] dark:bg-[#182a22] border border-emerald-200 dark:border-emerald-800 text-xs text-emerald-950 dark:text-emerald-100 focus:outline-emerald-600"
                 />
                 <button
                   onClick={() => handleCommentSubmit(post.id)}

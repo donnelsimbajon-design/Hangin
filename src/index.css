@@ -2,10 +2,191 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
+/* ==========================================================================
+   HANGIN DESIGN TOKENS — Dark Mode Card / Container Refinement
+   --------------------------------------------------------------------------
+   The emerald / slate / zinc ramps below are re-pointed at mode-aware CSS
+   variables via `@theme inline`. Every existing `bg-emerald-900`,
+   `dark:border-emerald-800`, `dark:text-emerald-300` … utility in the app
+   therefore re-themes automatically, with no changes to component markup.
+
+   Light mode values are byte-for-byte Tailwind's stock defaults, so Light
+   Mode renders exactly as before. Only `.dark` is redefined, to a calm,
+   low-contrast dark green / charcoal sanctuary palette.
+
+   Dark ramp intent:
+     50–300  off-white .. muted sage   (text hierarchy)
+     400–500 accent                    (icons, selected state, progress)
+     600–700 deep fill                 (keeps white button labels readable)
+     800–950 border .. elevated surface (containers, cards, dividers)
+   ========================================================================== */
+
 :root {
   color-scheme: light;
+
+  /* -- emerald ramp (LIGHT = Tailwind stock, unchanged) ------------------- */
+  --c-em-50: oklch(97.9% 0.021 166.113);
+  --c-em-100: oklch(95% 0.052 163.051);
+  --c-em-200: oklch(90.5% 0.093 164.15);
+  --c-em-300: oklch(84.5% 0.143 164.978);
+  --c-em-400: oklch(76.5% 0.177 163.223);
+  --c-em-500: oklch(69.6% 0.17 162.48);
+  --c-em-600: oklch(59.6% 0.145 163.225);
+  --c-em-700: oklch(50.8% 0.118 165.612);
+  --c-em-800: oklch(43.2% 0.095 166.913);
+  --c-em-900: oklch(37.8% 0.077 168.94);
+  --c-em-950: oklch(26.2% 0.051 172.552);
+
+  /* -- slate ramp (LIGHT = Tailwind stock, unchanged) --------------------- */
+  --c-slate-50: oklch(98.4% 0.003 247.858);
+  --c-slate-100: oklch(96.8% 0.007 247.896);
+  --c-slate-200: oklch(92.9% 0.013 255.508);
+  --c-slate-300: oklch(86.9% 0.022 252.894);
+  --c-slate-400: oklch(70.4% 0.04 256.788);
+  --c-slate-500: oklch(55.4% 0.046 257.417);
+  --c-slate-600: oklch(44.6% 0.043 257.281);
+  --c-slate-700: oklch(37.2% 0.044 257.287);
+  --c-slate-800: oklch(27.9% 0.041 260.031);
+  --c-slate-900: oklch(20.8% 0.042 265.755);
+  --c-slate-950: oklch(12.9% 0.042 264.695);
+
+  /* -- zinc ramp (LIGHT = Tailwind stock, unchanged) ---------------------- */
+  --c-zinc-50: oklch(98.5% 0 none);
+  --c-zinc-100: oklch(96.7% 0.001 286.375);
+  --c-zinc-200: oklch(92% 0.004 286.32);
+  --c-zinc-300: oklch(87.1% 0.006 286.286);
+  --c-zinc-400: oklch(70.5% 0.015 286.067);
+  --c-zinc-500: oklch(55.2% 0.016 285.938);
+  --c-zinc-600: oklch(44.2% 0.017 285.786);
+  --c-zinc-700: oklch(37% 0.013 285.805);
+  --c-zinc-800: oklch(27.4% 0.006 286.033);
+  --c-zinc-900: oklch(21% 0.006 285.885);
+  --c-zinc-950: oklch(14.1% 0.005 285.823);
+
+  /* -- semantic layer (LIGHT) --------------------------------------------- */
+  --c-canvas: #f4f8f5;
+  --c-surface: #ffffff;
+  --c-surface-2: #ecf4ef;
+  --c-line: #d7e6dc;
+  --c-ink: #17352a;
+  --c-ink-2: #527064;
+  --c-ink-3: #7c968a;
+  --c-accent: #3f8f68;
+  --c-accent-soft: #dcefe4;
 }
 
 :root.dark {
   color-scheme: dark;
+
+  /* -- emerald ramp (DARK = calm sanctuary) --------------------------------
+     Text steps are soft sage rather than neon mint. 400/500 carry the
+     single accent green. 600/700 stay deep so existing `text-white`
+     button labels keep >= 4.5:1 contrast. */
+  --c-em-50: #e6f1eb;
+  --c-em-100: #dfefe7;
+  --c-em-200: #d2e8dc;
+  --c-em-300: #bcd9c9;
+  --c-em-400: #6fcf97;
+  --c-em-500: #57b581;
+  --c-em-600: #2a7052;
+  --c-em-700: #236048;
+  --c-em-800: #244137;
+  --c-em-900: #1b2e25;
+  --c-em-950: #182a22;
+
+  /* -- slate ramp (DARK = muted sage neutrals) ---------------------------- */
+  --c-slate-50: #e6f1eb;
+  --c-slate-100: #dcebe3;
+  --c-slate-200: #c6d8ce;
+  --c-slate-300: #a8bdb3;
+  --c-slate-400: #93a99e;
+  --c-slate-500: #80988e;
+  --c-slate-600: #5e7469;
+  --c-slate-700: #4a5f55;
+  --c-slate-800: #2f4139;
+  --c-slate-900: #1d2c26;
+  --c-slate-950: #13221b;
+
+  /* -- zinc ramp (DARK = soft charcoal-green, never pure black) ----------- */
+  --c-zinc-50: #e6f1eb;
+  --c-zinc-100: #dcebe3;
+  --c-zinc-200: #c6d8ce;
+  --c-zinc-300: #a8bdb3;
+  --c-zinc-400: #93a99e;
+  --c-zinc-500: #80988e;
+  --c-zinc-600: #5e7469;
+  --c-zinc-700: #3d5349;
+  --c-zinc-800: #244137;
+  --c-zinc-900: #182a22;
+  --c-zinc-950: #0f1c17;
+
+  /* -- semantic layer (DARK) ----------------------------------------------
+     --c-ink-3 is nudged from #789087 to #80988e so muted text clears
+     WCAG AA (4.5:1) on the lightest surface (#182a22) as well. */
+  --c-canvas: #0b1411;
+  --c-surface: #13221b;
+  --c-surface-2: #182a22;
+  --c-line: #244137;
+  --c-ink: #e6f1eb;
+  --c-ink-2: #a8bdb3;
+  --c-ink-3: #80988e;
+  --c-accent: #6fcf97;
+  --c-accent-soft: #3d8f68;
+}
+
+/* --------------------------------------------------------------------------
+   Semantic surface tokens. Available in both modes, so new markup can be
+   written once and follow the active theme automatically.
+   -------------------------------------------------------------------------- */
+@theme inline {
+  --color-canvas: var(--c-canvas);
+  --color-surface: var(--c-surface);
+  --color-surface-2: var(--c-surface-2);
+  --color-line: var(--c-line);
+  --color-ink: var(--c-ink);
+  --color-ink-2: var(--c-ink-2);
+  --color-ink-3: var(--c-ink-3);
+  --color-accent: var(--c-accent);
+  --color-accent-soft: var(--c-accent-soft);
+}
+
+/* --------------------------------------------------------------------------
+   Re-point the three ramp families at the mode-aware variables.
+   -------------------------------------------------------------------------- */
+@theme inline {
+  --color-emerald-50: var(--c-em-50);
+  --color-emerald-100: var(--c-em-100);
+  --color-emerald-200: var(--c-em-200);
+  --color-emerald-300: var(--c-em-300);
+  --color-emerald-400: var(--c-em-400);
+  --color-emerald-500: var(--c-em-500);
+  --color-emerald-600: var(--c-em-600);
+  --color-emerald-700: var(--c-em-700);
+  --color-emerald-800: var(--c-em-800);
+  --color-emerald-900: var(--c-em-900);
+  --color-emerald-950: var(--c-em-950);
+
+  --color-slate-50: var(--c-slate-50);
+  --color-slate-100: var(--c-slate-100);
+  --color-slate-200: var(--c-slate-200);
+  --color-slate-300: var(--c-slate-300);
+  --color-slate-400: var(--c-slate-400);
+  --color-slate-500: var(--c-slate-500);
+  --color-slate-600: var(--c-slate-600);
+  --color-slate-700: var(--c-slate-700);
+  --color-slate-800: var(--c-slate-800);
+  --color-slate-900: var(--c-slate-900);
+  --color-slate-950: var(--c-slate-950);
+
+  --color-zinc-50: var(--c-zinc-50);
+  --color-zinc-100: var(--c-zinc-100);
+  --color-zinc-200: var(--c-zinc-200);
+  --color-zinc-300: var(--c-zinc-300);
+  --color-zinc-400: var(--c-zinc-400);
+  --color-zinc-500: var(--c-zinc-500);
+  --color-zinc-600: var(--c-zinc-600);
+  --color-zinc-700: var(--c-zinc-700);
+  --color-zinc-800: var(--c-zinc-800);
+  --color-zinc-900: var(--c-zinc-900);
+  --color-zinc-950: var(--c-zinc-950);
 }

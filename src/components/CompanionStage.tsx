@@ -147,13 +147,13 @@ export const CompanionStage: React.FC<CompanionStageProps> = ({
   return (
     <div className="w-full flex flex-col items-center">
       {/* 3D Model Stage Container */}
-      <div className="relative w-full aspect-[4/3] max-h-[380px] rounded-3xl bg-gradient-to-b from-[#eaf4eb] to-[#d8ebdb] dark:from-[#132219] dark:to-[#0d1712] border border-[#d2e4d5] dark:border-[#1e3829] shadow-inner overflow-hidden flex items-center justify-center">
+      <div className="relative w-full aspect-[4/3] max-h-[380px] rounded-3xl bg-gradient-to-b from-[#e7efe9] to-[#dcefe4] dark:from-[#182a22] dark:to-[#0b1411] border border-[#d7e6dc] dark:border-[#244137] shadow-inner overflow-hidden flex items-center justify-center">
         {/* Soft atmospheric background lights */}
         <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_50%_25%,rgba(255,255,255,0.7),transparent_70%)] dark:bg-[radial-gradient(circle_at_50%_25%,rgba(70,140,95,0.18),transparent_70%)]" />
 
         {/* Top Companion Status Badges */}
         <div className="absolute top-3 left-4 right-4 flex items-center justify-between pointer-events-none z-10">
-          <div className="flex items-center gap-2 bg-white/80 dark:bg-emerald-950/80 backdrop-blur-md px-3 py-1.5 rounded-full border border-emerald-900/10 dark:border-emerald-700/30 shadow-xs">
+          <div className="flex items-center gap-2 bg-white/80 dark:bg-emerald-950/80 backdrop-blur-md px-3 py-1.5 rounded-full border border-emerald-900/10 dark:border-[#2d4d41]/30 shadow-xs">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
             <span className="text-xs font-semibold text-emerald-950 dark:text-emerald-100">
               {companionName}
@@ -203,7 +203,7 @@ export const CompanionStage: React.FC<CompanionStageProps> = ({
       <motion.div
         initial={{ opacity: 0, y: 6 }}
         animate={{ opacity: 1, y: 0 }}
-        className="w-full mt-3 p-3.5 rounded-2xl bg-white/90 dark:bg-[#14231a] border border-[#dce9de] dark:border-[#223d2d] shadow-xs flex items-center gap-3"
+        className="w-full mt-3 p-3.5 rounded-2xl bg-white/90 dark:bg-[#182a22] border border-[#d7e6dc] dark:border-[#244137] shadow-xs flex items-center gap-3"
       >
         <div className="w-9 h-9 rounded-full bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center shrink-0 text-emerald-700 dark:text-emerald-300">
           <Smile className="w-5 h-5" />
@@ -216,8 +216,8 @@ export const CompanionStage: React.FC<CompanionStageProps> = ({
       {/* Calming Stat Bars */}
       <div className="w-full grid grid-cols-2 sm:grid-cols-4 gap-2.5 mt-3">
         {/* Fullness / Hunger */}
-        <div className="p-2.5 rounded-xl bg-white/80 dark:bg-[#14231a] border border-[#deecdf] dark:border-[#1e3829] shadow-2xs">
-          <div className="flex justify-between items-center text-[11px] font-semibold text-[#274735] dark:text-emerald-200 mb-1">
+        <div className="p-2.5 rounded-xl bg-white/80 dark:bg-[#182a22] border border-[#dde9e1] dark:border-[#244137] shadow-2xs">
+          <div className="flex justify-between items-center text-[11px] font-semibold text-[#1b4432] dark:text-emerald-200 mb-1">
             <span className="flex items-center gap-1">
               <Utensils className="w-3 h-3 text-orange-500" /> Fullness
             </span>
@@ -232,8 +232,8 @@ export const CompanionStage: React.FC<CompanionStageProps> = ({
         </div>
 
         {/* Cleanliness */}
-        <div className="p-2.5 rounded-xl bg-white/80 dark:bg-[#14231a] border border-[#deecdf] dark:border-[#1e3829] shadow-2xs">
-          <div className="flex justify-between items-center text-[11px] font-semibold text-[#274735] dark:text-emerald-200 mb-1">
+        <div className="p-2.5 rounded-xl bg-white/80 dark:bg-[#182a22] border border-[#dde9e1] dark:border-[#244137] shadow-2xs">
+          <div className="flex justify-between items-center text-[11px] font-semibold text-[#1b4432] dark:text-emerald-200 mb-1">
             <span className="flex items-center gap-1">
               <Bath className="w-3 h-3 text-sky-500" /> Clean
             </span>
@@ -248,8 +248,8 @@ export const CompanionStage: React.FC<CompanionStageProps> = ({
         </div>
 
         {/* Energy */}
-        <div className="p-2.5 rounded-xl bg-white/80 dark:bg-[#14231a] border border-[#deecdf] dark:border-[#1e3829] shadow-2xs">
-          <div className="flex justify-between items-center text-[11px] font-semibold text-[#274735] dark:text-emerald-200 mb-1">
+        <div className="p-2.5 rounded-xl bg-white/80 dark:bg-[#182a22] border border-[#dde9e1] dark:border-[#244137] shadow-2xs">
+          <div className="flex justify-between items-center text-[11px] font-semibold text-[#1b4432] dark:text-emerald-200 mb-1">
             <span className="flex items-center gap-1">
               <Sun className="w-3 h-3 text-amber-500" /> Energy
             </span>
@@ -264,8 +264,8 @@ export const CompanionStage: React.FC<CompanionStageProps> = ({
         </div>
 
         {/* Health */}
-        <div className="p-2.5 rounded-xl bg-white/80 dark:bg-[#14231a] border border-[#deecdf] dark:border-[#1e3829] shadow-2xs">
-          <div className="flex justify-between items-center text-[11px] font-semibold text-[#274735] dark:text-emerald-200 mb-1">
+        <div className="p-2.5 rounded-xl bg-white/80 dark:bg-[#182a22] border border-[#dde9e1] dark:border-[#244137] shadow-2xs">
+          <div className="flex justify-between items-center text-[11px] font-semibold text-[#1b4432] dark:text-emerald-200 mb-1">
             <span className="flex items-center gap-1">
               <Heart className="w-3 h-3 text-rose-500" /> Health
             </span>
@@ -288,7 +288,7 @@ export const CompanionStage: React.FC<CompanionStageProps> = ({
           className={`flex flex-col items-center justify-center p-2.5 rounded-2xl border transition-all duration-200 cursor-pointer ${
             showFeedDrawer
               ? 'bg-emerald-800 text-white border-emerald-900 shadow-sm'
-              : 'bg-white dark:bg-[#15241b] text-emerald-950 dark:text-emerald-100 border-[#dce8de] dark:border-[#223d2c] hover:bg-emerald-50 dark:hover:bg-emerald-950/40 active:scale-95'
+              : 'bg-white dark:bg-[#182a22] text-emerald-950 dark:text-emerald-100 border-[#d7e6dc] dark:border-[#244137] hover:bg-emerald-50 dark:hover:bg-emerald-950/40 active:scale-95'
           }`}
         >
           <Utensils className="w-5 h-5 text-amber-600 dark:text-amber-400 mb-1" />
@@ -298,7 +298,7 @@ export const CompanionStage: React.FC<CompanionStageProps> = ({
         {/* Bathe */}
         <button
           onClick={handleBathe}
-          className="flex flex-col items-center justify-center p-2.5 rounded-2xl bg-white dark:bg-[#15241b] text-emerald-950 dark:text-emerald-100 border border-[#dce8de] dark:border-[#223d2c] hover:bg-emerald-50 dark:hover:bg-emerald-950/40 active:scale-95 transition-all duration-200 cursor-pointer shadow-2xs"
+          className="flex flex-col items-center justify-center p-2.5 rounded-2xl bg-white dark:bg-[#182a22] text-emerald-950 dark:text-emerald-100 border border-[#d7e6dc] dark:border-[#244137] hover:bg-emerald-50 dark:hover:bg-emerald-950/40 active:scale-95 transition-all duration-200 cursor-pointer shadow-2xs"
         >
           <Bath className="w-5 h-5 text-sky-600 dark:text-sky-400 mb-1" />
           <span className="text-[11px] font-semibold">Bathe</span>
@@ -310,7 +310,7 @@ export const CompanionStage: React.FC<CompanionStageProps> = ({
           className={`flex flex-col items-center justify-center p-2.5 rounded-2xl border transition-all duration-200 cursor-pointer ${
             stats.isSleeping
               ? 'bg-indigo-900 text-indigo-50 border-indigo-950 shadow-sm'
-              : 'bg-white dark:bg-[#15241b] text-emerald-950 dark:text-emerald-100 border-[#dce8de] dark:border-[#223d2c] hover:bg-emerald-50 dark:hover:bg-emerald-950/40 active:scale-95 shadow-2xs'
+              : 'bg-white dark:bg-[#182a22] text-emerald-950 dark:text-emerald-100 border-[#d7e6dc] dark:border-[#244137] hover:bg-emerald-50 dark:hover:bg-emerald-950/40 active:scale-95 shadow-2xs'
           }`}
         >
           {stats.isSleeping ? (
@@ -329,7 +329,7 @@ export const CompanionStage: React.FC<CompanionStageProps> = ({
         {/* Nature Stroll */}
         <button
           onClick={handleWalk}
-          className="flex flex-col items-center justify-center p-2.5 rounded-2xl bg-white dark:bg-[#15241b] text-emerald-950 dark:text-emerald-100 border border-[#dce8de] dark:border-[#223d2c] hover:bg-emerald-50 dark:hover:bg-emerald-950/40 active:scale-95 transition-all duration-200 cursor-pointer shadow-2xs"
+          className="flex flex-col items-center justify-center p-2.5 rounded-2xl bg-white dark:bg-[#182a22] text-emerald-950 dark:text-emerald-100 border border-[#d7e6dc] dark:border-[#244137] hover:bg-emerald-50 dark:hover:bg-emerald-950/40 active:scale-95 transition-all duration-200 cursor-pointer shadow-2xs"
         >
           <Compass className="w-5 h-5 text-emerald-600 dark:text-emerald-400 mb-1" />
           <span className="text-[11px] font-semibold">Walk</span>
@@ -366,7 +366,7 @@ export const CompanionStage: React.FC<CompanionStageProps> = ({
             <div className="grid grid-cols-4 gap-2">
               <button
                 onClick={() => handleFeed('apple', 'Apple', 20)}
-                className="flex flex-col items-center p-2 rounded-xl bg-white dark:bg-[#1c2e22] border border-amber-100 dark:border-emerald-800/40 text-center hover:bg-amber-100/50 transition-colors"
+                className="flex flex-col items-center p-2 rounded-xl bg-white dark:bg-[#182a22] border border-amber-100 dark:border-emerald-800/40 text-center hover:bg-amber-100/50 transition-colors"
               >
                 <span className="text-xl">🍎</span>
                 <span className="text-[11px] font-semibold text-emerald-950 dark:text-emerald-100 mt-1">Apple</span>
@@ -375,7 +375,7 @@ export const CompanionStage: React.FC<CompanionStageProps> = ({
 
               <button
                 onClick={() => handleFeed('banana', 'Banana', 22)}
-                className="flex flex-col items-center p-2 rounded-xl bg-white dark:bg-[#1c2e22] border border-amber-100 dark:border-emerald-800/40 text-center hover:bg-amber-100/50 transition-colors"
+                className="flex flex-col items-center p-2 rounded-xl bg-white dark:bg-[#182a22] border border-amber-100 dark:border-emerald-800/40 text-center hover:bg-amber-100/50 transition-colors"
               >
                 <span className="text-xl">🍌</span>
                 <span className="text-[11px] font-semibold text-emerald-950 dark:text-emerald-100 mt-1">Banana</span>
@@ -384,7 +384,7 @@ export const CompanionStage: React.FC<CompanionStageProps> = ({
 
               <button
                 onClick={() => handleFeed('riceBowl', 'Rice Bowl', 35)}
-                className="flex flex-col items-center p-2 rounded-xl bg-white dark:bg-[#1c2e22] border border-amber-100 dark:border-emerald-800/40 text-center hover:bg-amber-100/50 transition-colors"
+                className="flex flex-col items-center p-2 rounded-xl bg-white dark:bg-[#182a22] border border-amber-100 dark:border-emerald-800/40 text-center hover:bg-amber-100/50 transition-colors"
               >
                 <span className="text-xl">🍚</span>
                 <span className="text-[11px] font-semibold text-emerald-950 dark:text-emerald-100 mt-1">Rice</span>
@@ -393,7 +393,7 @@ export const CompanionStage: React.FC<CompanionStageProps> = ({
 
               <button
                 onClick={() => handleFeed('water', 'Fresh Water', 12)}
-                className="flex flex-col items-center p-2 rounded-xl bg-white dark:bg-[#1c2e22] border border-amber-100 dark:border-emerald-800/40 text-center hover:bg-amber-100/50 transition-colors"
+                className="flex flex-col items-center p-2 rounded-xl bg-white dark:bg-[#182a22] border border-amber-100 dark:border-emerald-800/40 text-center hover:bg-amber-100/50 transition-colors"
               >
                 <span className="text-xl">💧</span>
                 <span className="text-[11px] font-semibold text-emerald-950 dark:text-emerald-100 mt-1">Water</span>

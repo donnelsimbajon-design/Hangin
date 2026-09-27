@@ -118,7 +118,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
       <motion.div
         initial={{ opacity: 0, scale: 0.95, y: 15 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
-        className="w-full max-w-lg rounded-3xl bg-white dark:bg-[#121f17] border border-emerald-100 dark:border-emerald-800 p-5 sm:p-7 shadow-2xl overflow-hidden max-h-[92vh] overflow-y-auto"
+        className="w-full max-w-lg rounded-3xl bg-white dark:bg-[#182a22] border border-emerald-100 dark:border-emerald-800 p-5 sm:p-7 shadow-2xl overflow-hidden max-h-[92vh] overflow-y-auto"
       >
         {/* =========================================================
             STEP 1: 5-PRESS MYSTERY REVEAL COMPANION
@@ -144,7 +144,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
             </p>
 
             {/* REVEAL STAGE */}
-            <div className="w-full h-56 sm:h-60 my-4 rounded-3xl bg-gradient-to-b from-[#eaf4eb] via-[#d8ebdb] to-[#c6e5cb] dark:from-[#15271d] dark:to-[#0f1d15] border border-emerald-200/80 dark:border-emerald-800/40 relative overflow-hidden flex flex-col items-center justify-center p-4">
+            <div className="w-full h-56 sm:h-60 my-4 rounded-3xl bg-gradient-to-b from-[#e7efe9] via-[#dcefe4] to-[#d3e7da] dark:from-[#182a22] dark:to-[#182a22] border border-emerald-200/80 dark:border-emerald-800/40 relative overflow-hidden flex flex-col items-center justify-center p-4">
               <AnimatePresence mode="wait">
                 {!isRevealed ? (
                   /* MYSTERY 5-PRESS EGG / BASKET */
@@ -340,7 +340,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
                     className={`p-3 rounded-2xl border flex items-center justify-center gap-2 cursor-pointer transition-all ${
                       species === 'dog'
                         ? 'bg-emerald-800 text-white border-emerald-900 shadow-sm font-bold'
-                        : 'bg-emerald-50 dark:bg-[#182a1f] text-emerald-900 dark:text-emerald-200 border-emerald-200 hover:bg-emerald-100'
+                        : 'bg-emerald-50 dark:bg-[#182a22] text-emerald-900 dark:text-emerald-200 border-emerald-200 hover:bg-emerald-100'
                     }`}
                   >
                     <span className="text-xl">🐶</span>
@@ -359,7 +359,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
                     className={`p-3 rounded-2xl border flex items-center justify-center gap-2 cursor-pointer transition-all ${
                       species === 'cat'
                         ? 'bg-emerald-800 text-white border-emerald-900 shadow-sm font-bold'
-                        : 'bg-emerald-50 dark:bg-[#182a1f] text-emerald-900 dark:text-emerald-200 border-emerald-200 hover:bg-emerald-100'
+                        : 'bg-emerald-50 dark:bg-[#182a22] text-emerald-900 dark:text-emerald-200 border-emerald-200 hover:bg-emerald-100'
                     }`}
                   >
                     <span className="text-xl">🐱</span>
@@ -380,7 +380,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
                     value={companionName}
                     onChange={(e) => setCompanionName(e.target.value)}
                     placeholder="Give your friend a name..."
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-emerald-50/70 dark:bg-[#182a1f] border border-emerald-200 dark:border-emerald-800 text-sm font-semibold text-emerald-950 dark:text-emerald-100 focus:outline-emerald-600"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-emerald-50/70 dark:bg-[#182a22] border border-emerald-200 dark:border-emerald-800 text-sm font-semibold text-emerald-950 dark:text-emerald-100 focus:outline-emerald-600"
                   />
                 </div>
 
@@ -436,7 +436,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
                     className={`p-2.5 rounded-xl border text-left text-xs font-medium transition-colors cursor-pointer ${
                       screenTimeIssue === item
                         ? 'bg-emerald-800 text-white border-emerald-900 shadow-xs'
-                        : 'bg-emerald-50/60 dark:bg-[#182a1f] border-emerald-200 dark:border-emerald-800 text-emerald-900 dark:text-emerald-200'
+                        : 'bg-emerald-50/60 dark:bg-[#182a22] border-emerald-200 dark:border-emerald-800 text-emerald-900 dark:text-emerald-200'
                     }`}
                   >
                     {item}
@@ -459,8 +459,8 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
                       onClick={() => toggleIntention(opt)}
                       className={`w-full p-2.5 rounded-xl border text-left flex items-center justify-between transition-colors cursor-pointer ${
                         isSelected
-                          ? 'bg-emerald-50 dark:bg-[#182a1f] border-emerald-600 text-emerald-950 dark:text-emerald-100 font-semibold'
-                          : 'bg-white dark:bg-[#14231a] border-emerald-200/80 dark:border-emerald-800/40 text-emerald-800 dark:text-emerald-300'
+                          ? 'bg-emerald-50 dark:bg-[#182a22] border-emerald-600 text-emerald-950 dark:text-emerald-100 font-semibold'
+                          : 'bg-white dark:bg-[#182a22] border-emerald-200/80 dark:border-emerald-800/40 text-emerald-800 dark:text-emerald-300'
                       }`}
                     >
                       <span className="text-xs">{opt}</span>
@@ -522,12 +522,12 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 placeholder="Choose a screen name..."
-                className="w-full px-3.5 py-2.5 rounded-xl bg-emerald-50/70 dark:bg-[#182a1f] border border-emerald-200 dark:border-emerald-800 text-sm font-semibold text-emerald-950 dark:text-emerald-100 focus:outline-emerald-600"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-emerald-50/70 dark:bg-[#182a22] border border-emerald-200 dark:border-emerald-800 text-sm font-semibold text-emerald-950 dark:text-emerald-100 focus:outline-emerald-600"
               />
             </div>
 
             {/* Private Journal PIN */}
-            <div className="w-full text-left mb-4 p-4 rounded-2xl bg-emerald-50/80 dark:bg-[#14261b] border border-emerald-200 dark:border-emerald-800">
+            <div className="w-full text-left mb-4 p-4 rounded-2xl bg-emerald-50/80 dark:bg-[#182a22] border border-emerald-200 dark:border-emerald-800">
               <div className="flex items-center gap-2 mb-1">
                 <Lock className="w-4 h-4 text-emerald-700 dark:text-emerald-300" />
                 <label className="text-xs font-bold text-emerald-950 dark:text-emerald-100">
@@ -543,7 +543,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
                   maxLength={4}
                   value={pin}
                   onChange={(e) => setPin(e.target.value.replace(/[^0-9]/g, ''))}
-                  className="w-full text-center tracking-[0.8em] text-2xl py-2 rounded-xl bg-white dark:bg-[#0d1811] border border-emerald-300 dark:border-emerald-700 font-black text-emerald-950 dark:text-emerald-100 focus:outline-emerald-600"
+                  className="w-full text-center tracking-[0.8em] text-2xl py-2 rounded-xl bg-white dark:bg-[#13221b] border border-emerald-300 dark:border-[#2d4d41] font-black text-emerald-950 dark:text-emerald-100 focus:outline-emerald-600"
                 />
               </div>
             </div>

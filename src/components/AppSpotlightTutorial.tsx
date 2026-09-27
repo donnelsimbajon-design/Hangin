@@ -171,20 +171,20 @@ export const AppSpotlightTutorial: React.FC<AppSpotlightTutorialProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-5 bg-black/80 backdrop-blur-md select-none overflow-y-auto">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-5 bg-[#0b1411]/80 backdrop-blur-md select-none overflow-y-auto">
       {/* Centered Modal Card Container */}
       <motion.div
         initial={{ opacity: 0, scale: 0.94, y: 15 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.94 }}
         transition={{ duration: 0.25 }}
-        className="relative w-full max-w-md bg-white dark:bg-[#0f1d14] rounded-3xl p-5 sm:p-6 shadow-[0_25px_60px_rgba(0,0,0,0.6)] border-2 border-emerald-500/50 flex flex-col my-auto max-h-[94vh] overflow-y-auto"
+        className="relative w-full max-w-md bg-white dark:bg-[#13221b] rounded-3xl p-5 sm:p-6 shadow-2xl border border-emerald-200 dark:border-emerald-800/70 flex flex-col my-auto max-h-[94vh] overflow-y-auto"
       >
         {/* Top Header Row */}
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
-            <span className="px-2.5 py-1 rounded-full bg-[#58cc02]/20 text-[#58cc02] dark:text-emerald-300 text-[11px] font-black uppercase tracking-wider flex items-center gap-1">
-              <Sparkles className="w-3 h-3 text-[#58cc02]" />
+            <span className="px-2.5 py-1 rounded-full bg-[#35805a]/20 text-[#35805a] dark:text-emerald-300 text-[11px] font-black uppercase tracking-wider flex items-center gap-1">
+              <Sparkles className="w-3 h-3 text-[#35805a]" />
               <span>Step {currentStep + 1} of 5</span>
             </span>
             <span className="text-[10px] font-bold text-slate-400 dark:text-emerald-500 uppercase tracking-tight hidden sm:inline">
@@ -205,8 +205,8 @@ export const AppSpotlightTutorial: React.FC<AppSpotlightTutorialProps> = ({
         {/* ==============================================================
             INTERACTIVE SPOTLIGHT SHOWCASE STAGE WITH GLOWING FOCUS & ARROW
             ============================================================== */}
-        <div className="relative w-full rounded-2xl bg-gradient-to-b from-emerald-950/60 to-emerald-900/40 p-4 border-2 border-[#58cc02] shadow-[0_0_30px_rgba(88,204,2,0.35)] overflow-hidden mb-4 min-h-[190px] flex flex-col items-center justify-center">
-          <div className="absolute inset-0 bg-radial from-[#58cc02]/20 via-transparent to-transparent pointer-events-none" />
+        <div className="relative w-full rounded-2xl bg-gradient-to-b from-emerald-950/50 to-emerald-900/30 p-4 border border-emerald-400/50 shadow-[0_0_24px_rgba(63,143,104,0.18)] overflow-hidden mb-4 min-h-[190px] flex flex-col items-center justify-center">
+          <div className="absolute inset-0 bg-radial from-[#35805a]/20 via-transparent to-transparent pointer-events-none" />
 
           {/* Animated Bouncing Pointer Arrow */}
           <motion.div
@@ -218,7 +218,7 @@ export const AppSpotlightTutorial: React.FC<AppSpotlightTutorialProps> = ({
           </motion.div>
 
           {/* Callout Pill */}
-          <div className="absolute top-8 z-30 px-2.5 py-0.5 rounded-full bg-black/80 backdrop-blur-xs border border-[#58cc02]/60 text-white text-[10px] font-extrabold shadow-sm text-center">
+          <div className="absolute top-8 z-30 px-2.5 py-0.5 rounded-full bg-[#0b1411]/80 backdrop-blur-xs border border-[#35805a]/60 text-white text-[10px] font-extrabold shadow-sm text-center">
             {current.arrowCallout}
           </div>
 
@@ -242,7 +242,7 @@ export const AppSpotlightTutorial: React.FC<AppSpotlightTutorialProps> = ({
                   onPet={handlePetCompanion}
                 />
               </div>
-              <span className="text-xs font-black text-amber-300 mt-1 bg-black/60 px-3 py-0.5 rounded-full border border-amber-400/40">
+              <span className="text-xs font-black text-amber-300 mt-1 bg-[#0b1411]/60 px-3 py-0.5 rounded-full border border-amber-400/40">
                 {companionName} ({species === 'dog' ? '🐶 Dog' : '🐱 Cat'})
               </span>
             </motion.div>
@@ -257,18 +257,18 @@ export const AppSpotlightTutorial: React.FC<AppSpotlightTutorialProps> = ({
               transition={{ duration: 0.3 }}
               className="mt-8 w-full max-w-xs flex flex-col items-center text-left"
             >
-              <div className="w-full p-3 rounded-2xl bg-white/95 dark:bg-[#11231a] border border-emerald-500/50 shadow-md">
+              <div className="w-full p-3 rounded-2xl bg-white/95 dark:bg-[#182a22] border border-emerald-500/50 shadow-md">
                 <div className="flex items-center justify-between text-[11px] font-bold text-emerald-800 dark:text-emerald-300 mb-1.5">
                   <span className="flex items-center gap-1">
-                    <span className="w-2 h-2 rounded-full bg-[#58cc02] animate-pulse" />
+                    <span className="w-2 h-2 rounded-full bg-[#35805a] animate-pulse" />
                     <span>Live Gemini 3 Flash Stream</span>
                   </span>
                   <span className="text-[9px] px-2 py-0.5 rounded-full bg-purple-100 text-purple-800 font-extrabold">
                     🎙️ Voice Mic
                   </span>
                 </div>
-                <div className="p-2 rounded-xl bg-slate-50 dark:bg-[#0c1811] text-xs text-slate-800 dark:text-emerald-100 leading-snug">
-                  <span className="text-[#58cc02] font-black mr-1">{companionName}:</span>
+                <div className="p-2 rounded-xl bg-slate-50 dark:bg-[#13221b] text-xs text-slate-800 dark:text-emerald-100 leading-snug">
+                  <span className="text-[#35805a] font-black mr-1">{companionName}:</span>
                   "I'm right here beside you. Take a soft breath..."
                 </div>
               </div>
@@ -326,7 +326,7 @@ export const AppSpotlightTutorial: React.FC<AppSpotlightTutorialProps> = ({
               transition={{ duration: 0.3 }}
               className="mt-8 w-full max-w-xs"
             >
-              <div className="p-3 rounded-2xl bg-white/95 dark:bg-[#112017]/95 border border-emerald-500/50 shadow-md text-left">
+              <div className="p-3 rounded-2xl bg-white/95 dark:bg-[#13221b]/95 border border-emerald-500/50 shadow-md text-left">
                 <div className="flex items-center gap-1.5 text-[10px] font-bold text-emerald-700 dark:text-emerald-400 mb-1">
                   <span>🍃</span>
                   <span className="font-extrabold">h/gentleminds</span>
@@ -340,7 +340,7 @@ export const AppSpotlightTutorial: React.FC<AppSpotlightTutorialProps> = ({
                     onClick={handleUpvoteSample}
                     className={`flex items-center gap-1 px-2 py-0.5 rounded-full cursor-pointer transition-all ${
                       hasUpvoted
-                        ? 'bg-[#58cc02] text-white'
+                        ? 'bg-[#35805a] text-white'
                         : 'bg-emerald-50 dark:bg-emerald-900/50 hover:bg-emerald-100'
                     }`}
                   >
@@ -377,7 +377,7 @@ export const AppSpotlightTutorial: React.FC<AppSpotlightTutorialProps> = ({
                       key={i}
                       className={`w-3 h-3 rounded-full transition-all ${
                         enteredPin.length > i
-                          ? 'bg-[#58cc02] shadow-[0_0_8px_#58cc02]'
+                          ? 'bg-[#35805a] shadow-[0_0_10px_rgba(63,143,104,0.28)]'
                           : 'bg-emerald-800'
                       }`}
                     />
@@ -411,7 +411,7 @@ export const AppSpotlightTutorial: React.FC<AppSpotlightTutorialProps> = ({
           <h2 className="text-lg sm:text-xl font-black text-slate-900 dark:text-emerald-100 leading-tight">
             {current.title}
           </h2>
-          <p className="text-xs font-bold text-[#58cc02] dark:text-emerald-400 mt-0.5">
+          <p className="text-xs font-bold text-[#35805a] dark:text-emerald-400 mt-0.5">
             {current.subtitle}
           </p>
         </div>
@@ -432,7 +432,7 @@ export const AppSpotlightTutorial: React.FC<AppSpotlightTutorialProps> = ({
               }}
               className={`h-2 rounded-full transition-all cursor-pointer ${
                 idx === currentStep
-                  ? 'w-7 bg-[#58cc02]'
+                  ? 'w-7 bg-[#35805a]'
                   : 'w-2 bg-slate-200 dark:bg-emerald-900 hover:bg-slate-300'
               }`}
               title={`Go to step ${idx + 1}`}
@@ -456,7 +456,7 @@ export const AppSpotlightTutorial: React.FC<AppSpotlightTutorialProps> = ({
 
           <button
             onClick={handleNext}
-            className="px-6 py-2.5 rounded-2xl bg-[#58cc02] hover:bg-[#46a302] text-white font-black text-xs shadow-md flex items-center gap-1.5 cursor-pointer active:translate-y-0.5 transition-all"
+            className="px-6 py-2.5 rounded-2xl bg-[#35805a] hover:bg-[#2a6b4b] text-white font-black text-xs shadow-md flex items-center gap-1.5 cursor-pointer active:translate-y-0.5 transition-all"
           >
             <span>{currentStep === steps.length - 1 ? 'Enter Sanctuary' : 'Next Step'}</span>
             <ArrowRight className="w-3.5 h-3.5" />
