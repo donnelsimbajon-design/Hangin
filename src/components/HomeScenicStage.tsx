@@ -518,7 +518,7 @@ export const HomeScenicStage: React.FC<HomeScenicStageProps> = ({
           ========================================================= */}
       <div className="absolute top-3 inset-x-3 sm:inset-x-5 z-30 flex items-center justify-between pointer-events-auto">
         {/* Real Philippine Time Badge */}
-        <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/40 backdrop-blur-md border border-white/20 text-white text-[11px] font-semibold shadow-md">
+        <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#0b1411]/40 backdrop-blur-md border border-white/20 text-white text-[11px] font-semibold shadow-md">
           <span className="text-xs">🇵🇭</span>
           <span className="font-mono">{phTime.timeFullStr}</span>
           <span className="hidden sm:inline text-emerald-300 font-bold">&bull; {phTime.phaseLabel}</span>
@@ -530,7 +530,7 @@ export const HomeScenicStage: React.FC<HomeScenicStageProps> = ({
           {mindfulGoals && mindfulGoals.length > 0 && (
             <button
               onClick={() => setShowGoalsDrawer(!showGoalsDrawer)}
-              className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-black/40 backdrop-blur-md border border-emerald-400/40 text-emerald-200 hover:bg-black/60 cursor-pointer shadow-xs flex items-center gap-1"
+              className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-[#0b1411]/40 backdrop-blur-md border border-emerald-400/40 text-emerald-200 hover:bg-[#0b1411]/60 cursor-pointer shadow-xs flex items-center gap-1"
               title="View your active mindful goals"
             >
               <Target className="w-3 h-3 text-emerald-400" />
@@ -539,7 +539,7 @@ export const HomeScenicStage: React.FC<HomeScenicStageProps> = ({
           )}
 
           {/* Time of Day Switcher */}
-          <div className="flex items-center gap-1 bg-black/45 backdrop-blur-md p-0.5 rounded-full border border-white/20 text-xs">
+          <div className="flex items-center gap-1 bg-[#0b1411]/45 backdrop-blur-md p-0.5 rounded-full border border-white/20 text-xs">
             <button
               onClick={() => setTimeOverride('day')}
               className={`p-1.5 rounded-full cursor-pointer transition-colors ${
@@ -588,17 +588,17 @@ export const HomeScenicStage: React.FC<HomeScenicStageProps> = ({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={() => setShowGoalsDrawer(false)}
-            className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4"
+            className="fixed inset-0 z-50 bg-[#0b1411]/70 backdrop-blur-sm flex items-center justify-center p-4"
           >
             <motion.div
               initial={{ scale: 0.94, y: 12 }}
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.94, y: 12 }}
               onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-sm bg-white dark:bg-[#0f1f16] rounded-3xl border-2 border-emerald-500/40 shadow-2xl overflow-hidden"
+              className="w-full max-w-sm bg-white dark:bg-[#13221b] rounded-3xl border border-emerald-200/80 dark:border-emerald-800/70 shadow-2xl overflow-hidden"
             >
               {/* Modal Header */}
-              <div className="p-4 bg-emerald-50 dark:bg-[#14251b] border-b border-emerald-100 dark:border-emerald-800/60 flex items-center justify-between">
+              <div className="p-4 bg-emerald-50 dark:bg-[#182a22] border-b border-emerald-100 dark:border-emerald-800/60 flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
                   <div className="w-9 h-9 rounded-xl bg-emerald-500 text-white flex items-center justify-center shadow-xs">
                     <Target className="w-4.5 h-4.5" />
@@ -669,7 +669,7 @@ export const HomeScenicStage: React.FC<HomeScenicStageProps> = ({
                 initial={{ opacity: 0, y: -6, scale: 0.95 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}
-                className="relative max-w-md w-full p-4 rounded-2xl bg-white/95 dark:bg-[#122219]/95 backdrop-blur-md shadow-xl border-2 border-emerald-200 dark:border-emerald-800 text-center overflow-hidden"
+                className="relative max-w-md w-full p-4 rounded-2xl bg-white/95 dark:bg-[#182a22]/95 backdrop-blur-md shadow-xl border-2 border-emerald-200 dark:border-emerald-800 text-center overflow-hidden"
               >
                 <Heart className="absolute -right-2 -bottom-3 w-16 h-16 text-rose-500/10 dark:text-rose-400/10 pointer-events-none" />
 
@@ -690,7 +690,7 @@ export const HomeScenicStage: React.FC<HomeScenicStageProps> = ({
                   {reactionText}
                 </p>
                 {/* Aesthetic Pointer Tail directly over companion */}
-                <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-3.5 h-3.5 bg-white dark:bg-[#122219] rotate-45 border-r-2 border-b-2 border-emerald-200 dark:border-emerald-800" />
+                <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-3.5 h-3.5 bg-white dark:bg-[#182a22] rotate-45 border-r-2 border-b-2 border-emerald-200 dark:border-emerald-800" />
               </motion.div>
             ) : showMoodSelector ? (
               /* "How are you feeling right now?" Check-in */
@@ -699,7 +699,7 @@ export const HomeScenicStage: React.FC<HomeScenicStageProps> = ({
                 initial={{ opacity: 0, y: -6, scale: 0.95 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}
-                className="relative max-w-md w-full p-3.5 rounded-2xl bg-white/95 dark:bg-[#122219]/95 backdrop-blur-md shadow-xl border-2 border-emerald-200 dark:border-emerald-800 text-center"
+                className="relative max-w-md w-full p-3.5 rounded-2xl bg-white/95 dark:bg-[#182a22]/95 backdrop-blur-md shadow-xl border-2 border-emerald-200 dark:border-emerald-800 text-center"
               >
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider">
@@ -730,7 +730,7 @@ export const HomeScenicStage: React.FC<HomeScenicStageProps> = ({
                       <button
                         key={m.id}
                         onClick={() => handleSelectMood(m.id, m.label)}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-50 dark:bg-emerald-900/40 hover:bg-emerald-100 dark:hover:bg-emerald-800/60 border border-emerald-200 dark:border-emerald-700/50 text-xs font-semibold text-emerald-950 dark:text-emerald-100 transition-colors active:scale-95 cursor-pointer"
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-50 dark:bg-emerald-900/40 hover:bg-emerald-100 dark:hover:bg-emerald-800/60 border border-emerald-200 dark:border-[#2d4d41]/50 text-xs font-semibold text-emerald-950 dark:text-emerald-100 transition-colors active:scale-95 cursor-pointer"
                       >
                         <MoodIcon className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-300" />
                         <span>{m.label}</span>
@@ -740,7 +740,7 @@ export const HomeScenicStage: React.FC<HomeScenicStageProps> = ({
                 </div>
 
                 {/* Aesthetic Pointer Tail */}
-                <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-3.5 h-3.5 bg-white dark:bg-[#122219] rotate-45 border-r-2 border-b-2 border-emerald-200 dark:border-emerald-800" />
+                <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-3.5 h-3.5 bg-white dark:bg-[#182a22] rotate-45 border-r-2 border-b-2 border-emerald-200 dark:border-emerald-800" />
               </motion.div>
             ) : (
               /* Daily Empathetic Quote */
@@ -750,7 +750,7 @@ export const HomeScenicStage: React.FC<HomeScenicStageProps> = ({
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}
                 onClick={handleNextQuote}
-                className="relative max-w-md w-full p-4 rounded-2xl bg-white/95 dark:bg-[#122219]/95 backdrop-blur-md shadow-xl border-2 border-emerald-200 dark:border-emerald-800 text-center cursor-pointer hover:border-emerald-400 transition-all group overflow-hidden"
+                className="relative max-w-md w-full p-4 rounded-2xl bg-white/95 dark:bg-[#182a22]/95 backdrop-blur-md shadow-xl border-2 border-emerald-200 dark:border-emerald-800 text-center cursor-pointer hover:border-emerald-400 transition-all group overflow-hidden"
               >
                 <Quote className="absolute -right-2 -bottom-3 w-16 h-16 text-emerald-500/10 dark:text-emerald-400/10 pointer-events-none" />
 
@@ -794,7 +794,7 @@ export const HomeScenicStage: React.FC<HomeScenicStageProps> = ({
                 </button>
 
                 {/* Aesthetic Pointer Tail */}
-                <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-3.5 h-3.5 bg-white dark:bg-[#122219] rotate-45 border-r-2 border-b-2 border-emerald-200 dark:border-emerald-800" />
+                <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-3.5 h-3.5 bg-white dark:bg-[#182a22] rotate-45 border-r-2 border-b-2 border-emerald-200 dark:border-emerald-800" />
               </motion.div>
             )}
           </AnimatePresence>
@@ -853,7 +853,7 @@ export const HomeScenicStage: React.FC<HomeScenicStageProps> = ({
         </div>
 
         {/* Real-time Emotional Feelings Animation Bar */}
-        <div className="mt-1.5 w-full max-w-[94vw] sm:max-w-md mx-auto flex flex-nowrap items-center justify-center gap-2 sm:gap-3 bg-[#08150f]/90 backdrop-blur-md px-3 sm:px-4 py-1.5 sm:py-2 rounded-full border border-emerald-500/25 shadow-sm overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div className="mt-1.5 w-full max-w-[94vw] sm:max-w-md mx-auto flex flex-nowrap items-center justify-center gap-2 sm:gap-3 bg-[#0b1411]/90 dark:bg-[#13221b]/90 backdrop-blur-md px-3 sm:px-4 py-1.5 sm:py-2 rounded-full border border-emerald-400/25 shadow-sm overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           <span className="text-[9px] sm:text-[10px] text-emerald-400 font-bold uppercase tracking-wider whitespace-nowrap shrink-0">Feeling</span>
           {[
             { id: 'happy' as const, label: 'Joyful' },

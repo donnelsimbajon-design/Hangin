@@ -64,7 +64,7 @@ export const PrototypeTesterBar: React.FC<PrototypeTesterBarProps> = ({
   }, []);
 
   return (
-    <div className="w-full bg-[#0d1e14]/95 backdrop-blur-md text-emerald-100 border-b border-emerald-800/60 text-xs select-none z-50 transition-all sticky top-0 shadow-sm">
+    <div className="w-full bg-[#0b1411]/95 backdrop-blur-md text-emerald-100 border-b border-emerald-800/60 text-xs select-none z-50 transition-all sticky top-0 shadow-sm">
       <div className="max-w-6xl mx-auto px-3 py-1.5 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span className="flex items-center gap-1.5 font-black text-amber-300">
@@ -195,7 +195,7 @@ export const PrototypeTesterBar: React.FC<PrototypeTesterBarProps> = ({
             {onOpenTutorial && (
               <button
                 onClick={onOpenTutorial}
-                className="px-2.5 py-1 rounded-lg bg-[#58cc02] hover:bg-[#46a302] text-white font-bold flex items-center gap-1 cursor-pointer shadow-xs"
+                className="px-2.5 py-1 rounded-lg bg-[#35805a] hover:bg-[#2a6b4b] text-white font-bold flex items-center gap-1 cursor-pointer shadow-xs"
                 title="Open Spotlight In-App Tutorial"
               >
                 <span>💡 Tutorial</span>

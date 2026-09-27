@@ -11,11 +11,11 @@ export const TesterGuideModal: React.FC<TesterGuideModalProps> = ({ isOpen, onCl
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#0b1411]/60 backdrop-blur-xs">
       <motion.div
         initial={{ opacity: 0, scale: 0.95, y: 15 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
-        className="w-full max-w-xl rounded-3xl bg-white dark:bg-[#121f17] border border-emerald-200 dark:border-emerald-800 p-6 shadow-2xl overflow-y-auto max-h-[88vh]"
+        className="w-full max-w-xl rounded-3xl bg-white dark:bg-[#182a22] border border-emerald-200 dark:border-emerald-800 p-6 shadow-2xl overflow-y-auto max-h-[88vh]"
       >
         <div className="flex items-center justify-between pb-3 border-b border-emerald-100 dark:border-emerald-800/60">
           <div>
@@ -36,7 +36,7 @@ export const TesterGuideModal: React.FC<TesterGuideModalProps> = ({ isOpen, onCl
 
         <div className="mt-4 space-y-4 text-xs text-emerald-950 dark:text-emerald-100 leading-relaxed">
           {/* Section 1 */}
-          <div className="p-3.5 rounded-2xl bg-emerald-50/60 dark:bg-[#172b1f] border border-emerald-100 dark:border-emerald-800/40">
+          <div className="p-3.5 rounded-2xl bg-emerald-50/60 dark:bg-[#182a22] border border-emerald-100 dark:border-emerald-800/40">
             <h4 className="font-bold text-emerald-900 dark:text-emerald-200 flex items-center gap-1.5 mb-1.5">
               <Sparkles className="w-4 h-4 text-amber-500" />
               1. 3D Animal Companion Mechanics (Dog &amp; Cat)
@@ -50,7 +50,7 @@ export const TesterGuideModal: React.FC<TesterGuideModalProps> = ({ isOpen, onCl
           </div>
 
           {/* Section 2 */}
-          <div className="p-3.5 rounded-2xl bg-teal-50/60 dark:bg-[#152a22] border border-teal-100 dark:border-teal-800/40">
+          <div className="p-3.5 rounded-2xl bg-teal-50/60 dark:bg-[#182a22] border border-teal-100 dark:border-teal-800/40">
             <h4 className="font-bold text-teal-950 dark:text-teal-200 flex items-center gap-1.5 mb-1.5">
               <Compass className="w-4 h-4 text-teal-600" />
               2. Evidence-Based Mental Health Modules

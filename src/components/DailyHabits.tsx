@@ -43,7 +43,7 @@ export const DailyHabits: React.FC<DailyHabitsProps> = ({
   };
 
   return (
-    <div className="w-full rounded-3xl bg-white dark:bg-[#132219] border border-[#dce8de] dark:border-[#223d2d] p-4 sm:p-5 shadow-sm">
+    <div className="w-full rounded-3xl bg-white dark:bg-[#182a22] border border-[#d7e6dc] dark:border-[#244137] p-4 sm:p-5 shadow-sm">
       {/* Header with Progress Bar */}
       <div className="flex items-center justify-between mb-3">
         <div>
@@ -78,8 +78,8 @@ export const DailyHabits: React.FC<DailyHabitsProps> = ({
             onClick={() => handleHabitClick(habit)}
             className={`w-full flex items-center justify-between p-3 rounded-2xl border text-left transition-all cursor-pointer ${
               habit.completed
-                ? 'bg-emerald-50/80 dark:bg-[#192b20] border-emerald-300/80 dark:border-emerald-700/50 text-emerald-950 dark:text-emerald-100'
-                : 'bg-white dark:bg-[#16271c] border-[#e0ece2] dark:border-[#1f382a] text-emerald-900 dark:text-emerald-200 hover:bg-emerald-50/50'
+                ? 'bg-emerald-50/80 dark:bg-[#182a22] border-emerald-300/80 dark:border-[#2d4d41]/50 text-emerald-950 dark:text-emerald-100'
+                : 'bg-white dark:bg-[#182a22] border-[#e2ece6] dark:border-[#244137] text-emerald-900 dark:text-emerald-200 hover:bg-emerald-50/50'
             }`}
           >
             <div className="flex items-center gap-3">

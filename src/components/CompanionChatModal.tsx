@@ -39,6 +39,343 @@ interface ChatMessage {
   isStreaming?: boolean;
 }
 
+// ============================================================
+// LIGHTWEIGHT CLIENT-SIDE MOOD CLASSIFICATION
+// Reads the emotional *meaning* of what the user just said so the
+// 2D pet can respond in kind. Weighted phrase signals + negation
+// and intensifier handling — not exact-keyword matching.
+//
+// This is presentation only. It decides how the mascot's face
+// looks; it never touches what is sent, stored, scored or handled.
+// ============================================================
+type PetEmotion =
+  | 'crying'
+  | 'sad'
+  | 'lonely'
+  | 'anxious'
+  | 'serious'
+  | 'tired'
+  | 'confused'
+  | 'loving'
+  | 'excited'
+  | 'happy'
+  | 'calm'
+  | 'listening';
+
+/** Ordered by emotional gravity — used to break score ties. */
+const EMOTION_PRIORITY: PetEmotion[] = [
+  'crying',
+  'sad',
+  'lonely',
+  'anxious',
+  'serious',
+  'tired',
+  'confused',
+  'loving',
+  'excited',
+  'happy',
+  'calm',
+  'listening',
+];
+
+/**
+ * Phrase signals per emotion. Longer, more specific phrases carry more
+ * weight than single common words, so "can't go on" outweighs "on".
+ * A few Tagalog/Taglish cues are included since the sanctuary is PH-facing.
+ */
+const EMOTION_SIGNALS: Array<{ emotion: PetEmotion; weight: number; phrases: string[] }> = [
+  {
+    emotion: 'crying',
+    weight: 2,
+    phrases: [
+      "don't know how much longer", 'not much longer', "can't go on", 'cannot go on',
+      "can't handle", 'can not handle', 'can handle this', 'handle this', 'too much to carry',
+      'at my limit', 'my limit', 'breaking point', 'falling apart', 'fall apart',
+      'break down', 'breaking down', 'broke down', 'give up', 'giving up', 'gave up',
+      'no point', 'no hope', 'hopeless', 'unbearable', "can't breathe", 'cannot breathe',
+      'so hard', 'been so hard', 'really hard', 'so painful', 'in pain', 'hurting',
+      'devastated', 'crushed', 'destroyed me', 'ruined', 'miserable', 'rock bottom',
+      'worst', 'terrible', 'awful', 'so tired of', 'suffocating', 'drowning',
+      'crying', 'cried', 'sobbing', 'sobbing', 'tears', 'shaking', 'numb',
+      'walang pag asa', 'hindi ko na kaya', 'sa gitna ng gabi', 'umiiyak',
+    ],
+  },
+  {
+    emotion: 'sad',
+    weight: 1.6,
+    phrases: [
+      'sad', 'depressed', 'unhappy', 'grief', 'grieving', 'heartbroken', 'hurt',
+      'pain', 'painful', 'empty', 'regret', 'disappointed', 'discouraged',
+      'lost', 'loss', 'miss', 'missing', 'sorry', 'apologize', 'failed', 'failure',
+      'rejected', 'let down', 'gave up on', 'hurts', 'tired of', 'fed up',
+      'malungkot', 'masakit', 'hinihapis',
+    ],
+  },
+  {
+    emotion: 'lonely',
+    weight: 1.8,
+    phrases: [
+      'lonely', 'alone', 'nobody', 'no one', 'nobody understands', 'no one understands',
+      "nobody cares", 'no one cares', 'left out', 'excluded', 'ignored', 'unwanted',
+      'invisible', 'no friends', "don't have anyone", 'dont have anyone', 'by myself',
+      'on my own', 'abandoned', 'no one listens', 'nobody listens', 'no one talks to me',
+      'walang nakakaintindihan', 'nakaiintindihan', 'akong mag isa', 'walang kaibigan',
+    ],
+  },
+  {
+    emotion: 'anxious',
+    weight: 1.7,
+    phrases: [
+      'anxious', 'anxiety', 'nervous', 'worried', 'worry', 'worrying', 'scared',
+      'afraid', 'fear', 'panic', 'panicking', 'panicking', 'overwhelmed', 'stressed',
+      'stress', 'tense', 'paranoid', 'dread', 'uneasy', 'restless', "can't sleep",
+      'cant sleep', 'insomnia', 'racing', 'butterflies', 'freaking out', 'spiraling',
+      'spiralling', 'on edge', 'jittery', 'nag aalala', 'takot', 'matatakot', 'kasiyahan',
+    ],
+  },
+  {
+    emotion: 'serious',
+    weight: 1.7,
+    phrases: [
+      'angry', 'mad', 'furious', 'rage', 'irritated', 'annoyed', 'annoying',
+      'frustrated', 'frustrating', 'pissed', 'resent', 'unfair', 'disrespect',
+      'infuriating', 'triggered', 'sick of', 'done with', 'hate', 'ridiculous',
+      'galit', 'naihi', 'yabo', 'angal',
+    ],
+  },
+  {
+    emotion: 'tired',
+    weight: 1.7,
+    phrases: [
+      'tired', 'exhausted', 'drained', 'sleepy', 'no energy', 'weary', 'worn out',
+      'burned out', 'burnt out', "can't keep up", 'cant keep up', 'need to sleep',
+      'need sleep', 'knackered', 'running on empty', 'overworked', 'swamped',
+      'slept', 'no sleep', 'pagod', 'pagod na', 'tulog', 'hindi na ako makapagpahinga',
+    ],
+  },
+  {
+    emotion: 'confused',
+    weight: 1.5,
+    phrases: [
+      'confused', 'confusing', "don't understand", 'dont understand', "don't get it",
+      'no idea', 'makes no sense', 'lost track', "what's happening", 'whats happening',
+      'why does', 'why do i', 'why am i', 'so weird', 'strange', 'baffled', 'not sure',
+      'unsure', 'overthinking', 'overthinking', 'head spin', 'lost', '??',
+      'hindi ko maintindihan', 'bakit', 'nakakalito',
+    ],
+  },
+  {
+    emotion: 'loving',
+    weight: 1.6,
+    phrases: [
+      'love you', 'i love', 'thank you', 'thanks', 'appreciate', 'grateful',
+      'gratitude', "you're the best", 'good boy', 'good girl', 'hug', 'hugs',
+      'proud of you', 'care about you', 'adore', 'sweet', 'kind', 'blessed',
+      'lucky to have', 'my best friend', 'salamat', 'mahal kita', 'mahal',
+    ],
+  },
+  {
+    emotion: 'excited',
+    weight: 1.9,
+    phrases: [
+      'yay', 'yesss', 'yess', 'hooray', 'finally', 'i passed', 'passed my',
+      'congrats', 'congratulations', 'promoted', 'got the job', 'got hired',
+      'graduat', 'wedding', 'achievement', 'so happy', 'so excited', "can't wait",
+      'cant wait', 'great news', 'amazing news', 'best day', 'i did it', 'i won',
+      'accepted', 'birthday', 'celebrat', 'it worked', 'passed', 'offer',
+      'nakatanggap', 'malaki ang saya',
+    ],
+  },
+  {
+    emotion: 'happy',
+    weight: 1.2,
+    phrases: [
+      'happy', 'glad', 'good', 'great', 'better', 'improving', 'proud', 'content',
+      'cheerful', 'enjoy', 'enjoying', 'nice', 'wonderful', 'light', 'lighter',
+      'masaya', 'buti', 'okay now', 'i am okay', "i'm okay", 'i feel okay',
+    ],
+  },
+  {
+    emotion: 'calm',
+    weight: 1.3,
+    phrases: [
+      'calm', 'relaxed', 'relieved', 'at peace', 'peace', 'settled', 'steady',
+      'rested', 'unwound', 'quiet', 'slow down', 'grounded', 'clear', 'breathe',
+      'breathing', 'meditat', 'yoga', 'peaceful', 'ayon na', 'kalmado', 'payapa',
+    ],
+  },
+];
+
+/**
+ * Signals pre-compiled with word boundaries. Unanchored `includes` let short
+ * cues fire inside unrelated words — "yay" matched inside "nangyayari", which
+ * read a visibly worried message as excitement.
+ */
+const COMPILED_SIGNALS = EMOTION_SIGNALS.map(({ emotion, weight, phrases }) => ({
+  emotion,
+  weight,
+  matchers: phrases.map((phrase) => {
+    const escaped = phrase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const lead = /^\w/.test(phrase) ? '\\b' : '';
+    const trail = /\w$/.test(phrase) ? '\\b' : '';
+    return new RegExp(`${lead}${escaped}${trail}`);
+  }),
+}));
+
+/** "not happy", "i'm not okay", "not happy anymore" — a negated positive is a negative. */
+const NEGATED_POSITIVE =
+  /\b(?:not|never|no longer|anymore|any more|at all|isn't|wasn't|dont|don't|didn't|does not|do not)\s+(?:\w+\s+){0,2}?(?:really\s+|very\s+|that\s+)?(happy|excited|okay|ok|good|fine|great|calm|relaxed|alright|enough)\b/;
+
+/** Words that deepen whatever feeling the sentence already carries. */
+const INTENSIFIERS =
+  /\b(?:so|really|very|extremely|incredibly|always|constantly|utterly|deeply|seriously|completely|totally|never|so much|too)\b/;
+
+/**
+ * Classifies a user's message into the feeling the pet should mirror.
+ * Falls back to 'listening' — attentive, neutral companionship — so the
+ * pet is never hardcoded to happy.
+ */
+const classifyMood = (text: string): PetEmotion => {
+  const t = ` ${text.toLowerCase().replace(/[^\p{L}\p{N}\s'?!]/gu, ' ').replace(/\s+/g, ' ')} `;
+  if (!t.trim()) return 'listening';
+
+  const scores: Partial<Record<PetEmotion, number>> = {};
+  const bump = (e: PetEmotion, n: number) => {
+    scores[e] = (scores[e] ?? 0) + n;
+  };
+
+  for (const { emotion, weight, matchers } of COMPILED_SIGNALS) {
+    for (const matcher of matchers) {
+      // Phrases stack within an emotion: leaning on several words for the
+      // same feeling ("hopeless", "empty", "numb") is real evidence of how
+      // strongly the user feels it.
+      if (matcher.test(t)) bump(emotion, weight);
+    }
+  }
+
+  // Negation flips a positive statement into a heavy one.
+  if (NEGATED_POSITIVE.test(t)) {
+    bump('sad', 2.2);
+    bump('crying', 1);
+  }
+
+  // Intensity scales whatever was already detected.
+  const intensity = INTENSIFIERS.test(t) ? 1.4 : 1;
+  for (const key of Object.keys(scores) as PetEmotion[]) {
+    scores[key] = (scores[key] ?? 0) * intensity;
+  }
+
+  // A question with no clearer signal reads as thoughtful confusion.
+  if (/(?:\?\?|\?$)/.test(text.trim()) && !(scores.excited || scores.happy)) {
+    bump('confused', 0.8);
+  }
+
+  let best: PetEmotion = 'listening';
+  let bestScore = 0;
+  for (const emotion of EMOTION_PRIORITY) {
+    const score = scores[emotion] ?? 0;
+    if (score > bestScore) {
+      best = emotion;
+      bestScore = score;
+    }
+  }
+  return best;
+};
+
+/** Maps a classified feeling onto the 2D mascot's expression vocabulary. */
+const EMOTION_TO_PET_MOOD: Record<PetEmotion, string> = {
+  crying: 'crying',
+  sad: 'sad',
+  lonely: 'lonely',
+  anxious: 'anxious',
+  serious: 'serious',
+  tired: 'tired',
+  confused: 'curious',
+  loving: 'loving',
+  excited: 'excited',
+  happy: 'happy',
+  calm: 'calm',
+  listening: 'listening',
+};
+
+// ============================================================
+// OFFLINE-FALLBACK REPLY POOLS
+// Used only when the live streaming endpoint fails. Several lines per
+// feeling so the companion never answers every message with the exact
+// same sentence — the reply is picked to match the mood just classified,
+// then chosen at random from that mood's pool.
+// ============================================================
+const FALLBACK_REPLIES: Record<PetEmotion, string[]> = {
+  crying: [
+    "*presses close and lets you lean on me, holding steady while you cry* I'm right here. You don't have to explain anything right now. Just breathe with me.",
+    '*nuzzles gently and stays very still beside you* This is a lot to carry. I\u2019m not going anywhere. Take your time.',
+    "*rests my whole weight against you, warm and quiet* Whatever this is, it's heavy. Let's just sit in it together for a moment.",
+  ],
+  sad: [
+    '*settles close with soft, sad eyes mirroring yours* I feel how heavy this is for you. Want to tell me more, or just sit together quietly?',
+    "*leans my head gently against your arm* I'm sorry today feels like this. You don't have to pretend it's okay with me.",
+    "*curls up beside you, tail still* That sounds really hard. I'm listening, for as long as you need.",
+  ],
+  lonely: [
+    "*stays extra close, refusing to leave your side* You're not alone right now — I'm right here, and I'm not going anywhere.",
+    '*presses against your hand, gentle and steady* Even when it feels like no one else is around, I am. Talk to me.',
+    "*tucks in beside you quietly* Loneliness is heavy. Let's keep each other company for a bit.",
+  ],
+  anxious: [
+    "*sits calmly and breathes slowly, inviting you to match my pace* Let's slow this down together. In... and out. What's the loudest worry right now?",
+    "*keeps very still, a steady presence next to the racing thoughts* I've got you. One breath at a time — you don't have to solve everything this second.",
+    "*rests a paw gently near yours, grounding* That sounds like a lot of 'what ifs.' Let's name just one, together.",
+  ],
+  serious: [
+    "*doesn't flinch, just stays steady while you vent* That's frustrating, and it's okay to feel that. Let it out — I can take it.",
+    "*sits attentively, ears forward, taking you seriously* Something's clearly not sitting right with you. Tell me what happened.",
+    '*holds a calm, grounded posture next to your frustration* I hear you. What part of this made you angriest?',
+  ],
+  tired: [
+    "*yawns softly and settles low, matching your energy* Sounds like you're running on empty. Want to just rest here for a bit?",
+    "*curls up quietly beside you, slow and unhurried* You don't have to have energy for this conversation. I'll wait with you.",
+    '*lays down heavily, sympathetically* Pagod na pagod ka na, no? Let\u2019s just breathe slow for a minute.',
+  ],
+  confused: [
+    "*tilts head, curious and patient* That does sound confusing. Want to try saying it out loud again, piece by piece?",
+    "*waits quietly, giving you space to think* No rush. Let's untangle this one thread at a time.",
+    "*blinks thoughtfully* Hmm, that is a lot to make sense of. What's the part that's confusing you most?",
+  ],
+  loving: [
+    "*wags/purrs warmly, soaking in the kindness* That means a lot, thank you for saying it. I care about you too.",
+    "*leans into you happily* Aww, kaibigan. I'm really glad you're here.",
+    "*nuzzles affectionately* You're kind for saying that. I feel lucky to be your companion.",
+  ],
+  excited: [
+    "*bounces happily, tail wagging fast* Yesss! Tell me everything — I want to hear all of it!",
+    "*spins in a happy little circle* That's wonderful news! I'm so proud of you!",
+    '*perks up, eyes bright* Ang saya naman! Let\u2019s celebrate this moment together.',
+  ],
+  happy: [
+    "*relaxes into a warm, content posture* I'm really glad to hear that. What's been going well?",
+    '*smiles softly, settled and at ease* That\u2019s a nice thing to sit with for a moment.',
+    "*wags gently, calm and pleased* Good days deserve to be noticed too.",
+  ],
+  calm: [
+    "*breathes slow and easy beside you* This feels like a good, quiet moment. Let's stay in it a little longer.",
+    "*settles peacefully next to you* Calm looks good on you. I'm happy to just be here.",
+    '*rests quietly, unhurried* Nice and steady. No need to rush anything right now.',
+  ],
+  listening: [
+    "*tilts head and settles in to listen* I hear you. Take your time — what's on your mind?",
+    "*keeps a warm, steady gaze on you* I'm right here. Go on, whenever you're ready.",
+    '*waits patiently, ears perked* Tell me more, friend.',
+  ],
+};
+
+/** Picks a reply for the given mood without repeating the very last one said,
+    so two offline replies in a row for the same feeling still read differently. */
+const pickFallbackReply = (mood: PetEmotion, avoid?: string): string => {
+  const pool = FALLBACK_REPLIES[mood];
+  const options = pool.length > 1 && avoid ? pool.filter((line) => line !== avoid) : pool;
+  return options[Math.floor(Math.random() * options.length)];
+};
+
 export const CompanionChatModal: React.FC<CompanionChatModalProps> = ({
   isOpen,
   onClose,
@@ -64,6 +401,12 @@ export const CompanionChatModal: React.FC<CompanionChatModalProps> = ({
   const [isVoiceSpeechEnabled, setIsVoiceSpeechEnabled] = useState(false);
   const [isListeningMic, setIsListeningMic] = useState(false);
   const [hasAwardedPoints, setHasAwardedPoints] = useState(false);
+  // The feeling the pet mirrors back. Presentation only — set from the
+  // user's own words so the companion reacts in kind.
+  const [petReflection, setPetReflection] = useState<PetEmotion>('listening');
+  // The last fallback line actually said, so a second offline reply for the
+  // same mood doesn't repeat it verbatim.
+  const lastFallbackRef = useRef<string | undefined>(undefined);
 
   const purrAudioRef = useRef<{ ctx: AudioContext; osc: OscillatorNode; gain: GainNode } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -234,6 +577,16 @@ export const CompanionChatModal: React.FC<CompanionChatModalProps> = ({
     'Pahinga muna tayo? ☕',
   ];
 
+  // The pet holds the feeling the user last shared, so it stays beside them
+  // instead of snapping back to cheerful once the reply finishes.
+  const petMood = (() => {
+    const lastCompanionMessage = [...messages].reverse().find((m) => m.sender === 'companion');
+    if (lastCompanionMessage?.isCrisis) return 'crying';
+    if (companionMood === 'excited') return 'excited';
+    if (isStreaming) return 'listening';
+    return EMOTION_TO_PET_MOOD[petReflection];
+  })();
+
   // LIVE STREAMING SEND HANDLER
   const handleSendText = async (text: string) => {
     if (!text.trim() || isStreaming) return;
@@ -244,6 +597,11 @@ export const CompanionChatModal: React.FC<CompanionChatModalProps> = ({
     }
 
     const userText = text.trim();
+    // The pet reads the feeling behind these words and wears it. Kept in a
+    // local const so the offline fallback below can pick a reply that
+    // matches the SAME classification, without re-running it.
+    const detectedMood = classifyMood(userText);
+    setPetReflection(detectedMood);
     const userMsg: ChatMessage = {
       id: 'user-' + Date.now(),
       sender: 'user',
@@ -382,7 +740,10 @@ export const CompanionChatModal: React.FC<CompanionChatModalProps> = ({
       speakCompanionReply(fullAccumulatedText);
     } catch (err) {
       console.warn('[CompanionChat] Streaming fallback to offline:', err);
-      const fallback = `*gently rests a warm paw in your hand and breathes calmly with you* I hear you. Take a soft breath. What part of this feels within your control today, and what can we gently set aside for now?`;
+      // Picked from a pool matching the mood just classified, and never the
+      // exact line said last time, so repeated offline replies still vary.
+      const fallback = pickFallbackReply(detectedMood, lastFallbackRef.current);
+      lastFallbackRef.current = fallback;
 
       setMessages((prev) =>
         prev.map((m) =>
@@ -413,80 +774,100 @@ export const CompanionChatModal: React.FC<CompanionChatModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-2 sm:p-4 select-none">
+    <div className="fixed inset-0 z-50 bg-[#0b1411]/80 backdrop-blur-md flex items-center justify-center p-2 sm:p-4 select-none">
       {/* RESPONSIVE SANCTUARY CHAT CONTAINER */}
       <motion.div
         initial={{ opacity: 0, scale: 0.95, y: 15 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 15 }}
-        className="w-full max-w-3xl h-[720px] max-h-[94vh] rounded-3xl bg-gradient-to-b from-white via-white to-emerald-50/30 dark:from-[#0d1c13] dark:via-[#09150e] dark:to-[#060e0a] border border-emerald-200/80 dark:border-emerald-700/50 shadow-2xl flex flex-col md:flex-row overflow-hidden relative"
+        className="w-full max-w-3xl h-[720px] max-h-[94vh] rounded-3xl bg-white dark:bg-[#13221b] border border-emerald-100 dark:border-emerald-800/50 shadow-2xl flex flex-col md:flex-row overflow-hidden relative"
       >
         {/* ============================================================
-            SIDE ANIMAL STAGE (Client requirement: Animal of choice at the side with chat bubble)
+            COMPANION SIDEBAR (kept) + 2D PET PINNED BOTTOM-LEFT
             ============================================================ */}
-        <div className="hidden md:flex flex-col items-center justify-between w-72 bg-gradient-to-b from-emerald-100/60 via-emerald-50/40 to-white dark:from-[#0b1a12] dark:via-[#08150e] dark:to-[#050e09] p-5 border-r border-emerald-100 dark:border-emerald-800/50 shrink-0 relative overflow-hidden">
-          {/* Ambient glow behind pet */}
-          <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-48 h-48 bg-emerald-400/15 dark:bg-emerald-500/10 rounded-full blur-2xl pointer-events-none" />
+        <div className="hidden md:flex flex-col items-center w-72 bg-emerald-50/50 dark:bg-[#13221b] p-4 border-r border-emerald-100 dark:border-emerald-800/50 shrink-0 relative overflow-x-hidden overflow-y-auto">
+          {/* Ambient glow behind the pet. Deliberately a warm neutral rather than
+              the brand emerald: a large translucent green pool sitting behind
+              the mascot cast a green wash over its amber (dog) and ginger (cat)
+              coat, and the themed `emerald-400` also re-resolves very differently
+              in Light vs Dark Mode. Neutral keeps the pet's own colours intact
+              in both. */}
+          <div className="absolute bottom-16 left-1/2 -translate-x-1/2 w-56 h-56 bg-[#f5c987]/20 dark:bg-[#f5c987]/10 rounded-full blur-2xl pointer-events-none" />
 
-          {/* Top Pet Badge */}
-          <div className="w-full flex items-center justify-between z-10">
-            <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/80 dark:bg-emerald-950/80 border border-emerald-200 dark:border-emerald-700/60 shadow-xs">
-              <span className="text-xs">{species === 'dog' ? '🐶' : '🐱'}</span>
-              <span className="text-xs font-black text-emerald-900 dark:text-emerald-100">{companionName}</span>
+          {/* Companion name — identity only, never an emotion read-out */}
+          <div className="w-full flex items-center shrink-0 z-10">
+            <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-white dark:bg-emerald-950/80 border border-emerald-200 dark:border-[#2d4d41]/75 shadow-xs min-w-0">
+              <span className="text-xs shrink-0">{species === 'dog' ? '🐶' : '🐱'}</span>
+              <span className="text-xs font-black text-emerald-900 dark:text-emerald-100 truncate">
+                {companionName}
+              </span>
             </div>
-            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 capitalize">
-              {companionMood}
-            </span>
           </div>
 
-          {/* 3D / Animated Mascot Stage */}
-          <div className="my-auto w-full flex flex-col items-center z-10">
-            <div
+          {/* Companion Live Talking Speech Bubble (sits above the pet) */}
+          <div className="relative mt-3 w-full p-3 bg-white dark:bg-[#182a22] rounded-2xl border border-emerald-200/90 dark:border-[#2d4d41]/70 shadow-md text-xs text-emerald-950 dark:text-emerald-50 text-center font-medium leading-relaxed z-10 shrink-0">
+            {/* Tail now points down toward the pet */}
+            <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-0 h-0 border-x-8 border-x-transparent border-t-8 border-t-white dark:border-t-[#182a22]" />
+            <p className="line-clamp-3">
+              {isStreaming
+                ? `*listens attentively and focuses warmly on you*`
+                : companionMood === 'excited'
+                ? `*happily barks/purrs and wags with joy!*`
+                : messages.length > 0 && messages[messages.length - 1].sender === 'companion'
+                ? messages[messages.length - 1].text.slice(0, 100) + '...'
+                : `Nandito lang ako para sa'yo, kaibigan. Anong nasa isip mo?`}
+            </p>
+          </div>
+
+          {/* ============================================================
+              THE COMPANION, AT THE BOTTOM-LEFT OF THE SIDEBAR.
+              No card, no panel, no emotion chip — the pet's face and
+              drift carry the feeling, and it sits straight on the
+              sanctuary background. shrink-0 + z-20 keep it from being
+              squashed or hidden by the sidebar's flex/overflow.
+              ============================================================ */}
+          <div className="mt-auto pt-3 w-full flex flex-col items-center shrink-0 z-20">
+            <motion.div
               onClick={handlePetMini}
-              className="w-48 h-48 cursor-pointer relative group flex items-center justify-center transition-transform hover:scale-105 active:scale-95"
+              className="relative z-10 w-60 h-60 shrink-0 flex items-center justify-center cursor-pointer group"
               title={`Tap to gently pet ${companionName}!`}
             >
-              <CuteCompanion
-                species={species}
-                mood={companionMood}
-                size="md"
-                interactive={true}
-              />
-              <div className="absolute bottom-0 text-[10px] font-bold text-emerald-700 dark:text-emerald-300 opacity-0 group-hover:opacity-100 transition-opacity bg-white/90 dark:bg-black/70 px-2 py-0.5 rounded-full shadow-xs">
-                Tap to Pet 💖
-              </div>
-            </div>
+              {/* Soft light from above and a blurred contact shadow below, so the
+                  mascot reads as a lit, grounded presence rather than a flat
+                  sticker floating over the background. Both are warm neutrals:
+                  a strong white haze here sat right behind the pet's head and
+                  hat and flattened the contrast its cream muzzle and pale
+                  accessories depend on in Light Mode. */}
+              <div className="absolute inset-x-8 top-1 h-20 rounded-full bg-[#fff6e6]/40 dark:bg-white/10 blur-2xl pointer-events-none" />
+              <div className="absolute bottom-3 left-1/2 -translate-x-1/2 w-32 h-6 rounded-full bg-[#3a2410]/25 dark:bg-[#0b1411]/40 blur-md pointer-events-none" />
 
-            {/* Companion Live Talking Speech Bubble */}
-            <div className="relative mt-2 p-3 bg-white/95 dark:bg-[#12241a]/95 rounded-2xl border border-emerald-200/90 dark:border-emerald-700/70 shadow-md text-xs text-emerald-950 dark:text-emerald-50 w-full text-center font-medium leading-relaxed">
-              <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-0 h-0 border-x-8 border-x-transparent border-b-8 border-b-white dark:border-b-[#12241a]" />
-              <p className="line-clamp-3">
-                {isStreaming
-                  ? `*listens attentively and focuses warmly on you*`
-                  : companionMood === 'excited'
-                  ? `*happily barks/purrs and wags with joy!*`
-                  : messages.length > 0 && messages[messages.length - 1].sender === 'companion'
-                  ? messages[messages.length - 1].text.slice(0, 100) + '...'
-                  : `Nandito lang ako para sa'yo, kaibigan. Anong nasa isip mo?`}
-              </p>
-            </div>
+              {/* A slow, continuous breathing drift — small enough to read as
+                  "alive" rather than as an obvious loop. */}
+              <motion.div
+                animate={{ y: [0, -4, 0] }}
+                transition={{ duration: 3.2, repeat: Infinity, ease: 'easeInOut' }}
+                className="relative z-10"
+              >
+                <CuteCompanion
+                  species={species}
+                  mood={petMood}
+                  equipped={equipped}
+                  size="lg"
+                  interactive={true}
+                  force2D
+                />
+              </motion.div>
+              <div className="absolute bottom-1 z-20 text-[10px] font-bold text-emerald-700 dark:text-emerald-300 opacity-0 group-hover:opacity-100 transition-opacity bg-white/90 dark:bg-[#0b1411]/70 px-2 py-0.5 rounded-full shadow-xs pointer-events-none">
+                Tap to Pet 💚
+              </div>
+            </motion.div>
           </div>
 
-          {/* Calming Action Buttons */}
-          <div className="w-full flex flex-col gap-2 z-10 pt-2 border-t border-emerald-100 dark:border-emerald-800/40">
-            <button
-              onClick={togglePurr}
-              className={`w-full py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
-                isPurring
-                  ? 'bg-amber-100 text-amber-900 border border-amber-400 dark:bg-amber-950 dark:text-amber-200 animate-pulse'
-                  : 'bg-white/80 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 hover:bg-emerald-50'
-              }`}
-            >
-              <span>{isPurring ? '🐾 28Hz Purr On' : '🐾 Play 28Hz Purr'}</span>
-            </button>
-            <div className="text-[10px] text-center text-emerald-700 dark:text-emerald-400">
-              Safe &bull; Confidential &bull; Judgment-free
-            </div>
+          {/* Safety reassurance footnote — the purr control now lives only in
+              the header above, so it isn't offered twice on desktop. */}
+          <div className="w-full shrink-0 flex items-center justify-center gap-1.5 z-10 pt-3 mt-1 border-t border-emerald-100 dark:border-emerald-800/40 text-[10px] text-emerald-700 dark:text-emerald-400">
+            <Shield className="w-3 h-3" />
+            <span>Safe &bull; Confidential &bull; Judgment-free</span>
           </div>
         </div>
 
@@ -497,15 +878,12 @@ export const CompanionChatModal: React.FC<CompanionChatModalProps> = ({
         {/* ============================================================
             TOP CHAT HEADER
             ============================================================ */}
-        {/* ============================================================
-            TOP CHAT HEADER (POLISHED & PROPORTIONATE - IMAGE 1 FIX)
-            ============================================================ */}
-        <div className="px-3.5 sm:px-5 py-3 bg-white/95 dark:bg-[#102218]/95 backdrop-blur-md border-b border-emerald-100/80 dark:border-emerald-800/60 flex items-center justify-between shrink-0 z-20">
+        <div className="px-3.5 sm:px-5 py-3 bg-white dark:bg-[#13221b] border-b border-emerald-100 dark:border-emerald-800/60 flex items-center justify-between shrink-0 z-20">
           {/* Left: Back button & Companion Profile */}
           <div className="flex items-center gap-2.5 min-w-0">
             <button
               onClick={onClose}
-              className="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-emerald-900/60 text-slate-600 dark:text-emerald-200 cursor-pointer transition-colors shrink-0"
+              className="p-2 rounded-xl hover:bg-emerald-50 dark:hover:bg-emerald-900/60 text-emerald-700 dark:text-emerald-200 cursor-pointer transition-colors shrink-0"
               title="Back to Sanctuary"
             >
               <ArrowLeft className="w-4 h-4" />
@@ -513,16 +891,16 @@ export const CompanionChatModal: React.FC<CompanionChatModalProps> = ({
 
             <div
               onClick={handlePetMini}
-              className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-emerald-100 to-teal-50 dark:from-emerald-900/80 dark:to-teal-950 border border-emerald-300 dark:border-emerald-700 flex items-center justify-center text-xl cursor-pointer hover:scale-105 active:scale-95 transition-transform shadow-xs shrink-0"
+              className="w-10 h-10 rounded-2xl bg-emerald-100 dark:bg-emerald-900/80 border border-emerald-300 dark:border-[#2d4d41] flex items-center justify-center text-xl cursor-pointer hover:scale-105 active:scale-95 transition-transform shadow-xs shrink-0"
               title={`Tap to gently pet ${companionName}!`}
             >
               {species === 'dog' ? '🐶' : '🐱'}
             </div>
 
             <div className="min-w-0">
-              <h3 className="text-sm font-extrabold text-slate-900 dark:text-emerald-50 leading-tight truncate flex items-center gap-1.5">
+              <h3 className="text-sm font-extrabold text-emerald-950 dark:text-emerald-50 leading-tight truncate flex items-center gap-1.5">
                 <span>{companionName}</span>
-                <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-100/70 dark:bg-emerald-950/80 px-2 py-0.5 rounded-full">
+                <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-950/80 px-2 py-0.5 rounded-full">
                   AI Friend
                 </span>
               </h3>
@@ -534,7 +912,7 @@ export const CompanionChatModal: React.FC<CompanionChatModalProps> = ({
           </div>
 
           {/* Right: Actions with consistent h-8 heights */}
-          <div className="flex items-center gap-1.5 shrink-0">
+          <div className="flex items-center gap-1 shrink-0">
             {/* Live Text-to-Speech Voice Toggle */}
             <button
               onClick={() => {
@@ -546,29 +924,19 @@ export const CompanionChatModal: React.FC<CompanionChatModalProps> = ({
               }}
               className={`h-8 w-8 rounded-full flex items-center justify-center transition-all cursor-pointer ${
                 isVoiceSpeechEnabled
-                  ? 'bg-purple-100 text-purple-800 border border-purple-300 dark:bg-purple-950 dark:text-purple-300 shadow-xs'
-                  : 'bg-slate-100 text-slate-500 hover:bg-slate-200 dark:bg-emerald-900/60 dark:text-emerald-300'
+                  ? 'bg-emerald-600 text-white shadow-xs'
+                  : 'bg-emerald-50 text-emerald-500 hover:bg-emerald-100 dark:bg-emerald-900/60 dark:text-emerald-300'
               }`}
               title={isVoiceSpeechEnabled ? 'Voice Aloud: ON' : 'Turn Voice Aloud ON'}
             >
-              {isVoiceSpeechEnabled ? <Volume2 className="w-4 h-4 text-purple-600" /> : <VolumeX className="w-4 h-4" />}
+              {isVoiceSpeechEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
             </button>
 
             {/* 28Hz Feline Purr Somatic Calming Button */}
-            <button
-              onClick={togglePurr}
-              className={`h-8 px-2.5 rounded-full text-xs font-bold flex items-center gap-1 transition-all cursor-pointer ${
-                isPurring
-                  ? 'bg-amber-100 text-amber-900 border border-amber-400 dark:bg-amber-950 dark:text-amber-300 animate-pulse shadow-xs'
-                  : 'bg-emerald-50 text-emerald-800 hover:bg-emerald-100 dark:bg-emerald-900/60 dark:text-emerald-200'
-              }`}
-              title="Toggle 28Hz Purr Somatic Calming"
-            >
-              <span>🐾</span>
-              <span className="hidden sm:inline">Purr</span>
-            </button>
 
-            {/* 24/7 Crisis Hotline Trigger */}
+            {/* 24/7 Crisis Hotline Trigger — kept in an urgent color on purpose:
+                a safety exit should stay visually distinct from the calm
+                emerald/white theme everywhere else. */}
             {onTriggerCrisisSafety && (
               <button
                 onClick={onTriggerCrisisSafety}
@@ -582,7 +950,7 @@ export const CompanionChatModal: React.FC<CompanionChatModalProps> = ({
 
             <button
               onClick={onClose}
-              className="h-8 w-8 rounded-full flex items-center justify-center hover:bg-slate-100 dark:hover:bg-emerald-900/60 cursor-pointer text-slate-500 dark:text-emerald-300 transition-colors"
+              className="h-8 w-8 rounded-full flex items-center justify-center hover:bg-emerald-50 dark:hover:bg-emerald-900/60 cursor-pointer text-emerald-600 dark:text-emerald-300 transition-colors"
               title="Close chat"
             >
               <X className="w-4 h-4" />
@@ -591,62 +959,52 @@ export const CompanionChatModal: React.FC<CompanionChatModalProps> = ({
         </div>
 
         {/* Calm Mindful Atmosphere Banner */}
-        <div className="px-4 py-1.5 bg-emerald-50/60 dark:bg-emerald-950/30 border-b border-emerald-100/60 dark:border-emerald-900/40 flex items-center justify-between text-[11px] text-emerald-800 dark:text-emerald-300 font-medium shrink-0">
+        <div className="px-4 py-1.5 bg-emerald-50/70 dark:bg-emerald-950/30 border-b border-emerald-100 dark:border-emerald-900/40 flex items-center justify-between text-[11px] text-emerald-800 dark:text-emerald-300 font-medium shrink-0">
           <div className="flex items-center gap-1.5">
             <span>🌿</span>
             <span>Ligtas at pribadong espasyo para sa iyong damdamin</span>
           </div>
-          <button
-            onClick={handlePetMini}
-            className="flex items-center gap-1 font-bold text-amber-600 dark:text-amber-300 hover:underline cursor-pointer"
-          >
-            <Heart className="w-3 h-3 fill-current text-rose-500" />
-            <span>Himasin si {companionName}</span>
-          </button>
         </div>
 
         {/* ============================================================
-            CHAT MESSAGES VIEWPORT (CLEAN, SCROLLABLE, ZERO OVERLAP)
+            CHAT MESSAGES VIEWPORT
+            Companion bubbles hug the LEFT, user bubbles hug the RIGHT.
+            No per-message avatar — the 2D pet lives in the sidebar.
             ============================================================ */}
-        <div className="flex-1 p-4 overflow-y-auto space-y-3.5 relative z-10">
+        <div className="flex-1 p-4 overflow-y-auto space-y-3.5 relative z-10 bg-white dark:bg-[#13221b]">
           {messages.map((msg) => (
             <div
               key={msg.id}
-              className={`flex items-end gap-2 ${
-                msg.sender === 'user' ? 'justify-end' : 'justify-start'
-              }`}
+              className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}
             >
-              {msg.sender === 'companion' && (
-                <div className="w-7 h-7 rounded-xl bg-emerald-100 dark:bg-emerald-900/80 border border-emerald-300 dark:border-emerald-700 flex items-center justify-center text-sm shrink-0 mb-1 shadow-2xs">
-                  {species === 'dog' ? '🐶' : '🐱'}
-                </div>
-              )}
-
-              <div
+              <motion.div
+                initial={{ opacity: 0, y: 8, scale: 0.98 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                transition={{ duration: 0.25, ease: 'easeOut' }}
                 className={`max-w-[82%] rounded-2xl px-4 py-2.5 text-xs sm:text-sm leading-relaxed shadow-xs ${
                   msg.sender === 'user'
-                    ? 'bg-[#58cc02] text-white rounded-br-xs font-medium'
+                    ? 'bg-emerald-600 text-white rounded-br-xs font-medium'
                     : msg.isCrisis
                     ? 'bg-rose-100 dark:bg-rose-950/90 text-rose-900 dark:text-rose-100 border-2 border-rose-300 dark:border-rose-700 rounded-bl-xs'
-                    : 'bg-white dark:bg-[#152a1e] text-slate-800 dark:text-emerald-100 border border-slate-200/90 dark:border-emerald-800/80 rounded-bl-xs'
+                    : 'bg-white dark:bg-[#182a22] text-emerald-950 dark:text-emerald-100 border border-emerald-100 dark:border-emerald-800/80 rounded-bl-xs'
                 }`}
               >
                 <p className="whitespace-pre-wrap">
                   {msg.text}
                   {msg.isStreaming && (
-                    <span className="inline-block w-2 h-4 ml-1 bg-[#58cc02] animate-pulse rounded-xs" />
+                    <span className="inline-block w-2 h-4 ml-1 bg-emerald-600 animate-pulse rounded-xs" />
                   )}
                 </p>
                 <span
                   className={`block text-[10px] mt-1 text-right font-medium ${
                     msg.sender === 'user'
                       ? 'text-emerald-100'
-                      : 'text-slate-400 dark:text-emerald-400/80'
+                      : 'text-emerald-400/80'
                   }`}
                 >
                   {msg.timestamp}
                 </span>
-              </div>
+              </motion.div>
             </div>
           ))}
 
@@ -654,26 +1012,66 @@ export const CompanionChatModal: React.FC<CompanionChatModalProps> = ({
         </div>
 
         {/* ============================================================
-            QUICK SUGGESTION PILLS
+            COMPACT COMPANION
+            The left sidebar is `hidden md:flex`, so below the md
+            breakpoint the mascot would vanish entirely. No card, no
+            chip — just the same 2D pet sitting on the background.
             ============================================================ */}
-        <div className="px-3 py-1.5 bg-white/70 dark:bg-[#11231a]/70 backdrop-blur-xs flex gap-1.5 overflow-x-auto z-20 shrink-0 border-t border-slate-100 dark:border-emerald-900/40">
-          {quickPrompts.map((p) => (
-            <button
-              key={p}
-              onClick={() => handleSendText(p)}
-              disabled={isStreaming}
-              className="whitespace-nowrap px-3 py-1 rounded-full bg-white dark:bg-[#152a1e] border border-emerald-300/80 dark:border-emerald-800 text-[11px] font-bold text-emerald-800 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-800/50 active:scale-95 disabled:opacity-50 cursor-pointer transition-all shrink-0 shadow-2xs"
+        <div className="md:hidden shrink-0 z-20 flex items-center pl-3 -mt-1">
+          <motion.div
+            onClick={handlePetMini}
+            className="relative z-10 w-24 h-24 shrink-0 flex items-center justify-center cursor-pointer"
+            title={`Tap to gently pet ${companionName}!`}
+          >
+            {/* Same grounding shadow + gentle drift as the desktop mascot, scaled down */}
+            <div className="absolute bottom-1 left-1/2 -translate-x-1/2 w-14 h-3 rounded-full bg-emerald-950/20 dark:bg-[#0b1411]/35 blur-sm pointer-events-none" />
+            <motion.div
+              animate={{ y: [0, -2.5, 0] }}
+              transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+              className="relative z-10"
             >
-              {p}
-            </button>
-          ))}
+              <CuteCompanion
+                species={species}
+                mood={petMood}
+                equipped={equipped}
+                size="sm"
+                interactive={true}
+                force2D
+              />
+            </motion.div>
+          </motion.div>
+          <span className="text-xs font-black text-emerald-800 dark:text-emerald-200 truncate">
+            {companionName}
+          </span>
+        </div>
+
+        {/* ============================================================
+            QUICK CHAT — SUGGESTION PILLS
+            ============================================================ */}
+        <div className="bg-white dark:bg-[#13221b] z-20 shrink-0 border-t border-emerald-100 dark:border-emerald-900/40">
+          <div className="px-3.5 pt-2 flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-[0.14em] text-emerald-700/80 dark:text-emerald-400/80">
+            <Zap className="w-3 h-3" />
+            <span>Quick Chat</span>
+          </div>
+          <div className="px-3 py-1.5 flex gap-1.5 overflow-x-auto">
+            {quickPrompts.map((p) => (
+              <button
+                key={p}
+                onClick={() => handleSendText(p)}
+                disabled={isStreaming}
+                className="whitespace-nowrap px-3 py-1 rounded-full bg-white dark:bg-[#182a22] border border-emerald-200 dark:border-emerald-800 text-[11px] font-bold text-emerald-800 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-800/50 active:scale-95 disabled:opacity-50 cursor-pointer transition-all shrink-0 shadow-2xs"
+              >
+                {p}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Live Mic Listening Notice Banner */}
         {isListeningMic && (
-          <div className="px-4 py-1.5 bg-rose-50 dark:bg-rose-950/80 border-t border-rose-200 text-rose-700 dark:text-rose-200 text-xs font-bold flex items-center justify-between">
+          <div className="px-4 py-1.5 bg-emerald-50 dark:bg-emerald-950/60 border-t border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-200 text-xs font-bold flex items-center justify-between">
             <span className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping" />
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
               <span>Listening to your voice... Speak now!</span>
             </span>
             <button
@@ -690,7 +1088,7 @@ export const CompanionChatModal: React.FC<CompanionChatModalProps> = ({
             ============================================================ */}
         <form
           onSubmit={handleSend}
-          className="p-3 bg-white dark:bg-[#11231a] border-t border-emerald-100 dark:border-emerald-800/60 flex items-center gap-2 shrink-0 z-20"
+          className="p-3 bg-white dark:bg-[#13221b] border-t border-emerald-100 dark:border-emerald-800/60 flex items-center gap-2 shrink-0 z-20"
         >
           {/* Live Mic Speech-To-Text Button */}
           <button
@@ -698,7 +1096,7 @@ export const CompanionChatModal: React.FC<CompanionChatModalProps> = ({
             onClick={toggleMicListening}
             className={`w-10 h-10 rounded-2xl flex items-center justify-center transition-all cursor-pointer shrink-0 ${
               isListeningMic
-                ? 'bg-rose-500 text-white shadow-lg animate-pulse ring-2 ring-rose-400'
+                ? 'bg-emerald-600 text-white shadow-lg animate-pulse ring-2 ring-emerald-300'
                 : 'bg-emerald-100 dark:bg-emerald-900/80 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-200'
             }`}
             title={isListeningMic ? 'Stop Listening' : 'Speak Live into Microphone 🎙️'}
@@ -713,13 +1111,13 @@ export const CompanionChatModal: React.FC<CompanionChatModalProps> = ({
             onChange={(e) => setInputText(e.target.value)}
             placeholder={isListeningMic ? 'Listening...' : `Talk live with ${companionName}...`}
             disabled={isStreaming}
-            className="flex-1 px-4 py-2.5 rounded-2xl bg-slate-100 dark:bg-emerald-950/70 border border-slate-200 dark:border-emerald-800 text-slate-800 dark:text-emerald-100 text-xs sm:text-sm focus:ring-2 focus:ring-[#58cc02] focus:outline-none placeholder:text-slate-400 dark:placeholder:text-emerald-500"
+            className="flex-1 px-4 py-2.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/70 border border-emerald-100 dark:border-emerald-800 text-emerald-950 dark:text-emerald-100 text-xs sm:text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none placeholder:text-emerald-400 dark:placeholder:text-emerald-500"
           />
 
           <button
             type="submit"
             disabled={!inputText.trim() || isStreaming}
-            className="w-10 h-10 rounded-2xl bg-[#58cc02] hover:bg-[#46a302] disabled:opacity-40 text-white flex items-center justify-center shadow-md active:translate-y-0.5 transition-all cursor-pointer shrink-0"
+            className="w-10 h-10 rounded-2xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 text-white flex items-center justify-center shadow-md active:translate-y-0.5 transition-all cursor-pointer shrink-0"
             title="Send live message"
           >
             <Send className="w-4 h-4" />

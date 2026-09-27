@@ -55,7 +55,7 @@ export const SimulatedShell: React.FC<SimulatedShellProps> = ({
   if (deviceMode === 'full') {
     return (
       <div className="relative w-full min-h-screen">
-        <div className="fixed top-2 right-2 z-50 flex items-center gap-1.5 bg-black/70 backdrop-blur-md px-3 py-1.5 rounded-full text-white text-xs shadow-lg">
+        <div className="fixed top-2 right-2 z-50 flex items-center gap-1.5 bg-[#0b1411]/70 backdrop-blur-md px-3 py-1.5 rounded-full text-white text-xs shadow-lg">
           <button
             onClick={() => setDeviceMode('desktop')}
             className="flex items-center gap-1 px-2 py-1 rounded-lg hover:bg-white/20 transition-colors cursor-pointer"
@@ -150,7 +150,7 @@ export const SimulatedShell: React.FC<SimulatedShellProps> = ({
           MODE 1: SIMULATED COMPUTER WORKSTATION / OS DESKTOP
           ========================================================= */}
       {deviceMode === 'desktop' && (
-        <div className="w-full max-w-5xl h-[86vh] rounded-3xl bg-gradient-to-tr from-slate-950 via-[#102419] to-emerald-950 border border-slate-700 shadow-2xl relative overflow-hidden flex flex-col">
+        <div className="w-full max-w-5xl h-[86vh] rounded-3xl bg-gradient-to-tr from-slate-950 via-[#13221b] to-emerald-950 border border-slate-800 shadow-2xl relative overflow-hidden flex flex-col">
           {/* OS Desktop Wallpaper & Icons */}
           <div className="flex-1 p-6 relative flex flex-col justify-between">
             {/* Desktop App Icons */}
@@ -197,7 +197,7 @@ export const SimulatedShell: React.FC<SimulatedShellProps> = ({
                 initial={{ opacity: 0, scale: 0.95, y: 20 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                className="absolute inset-4 sm:inset-6 rounded-2xl bg-white dark:bg-[#0d1712] border border-slate-700 shadow-2xl flex flex-col overflow-hidden z-20"
+                className="absolute inset-4 sm:inset-6 rounded-2xl bg-white dark:bg-[#0b1411] border border-slate-700 shadow-2xl flex flex-col overflow-hidden z-20"
               >
                 {/* OS Window Title Bar */}
                 <div className="h-9 bg-slate-900 border-b border-slate-800 px-3 flex items-center justify-between select-none">
@@ -275,7 +275,7 @@ export const SimulatedShell: React.FC<SimulatedShellProps> = ({
           </div>
 
           {/* Phone Screen Inner Bezel */}
-          <div className="flex-1 rounded-[38px] bg-[#0e1712] overflow-hidden flex flex-col relative border border-slate-800">
+          <div className="flex-1 rounded-[38px] bg-[#13221b] overflow-hidden flex flex-col relative border border-slate-800">
             {/* Phone Status Bar with Philippine Time */}
             <div className="h-8 px-6 pt-1 flex items-center justify-between text-[11px] font-bold text-slate-300 select-none z-30">
               <span className="font-mono text-emerald-400">{phTime.timeStr}</span>

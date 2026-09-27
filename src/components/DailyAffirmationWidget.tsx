@@ -247,7 +247,7 @@ export const DailyAffirmationWidget: React.FC<DailyAffirmationWidgetProps> = ({
           ============================================================ */}
       <motion.div
         layout
-        className={`relative rounded-3xl p-4 sm:p-5 border-2 border-emerald-500/30 dark:border-emerald-700/40 bg-gradient-to-br ${currentAffirmation.gradient} bg-white/90 dark:bg-[#112017]/90 backdrop-blur-md shadow-lg overflow-hidden`}
+        className={`relative rounded-3xl p-4 sm:p-5 border border-emerald-200/80 dark:border-emerald-800/60 bg-gradient-to-br ${currentAffirmation.gradient} bg-white/90 dark:bg-[#13221b]/90 backdrop-blur-md shadow-lg overflow-hidden`}
       >
         {/* Decorative Watermark Quotation Mark */}
         <Quote className="absolute -right-3 -bottom-4 w-28 h-28 text-emerald-500/10 dark:text-emerald-400/5 pointer-events-none stroke-[1]" />
@@ -255,7 +255,7 @@ export const DailyAffirmationWidget: React.FC<DailyAffirmationWidgetProps> = ({
         {/* Top Widget Bar */}
         <div className="flex items-center justify-between gap-2 mb-3 relative z-10">
           <div className="flex items-center gap-2">
-            <span className="w-7 h-7 rounded-xl bg-[#58cc02]/20 text-[#58cc02] dark:text-emerald-300 flex items-center justify-center text-sm shadow-2xs">
+            <span className="w-7 h-7 rounded-xl bg-[#35805a]/20 text-[#35805a] dark:text-emerald-300 flex items-center justify-center text-sm shadow-2xs">
               <currentAffirmation.icon className="w-4 h-4" />
             </span>
             <div>
@@ -272,9 +272,9 @@ export const DailyAffirmationWidget: React.FC<DailyAffirmationWidgetProps> = ({
               className="relative flex items-center justify-center w-8 h-8 rounded-full bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/60 dark:hover:bg-emerald-900/60 border border-emerald-200 dark:border-emerald-800/80 transition-all cursor-pointer shadow-2xs"
               title={`View Bookmarked Affirmations (${bookmarkedIds.length} saved)`}
             >
-              <BookmarkCheck className="w-4 h-4 text-emerald-500 fill-[#58cc02]" />
+              <BookmarkCheck className="w-4 h-4 text-emerald-500 fill-[#35805a]" />
               {bookmarkedIds.length > 0 && (
-                <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 rounded-full bg-[#076700] text-white text-[9px] font-black flex items-center justify-center leading-none shadow-sm">
+                <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 rounded-full bg-[#23573e] text-white text-[9px] font-black flex items-center justify-center leading-none shadow-sm">
                   {bookmarkedIds.length}
                 </span>
               )}
@@ -356,7 +356,7 @@ export const DailyAffirmationWidget: React.FC<DailyAffirmationWidgetProps> = ({
               title="Copy affirmation to clipboard"
             >
               {copiedToast ? (
-                <Check className="w-3.5 h-3.5 text-[#58cc02]" />
+                <Check className="w-3.5 h-3.5 text-[#35805a]" />
               ) : (
                 <Copy className="w-3.5 h-3.5" />
               )}
@@ -383,16 +383,16 @@ export const DailyAffirmationWidget: React.FC<DailyAffirmationWidgetProps> = ({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 bg-black/75 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4"
+            className="fixed inset-0 z-50 bg-[#0b1411]/75 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4"
           >
             <motion.div
               initial={{ scale: 0.94, y: 15 }}
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.94, y: 15 }}
-              className="w-full max-w-md max-h-[85vh] bg-white dark:bg-[#11231a] rounded-3xl border-2 border-emerald-500/40 shadow-2xl flex flex-col overflow-hidden"
+              className="w-full max-w-md max-h-[85vh] bg-white dark:bg-[#182a22] rounded-3xl border border-emerald-200/80 dark:border-emerald-800/70 shadow-2xl flex flex-col overflow-hidden"
             >
               {/* Modal Header */}
-              <div className="p-4 bg-emerald-50 dark:bg-[#16271c] border-b border-emerald-100 dark:border-emerald-800/60 flex items-center justify-between">
+              <div className="p-4 bg-emerald-50 dark:bg-[#182a22] border-b border-emerald-100 dark:border-emerald-800/60 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <div className="w-8 h-8 rounded-xl bg-emerald-500 text-white flex items-center justify-center shadow-xs">
                     <BookmarkCheck className="w-4 h-4 fill-current" />
@@ -428,7 +428,7 @@ export const DailyAffirmationWidget: React.FC<DailyAffirmationWidgetProps> = ({
                   bookmarkedItems.map((item) => (
                     <div
                       key={item.id}
-                      className="p-3.5 rounded-2xl bg-slate-50 dark:bg-[#16271d] border border-slate-200 dark:border-emerald-800/60 flex flex-col justify-between gap-2 shadow-2xs hover:border-emerald-400 transition-colors"
+                      className="p-3.5 rounded-2xl bg-slate-50 dark:bg-[#182a22] border border-slate-200 dark:border-emerald-800/60 flex flex-col justify-between gap-2 shadow-2xs hover:border-emerald-400 transition-colors"
                     >
                       <div className="flex items-start justify-between gap-2">
                         <span className="text-xs font-black uppercase text-emerald-500 dark:text-emerald-400 flex items-center gap-1">
@@ -465,7 +465,7 @@ export const DailyAffirmationWidget: React.FC<DailyAffirmationWidgetProps> = ({
               </div>
 
               {/* Modal Footer */}
-              <div className="p-3 bg-white dark:bg-[#11231a] border-t border-emerald-100 dark:border-emerald-800/60 flex items-center justify-between">
+              <div className="p-3 bg-white dark:bg-[#182a22] border-t border-emerald-100 dark:border-emerald-800/60 flex items-center justify-between">
                 <span className="text-[11px] font-medium text-emerald-700 dark:text-emerald-400">
                   {companionName} treasures these with you 🌸
                 </span>

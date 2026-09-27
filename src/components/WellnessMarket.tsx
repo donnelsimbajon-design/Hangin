@@ -54,9 +54,9 @@ export const WellnessMarket: React.FC<WellnessMarketProps> = ({
   ];
 
   return (
-    <div className="w-full rounded-3xl bg-white dark:bg-[#132219] border border-[#dce8de] dark:border-[#223d2d] p-4 sm:p-6 shadow-sm">
+    <div className="w-full rounded-3xl bg-white dark:bg-[#182a22] border border-[#d7e6dc] dark:border-[#244137] p-4 sm:p-6 shadow-sm">
       {/* Market Header */}
-      <div className="flex items-center justify-between pb-4 border-b border-[#e5efe7] dark:border-[#1e3828] mb-5">
+      <div className="flex items-center justify-between pb-4 border-b border-[#e4eee8] dark:border-[#244137] mb-5">
         <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-xl bg-amber-100 dark:bg-amber-950 flex items-center justify-center text-amber-700 dark:text-amber-300">
             <ShoppingBag className="w-4 h-4" />
@@ -93,7 +93,7 @@ export const WellnessMarket: React.FC<WellnessMarketProps> = ({
             return (
               <div
                 key={acc.key}
-                className="p-3 rounded-2xl bg-emerald-50/50 dark:bg-[#172b1f] border border-emerald-100 dark:border-emerald-800/30 flex items-center justify-between gap-3"
+                className="p-3 rounded-2xl bg-emerald-50/50 dark:bg-[#182a22] border border-emerald-100 dark:border-emerald-800/30 flex items-center justify-between gap-3"
               >
                 <div className="flex items-center gap-3">
                   <span className="text-2xl shrink-0">{acc.icon}</span>
@@ -154,7 +154,7 @@ export const WellnessMarket: React.FC<WellnessMarketProps> = ({
             return (
               <div
                 key={item.key}
-                className="p-3 rounded-2xl bg-white dark:bg-[#16271c] border border-[#e0ece2] dark:border-[#1f382a] flex items-center justify-between gap-3 shadow-2xs"
+                className="p-3 rounded-2xl bg-white dark:bg-[#182a22] border border-[#e2ece6] dark:border-[#244137] flex items-center justify-between gap-3 shadow-2xs"
               >
                 <div className="flex items-center gap-3">
                   <span className="text-2xl shrink-0">{item.icon}</span>

@@ -110,9 +110,9 @@ export const MindfulStudio: React.FC<MindfulStudioProps> = ({
   }, [activeExercise, focusRunning]);
 
   return (
-    <div className="w-full rounded-3xl bg-white dark:bg-[#132219] border border-[#dce8de] dark:border-[#223d2d] p-4 sm:p-6 shadow-sm">
+    <div className="w-full rounded-3xl bg-white dark:bg-[#182a22] border border-[#d7e6dc] dark:border-[#244137] p-4 sm:p-6 shadow-sm">
       {/* Header */}
-      <div className="flex items-center justify-between pb-4 border-b border-[#e5efe7] dark:border-[#1e3828]">
+      <div className="flex items-center justify-between pb-4 border-b border-[#e4eee8] dark:border-[#244137]">
         <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-xl bg-emerald-100 dark:bg-emerald-950 flex items-center justify-center text-emerald-700 dark:text-emerald-300">
             <Wind className="w-4 h-4" />
@@ -146,7 +146,7 @@ export const MindfulStudio: React.FC<MindfulStudioProps> = ({
               setActiveExercise('breathing');
               setIsBreathingActive(true);
             }}
-            className="flex items-start gap-3.5 p-3.5 rounded-2xl bg-emerald-50/70 dark:bg-[#182a1f] border border-emerald-100 dark:border-emerald-800/30 text-left hover:bg-emerald-100/70 dark:hover:bg-[#1d3326] transition-all cursor-pointer group"
+            className="flex items-start gap-3.5 p-3.5 rounded-2xl bg-emerald-50/70 dark:bg-[#182a22] border border-emerald-100 dark:border-emerald-800/30 text-left hover:bg-emerald-100/70 dark:hover:bg-emerald-900 transition-all cursor-pointer group"
           >
             <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-sm">
               <Wind className="w-5 h-5" />
@@ -170,7 +170,7 @@ export const MindfulStudio: React.FC<MindfulStudioProps> = ({
               setActiveExercise('grounding');
               setGroundingStep(0);
             }}
-            className="flex items-start gap-3.5 p-3.5 rounded-2xl bg-emerald-50/70 dark:bg-[#182a1f] border border-emerald-100 dark:border-emerald-800/30 text-left hover:bg-emerald-100/70 dark:hover:bg-[#1d3326] transition-all cursor-pointer group"
+            className="flex items-start gap-3.5 p-3.5 rounded-2xl bg-emerald-50/70 dark:bg-[#182a22] border border-emerald-100 dark:border-emerald-800/30 text-left hover:bg-emerald-100/70 dark:hover:bg-emerald-900 transition-all cursor-pointer group"
           >
             <div className="w-10 h-10 rounded-xl bg-teal-600 text-white flex items-center justify-center shrink-0 shadow-sm">
               <Eye className="w-5 h-5" />
@@ -191,7 +191,7 @@ export const MindfulStudio: React.FC<MindfulStudioProps> = ({
           {/* Gratitude Garden */}
           <button
             onClick={() => setActiveExercise('gratitude')}
-            className="flex items-start gap-3.5 p-3.5 rounded-2xl bg-emerald-50/70 dark:bg-[#182a1f] border border-emerald-100 dark:border-emerald-800/30 text-left hover:bg-emerald-100/70 dark:hover:bg-[#1d3326] transition-all cursor-pointer group"
+            className="flex items-start gap-3.5 p-3.5 rounded-2xl bg-emerald-50/70 dark:bg-[#182a22] border border-emerald-100 dark:border-emerald-800/30 text-left hover:bg-emerald-100/70 dark:hover:bg-emerald-900 transition-all cursor-pointer group"
           >
             <div className="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center shrink-0 shadow-sm">
               <Heart className="w-5 h-5" />
@@ -212,7 +212,7 @@ export const MindfulStudio: React.FC<MindfulStudioProps> = ({
           {/* Sanctuary Focus Timer */}
           <button
             onClick={() => setActiveExercise('focus')}
-            className="flex items-start gap-3.5 p-3.5 rounded-2xl bg-emerald-50/70 dark:bg-[#182a1f] border border-emerald-100 dark:border-emerald-800/30 text-left hover:bg-emerald-100/70 dark:hover:bg-[#1d3326] transition-all cursor-pointer group"
+            className="flex items-start gap-3.5 p-3.5 rounded-2xl bg-emerald-50/70 dark:bg-[#182a22] border border-emerald-100 dark:border-emerald-800/30 text-left hover:bg-emerald-100/70 dark:hover:bg-emerald-900 transition-all cursor-pointer group"
           >
             <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center shrink-0 shadow-sm">
               <Timer className="w-5 h-5" />
@@ -351,7 +351,7 @@ export const MindfulStudio: React.FC<MindfulStudioProps> = ({
               onChange={(e) => setCurrentGratitude(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleAddGratitude()}
               placeholder="I am grateful for..."
-              className="flex-1 px-3.5 py-2.5 rounded-xl bg-emerald-50/50 dark:bg-[#16271c] border border-emerald-200 dark:border-emerald-800/40 text-xs text-emerald-950 dark:text-emerald-100 placeholder:text-emerald-700/50 focus:outline-emerald-600"
+              className="flex-1 px-3.5 py-2.5 rounded-xl bg-emerald-50/50 dark:bg-[#182a22] border border-emerald-200 dark:border-emerald-800/40 text-xs text-emerald-950 dark:text-emerald-100 placeholder:text-emerald-700/50 focus:outline-emerald-600"
             />
             <button
               onClick={handleAddGratitude}

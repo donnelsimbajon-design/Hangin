@@ -225,7 +225,7 @@ export const WellnessMiniGames: React.FC<WellnessMiniGamesProps> = ({
           >
             <div className="flex items-start justify-between w-full mb-2">
               <span className="text-3xl">{game.icon}</span>
-              <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-white/80 dark:bg-black/40 text-emerald-950 dark:text-emerald-100 border border-emerald-100 dark:border-emerald-800/40">
+              <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-white/80 dark:bg-[#0b1411]/40 text-emerald-950 dark:text-emerald-100 border border-emerald-100 dark:border-emerald-800/40">
                 {game.badge}
               </span>
             </div>
@@ -254,16 +254,16 @@ export const WellnessMiniGames: React.FC<WellnessMiniGamesProps> = ({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 select-none"
+            className="fixed inset-0 z-50 bg-[#0b1411]/75 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 select-none"
           >
             <motion.div
               initial={{ scale: 0.92, y: 15 }}
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.92, y: 15 }}
-              className="w-full max-w-md bg-white dark:bg-[#122218] rounded-3xl border border-emerald-100 dark:border-emerald-800 shadow-2xl overflow-hidden flex flex-col"
+              className="w-full max-w-md bg-white dark:bg-[#182a22] rounded-3xl border border-emerald-100 dark:border-emerald-800 shadow-2xl overflow-hidden flex flex-col"
             >
               {/* Game Modal Header */}
-              <div className="p-4 border-b border-emerald-100 dark:border-emerald-800/60 flex items-center justify-between bg-emerald-50/50 dark:bg-[#16271c]">
+              <div className="p-4 border-b border-emerald-100 dark:border-emerald-800/60 flex items-center justify-between bg-emerald-50/50 dark:bg-[#182a22]">
                 <div className="flex items-center gap-2">
                   <span className="text-2xl">
                     {GAME_CATALOG.find((g) => g.id === activeGame)?.icon}
@@ -442,7 +442,7 @@ const TreatCatcherGame: React.FC<{
     <div className="flex flex-col items-center">
       <div className="w-full flex items-center justify-between text-xs font-bold mb-2 text-emerald-950 dark:text-emerald-100">
         <div className="flex items-center gap-2">
-          <span>Score: <span className="font-extrabold text-[#58cc02]">{score}</span></span>
+          <span>Score: <span className="font-extrabold text-[#35805a]">{score}</span></span>
           {combo > 1 && (
             <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500 text-white font-black flex items-center gap-0.5 animate-pulse">
               <Flame className="w-3 h-3 fill-current" />
@@ -490,7 +490,7 @@ const TreatCatcherGame: React.FC<{
         </div>
 
         {!isPlaying && (
-          <div className="absolute inset-0 bg-black/65 flex flex-col items-center justify-center p-4 text-center text-white">
+          <div className="absolute inset-0 bg-[#0b1411]/65 flex flex-col items-center justify-center p-4 text-center text-white">
             {isGameOver ? (
               <>
                 <Trophy className="w-10 h-10 text-amber-400 mb-1 animate-bounce" />
@@ -514,7 +514,7 @@ const TreatCatcherGame: React.FC<{
                 </p>
                 <button
                   onClick={startGame}
-                  className="px-5 py-2.5 rounded-2xl bg-[#58cc02] hover:bg-[#46a302] text-white font-black text-xs cursor-pointer shadow-lg flex items-center gap-1.5"
+                  className="px-5 py-2.5 rounded-2xl bg-[#35805a] hover:bg-[#2a6b4b] text-white font-black text-xs cursor-pointer shadow-lg flex items-center gap-1.5"
                 >
                   <Play className="w-4 h-4 fill-current" />
                   <span>Start Game</span>
@@ -712,7 +712,7 @@ const LaserChaseGame: React.FC<{
             <span>{species === 'cat' ? '🧶' : '🎾'}</span>
           </motion.div>
         ) : (
-          <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center p-4 text-center text-white">
+          <div className="absolute inset-0 bg-[#0b1411]/60 flex flex-col items-center justify-center p-4 text-center text-white">
             <span className="text-4xl mb-2">{species === 'cat' ? '🧶' : '🎾'}</span>
             <h4 className="text-sm font-black mb-1">Laser &amp; Yarn Chase</h4>
             <p className="text-xs text-slate-300 mb-4">
@@ -748,7 +748,7 @@ const PawRhythmGame: React.FC<{
   const pads = [
     { id: 0, label: 'C', color: 'bg-rose-500 hover:bg-rose-400', freq: 261.63 },
     { id: 1, label: 'E', color: 'bg-amber-500 hover:bg-amber-400', freq: 329.63 },
-    { id: 2, label: 'G', color: 'bg-[#58cc02] hover:bg-lime-400', freq: 392.0 },
+    { id: 2, label: 'G', color: 'bg-[#35805a] hover:bg-lime-400', freq: 392.0 },
     { id: 3, label: 'B', color: 'bg-indigo-500 hover:bg-indigo-400', freq: 493.88 },
   ];
 
@@ -881,7 +881,7 @@ const CloudJumperGame: React.FC<{
               setIsPlaying(true);
               setAltitude(0);
             }}
-            className="px-5 py-2.5 rounded-2xl bg-[#58cc02] hover:bg-[#46a302] text-white font-black text-xs cursor-pointer shadow-lg flex items-center gap-1.5 z-20"
+            className="px-5 py-2.5 rounded-2xl bg-[#35805a] hover:bg-[#2a6b4b] text-white font-black text-xs cursor-pointer shadow-lg flex items-center gap-1.5 z-20"
           >
             <Play className="w-4 h-4 fill-current" />
             <span>Start Cloud Jump</span>
