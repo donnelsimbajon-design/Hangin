@@ -1,7 +1,7 @@
 {
   "name": "Hangin - Self-Care & Mental Wellness Companion",
   "short_name": "Hangin",
-  "description": "Your 3D animal companion for mental health, mindful habits, and self-care.",
+  "description": "Your mindful self-care companion for mental health, gentle daily habits, and emotional wellness.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
@@ -10,6 +10,18 @@
   "theme_color": "#10b981",
   "categories": ["lifestyle", "health", "wellness"],
   "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
     {
       "src": "/icon-192.svg",
       "sizes": "192x192",

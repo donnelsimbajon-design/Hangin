@@ -1825,26 +1825,30 @@ export default function App() {
                 </p>
               </div>
 
-              <div className="p-3 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-100 dark:border-emerald-900/50">
-                <div className="font-bold mb-1 flex items-center gap-1.5 text-emerald-800 dark:text-emerald-200">
-                  <Apple className="w-3.5 h-3.5 text-slate-700 dark:text-slate-300" />
-                  <span>
-                    iPhone / Safari:
-                  </span>
+              <div className="p-3.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/80 border-2 border-emerald-400/40 text-emerald-950 dark:text-emerald-50 shadow-sm">
+                <div className="font-bold mb-2 flex items-center gap-1.5 text-xs text-emerald-800 dark:text-emerald-200">
+                  <Apple className="w-4 h-4 text-emerald-600 dark:text-emerald-300" />
+                  <span className="font-extrabold">Para sa iPhone / iPad (Safari):</span>
                 </div>
 
-                <p className="text-[11px]">
-                  Pindutin ang{' '}
-                  <strong>
-                    Share button (⎙)
-                  </strong>{' '}
-                  sa ilalim ng Safari, at piliin
-                  ang{' '}
-                  <strong>
-                    "Add to Home Screen"
-                  </strong>
-                  .
-                </p>
+                <div className="space-y-1.5 text-[11px] leading-snug">
+                  <div className="flex items-start gap-2">
+                    <span className="w-4 h-4 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-[9px] shrink-0 mt-0.5">1</span>
+                    <span>Buksan ang link na ito sa <strong>Safari browser</strong> (hindi sa loob ng Messenger o Facebook).</span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <span className="w-4 h-4 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-[9px] shrink-0 mt-0.5">2</span>
+                    <span>Pindutin ang <strong>Share button</strong> <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-emerald-200/80 dark:bg-emerald-800 text-emerald-900 dark:text-white font-mono font-bold text-[10px]">⎋ / [↑]</span> sa ibaba ng iyong Safari screen.</span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <span className="w-4 h-4 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-[9px] shrink-0 mt-0.5">3</span>
+                    <span>I-scroll pababa at piliin ang <strong>"Add to Home Screen"</strong> (o <em>"Idagdag sa Home Screen"</em>).</span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <span className="w-4 h-4 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-[9px] shrink-0 mt-0.5">4</span>
+                    <span>Pindutin ang <strong>"Add"</strong> sa kanang itaas. Tapos na! Lalabas na ang Hangin app icon sa Home Screen mo!</span>
+                  </div>
+                </div>
               </div>
             </div>
 
