@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useId } from 'react';
 import { motion } from 'motion/react';
 import { PetSpecies, PetAnimationMood, EquippedAccessories } from '../types';
-import { ThreePetCanvas } from './ThreePetCanvas';
 
 interface CuteCompanionProps {
   species: PetSpecies;
@@ -193,9 +192,7 @@ export const CuteCompanion: React.FC<CuteCompanionProps> = ({
   isSniffing = false,
   consumedItemIcon,
   consumedItemKind = 'food',
-  force2D = false,
 }) => {
-  const [is3D, setIs3D] = useState(!force2D);
   const [isPetted, setIsPetted] = useState(false);
   const [hearts, setHearts] = useState<{ id: number; x: number; y: number; emoji: string }[]>([]);
   const [blink, setBlink] = useState(false);
@@ -402,57 +399,6 @@ export const CuteCompanion: React.FC<CuteCompanionProps> = ({
         </motion.div>
       )}
 
-      {is3D ? (
-        <div className="relative w-full h-full flex flex-col items-center justify-center">
-          <ThreePetCanvas
-            species={species}
-            animationMood={mood}
-            equipped={equipped}
-            interactive={interactive}
-            onPet={() => {
-              handleInteraction({
-                currentTarget: {
-                  getBoundingClientRect: () => ({ left: 0, top: 0, width: 200, height: 200 }),
-                },
-                clientX: 100,
-                clientY: 100,
-              } as any);
-            }}
-            size={size}
-            showBowl={showBowl}
-            isEating={isEating}
-            isSniffing={isSniffing}
-          />
-          {size !== 'sm' && !force2D && (
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                setIs3D(false);
-              }}
-              className="absolute top-2 right-2 z-30 px-2.5 py-1 rounded-full bg-[#0b1411]/55 hover:bg-[#0b1411]/75 backdrop-blur-md border border-white/20 text-[10px] font-bold text-emerald-200 transition-all cursor-pointer shadow-md flex items-center gap-1.5"
-              title="Switch to 2D Art view"
-            >
-              <span>3D</span>
-              <span className="text-[9px] text-white/60">⇄ 2D</span>
-            </button>
-          )}
-        </div>
-      ) : (
-        <>
-          {size !== 'sm' && !force2D && (
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                setIs3D(true);
-              }}
-              className="absolute top-2 right-2 z-30 px-2.5 py-1 rounded-full bg-[#0b1411]/55 hover:bg-[#0b1411]/75 backdrop-blur-md border border-amber-400/40 text-[10px] font-bold text-amber-200 transition-all cursor-pointer shadow-md flex items-center gap-1.5"
-              title="Switch to 3D Realistic model"
-            >
-              <span>✨ 3D</span>
-            </button>
-          )}
           {/* ============================================================
               THEME-NEUTRAL STAGE (2D art only)
 
@@ -1197,8 +1143,6 @@ export const CuteCompanion: React.FC<CuteCompanionProps> = ({
           </svg>
         )}
       </motion.div>
-      </>
-      )}
     </div>
   );
 };

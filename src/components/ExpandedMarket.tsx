@@ -37,9 +37,10 @@ import {
   ShieldCheck,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
-import { Inventory, AccessoryInventory, EquippedAccessories, DailyHabit } from '../types';
+import { Inventory, AccessoryInventory, EquippedAccessories, DailyHabit, PetSpecies } from '../types';
 
 interface ExpandedMarketProps {
+  species?: PetSpecies;
   points: number;
   inventory: Inventory;
   accessories: AccessoryInventory;
@@ -55,6 +56,7 @@ interface ExpandedMarketProps {
 }
 
 export const ExpandedMarket: React.FC<ExpandedMarketProps> = ({
+  species = 'dog',
   points,
   inventory,
   accessories,
@@ -498,8 +500,10 @@ export const ExpandedMarket: React.FC<ExpandedMarketProps> = ({
         {/* FOOD CATEGORY */}
         {activeCategory === 'food' && (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {foodCatalog.map((item) => {
-              const Icon = item.Icon;
+            {foodCatalog
+              .filter((item) => item.species === species || item.species === 'all')
+              .map((item) => {
+                const Icon = item.Icon;
               return (
                 <div
                   key={item.key}

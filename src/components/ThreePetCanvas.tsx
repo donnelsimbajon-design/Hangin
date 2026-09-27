@@ -17,7 +17,7 @@ interface ThreePetCanvasProps {
 }
 
 // ---------------------------------------------------------------------------
-// High-Fidelity Procedural Fur, Eye & Nose Texture Generators
+// High-Fidelity Procedural Fur, Eye, Nose & Blush Texture Generators
 // ---------------------------------------------------------------------------
 
 function createRealisticFurTexture(isDog: boolean): THREE.CanvasTexture {
@@ -26,13 +26,13 @@ function createRealisticFurTexture(isDog: boolean): THREE.CanvasTexture {
   canvas.height = 1024;
   const ctx = canvas.getContext('2d')!;
 
-  // Warm Golden Retriever coat base gradient
+  // Warm Golden Retriever coat base gradient (rich honey amber)
   const grad = ctx.createLinearGradient(0, 0, 0, 1024);
   if (isDog) {
-    grad.addColorStop(0, '#e59d43');    // Golden honey
-    grad.addColorStop(0.35, '#d98b2f'); // Warm amber
-    grad.addColorStop(0.7, '#c27421');  // Rich caramel
-    grad.addColorStop(1, '#9e5614');    // Deep chestnut shadow
+    grad.addColorStop(0, '#f2a949');    // Radiant golden honey
+    grad.addColorStop(0.35, '#e49432'); // Warm amber
+    grad.addColorStop(0.7, '#cc7b20');  // Rich caramel
+    grad.addColorStop(1, '#9b5310');    // Deep warm chestnut shadow
   } else {
     grad.addColorStop(0, '#fca855');
     grad.addColorStop(0.4, '#e68733');
@@ -43,8 +43,8 @@ function createRealisticFurTexture(isDog: boolean): THREE.CanvasTexture {
   ctx.fillRect(0, 0, 1024, 1024);
 
   // Layer 1: Directional micro-hair fibers (dense velvety undercoat)
-  ctx.fillStyle = 'rgba(255, 240, 215, 0.08)';
-  for (let i = 0; i < 22000; i++) {
+  ctx.fillStyle = 'rgba(255, 245, 220, 0.09)';
+  for (let i = 0; i < 24000; i++) {
     const x = Math.random() * 1024;
     const y = Math.random() * 1024;
     const len = 3 + Math.random() * 7;
@@ -52,7 +52,7 @@ function createRealisticFurTexture(isDog: boolean): THREE.CanvasTexture {
   }
 
   // Layer 2: Deep shadow fibers for depth and tactile softness
-  ctx.fillStyle = 'rgba(60, 25, 0, 0.07)';
+  ctx.fillStyle = 'rgba(70, 30, 5, 0.08)';
   for (let i = 0; i < 18000; i++) {
     const x = Math.random() * 1024;
     const y = Math.random() * 1024;
@@ -61,8 +61,8 @@ function createRealisticFurTexture(isDog: boolean): THREE.CanvasTexture {
   }
 
   // Layer 3: Soft golden highlights on guard hairs
-  ctx.fillStyle = 'rgba(255, 255, 230, 0.12)';
-  for (let i = 0; i < 9000; i++) {
+  ctx.fillStyle = 'rgba(255, 255, 235, 0.14)';
+  for (let i = 0; i < 10000; i++) {
     const x = Math.random() * 1024;
     const y = Math.random() * 1024;
     const len = 4 + Math.random() * 9;
@@ -87,7 +87,7 @@ function createRealisticEyeTexture(isDog: boolean): THREE.CanvasTexture {
   const radius = 240;
 
   // Dark sclera / outer eye rim
-  ctx.fillStyle = '#110b08';
+  ctx.fillStyle = '#0f0a07';
   ctx.beginPath();
   ctx.arc(cx, cy, radius, 0, Math.PI * 2);
   ctx.fill();
@@ -100,16 +100,16 @@ function createRealisticEyeTexture(isDog: boolean): THREE.CanvasTexture {
   // Radiant canine amber iris gradient
   const irisGrad = ctx.createRadialGradient(cx, cy, 40, cx, cy, radius - 16);
   if (isDog) {
-    irisGrad.addColorStop(0, '#5a3010');
-    irisGrad.addColorStop(0.3, '#8c4b18');
-    irisGrad.addColorStop(0.65, '#bd7122');
-    irisGrad.addColorStop(0.88, '#e09133');
-    irisGrad.addColorStop(1, '#3b1d06');
+    irisGrad.addColorStop(0, '#542c0c');
+    irisGrad.addColorStop(0.3, '#854514');
+    irisGrad.addColorStop(0.65, '#bc6d1e');
+    irisGrad.addColorStop(0.88, '#e49232');
+    irisGrad.addColorStop(1, '#3b1c05');
   } else {
-    irisGrad.addColorStop(0, '#426823');
-    irisGrad.addColorStop(0.35, '#75a631');
-    irisGrad.addColorStop(0.75, '#add645');
-    irisGrad.addColorStop(1, '#253d0e');
+    irisGrad.addColorStop(0, '#3e6220');
+    irisGrad.addColorStop(0.35, '#71a12e');
+    irisGrad.addColorStop(0.75, '#a7d142');
+    irisGrad.addColorStop(1, '#22380d');
   }
   ctx.fillStyle = irisGrad;
   ctx.beginPath();
@@ -117,7 +117,7 @@ function createRealisticEyeTexture(isDog: boolean): THREE.CanvasTexture {
   ctx.fill();
 
   // Fine radial iris striations
-  ctx.strokeStyle = isDog ? 'rgba(255, 225, 160, 0.28)' : 'rgba(235, 255, 180, 0.3)';
+  ctx.strokeStyle = isDog ? 'rgba(255, 230, 170, 0.28)' : 'rgba(235, 255, 180, 0.3)';
   ctx.lineWidth = 1.8;
   for (let a = 0; a < Math.PI * 2; a += 0.05) {
     const r1 = 50 + Math.random() * 20;
@@ -129,25 +129,25 @@ function createRealisticEyeTexture(isDog: boolean): THREE.CanvasTexture {
   }
 
   // Deep velvet black pupil
-  ctx.fillStyle = '#060403';
+  ctx.fillStyle = '#050302';
   ctx.beginPath();
   if (isDog) {
-    ctx.arc(cx, cy, 88, 0, Math.PI * 2);
+    ctx.arc(cx, cy, 94, 0, Math.PI * 2);
   } else {
-    ctx.ellipse(cx, cy, 38, 125, 0, 0, Math.PI * 2);
+    ctx.ellipse(cx, cy, 40, 128, 0, 0, Math.PI * 2);
   }
   ctx.fill();
 
-  // Primary moist glossy catchlight
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.92)';
+  // Primary moist glossy catchlight (upper right)
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.94)';
   ctx.beginPath();
-  ctx.arc(cx - 48, cy - 54, 30, 0, Math.PI * 2);
+  ctx.arc(cx + 44, cy - 52, 38, 0, Math.PI * 2);
   ctx.fill();
 
-  // Secondary soft ambient catchlight
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.55)';
+  // Secondary soft ambient catchlight (lower left)
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.62)';
   ctx.beginPath();
-  ctx.arc(cx + 52, cy + 50, 16, 0, Math.PI * 2);
+  ctx.arc(cx - 48, cy + 46, 18, 0, Math.PI * 2);
   ctx.fill();
 
   const texture = new THREE.CanvasTexture(canvas);
@@ -163,7 +163,7 @@ function createRealisticNoseTexture(): THREE.CanvasTexture {
   ctx.fillStyle = '#1c1511';
   ctx.fillRect(0, 0, 512, 512);
 
-  // Leathery cobblestone pebble bump pattern
+  // Leathery cobblestone bump pattern
   for (let i = 0; i < 4200; i++) {
     const x = Math.random() * 512;
     const y = Math.random() * 512;
@@ -176,13 +176,33 @@ function createRealisticNoseTexture(): THREE.CanvasTexture {
 
   // Wet specular shine across top surface of the nose
   const gloss = ctx.createLinearGradient(120, 80, 392, 240);
-  gloss.addColorStop(0, 'rgba(255, 255, 255, 0.32)');
-  gloss.addColorStop(0.5, 'rgba(255, 255, 255, 0.1)');
+  gloss.addColorStop(0, 'rgba(255, 255, 255, 0.35)');
+  gloss.addColorStop(0.5, 'rgba(255, 255, 255, 0.12)');
   gloss.addColorStop(1, 'rgba(255, 255, 255, 0)');
   ctx.fillStyle = gloss;
   ctx.beginPath();
   ctx.ellipse(256, 140, 130, 50, 0, 0, Math.PI * 2);
   ctx.fill();
+
+  const texture = new THREE.CanvasTexture(canvas);
+  return texture;
+}
+
+// Soft Airbrushed Cheek Blush (Radial Gradient)
+function createBlushTexture(): THREE.CanvasTexture {
+  const canvas = document.createElement('canvas');
+  canvas.width = 256;
+  canvas.height = 256;
+  const ctx = canvas.getContext('2d')!;
+
+  const grad = ctx.createRadialGradient(128, 128, 0, 128, 128, 128);
+  grad.addColorStop(0, 'rgba(255, 95, 120, 0.88)');
+  grad.addColorStop(0.35, 'rgba(255, 115, 138, 0.55)');
+  grad.addColorStop(0.7, 'rgba(255, 140, 160, 0.18)');
+  grad.addColorStop(1.0, 'rgba(255, 160, 175, 0.0)');
+
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, 256, 256);
 
   const texture = new THREE.CanvasTexture(canvas);
   return texture;
@@ -227,8 +247,6 @@ export const ThreePetCanvas: React.FC<ThreePetCanvasProps> = ({
     snoutGroup: THREE.Group;
     jawGroup: THREE.Group;
     tongueGroup: THREE.Group;
-    tailGroup: THREE.Group;
-    tailJoints: THREE.Group[];
     leftEarGroup: THREE.Group;
     rightEarGroup: THREE.Group;
     leftUpperLid: THREE.Mesh;
@@ -244,6 +262,7 @@ export const ThreePetCanvas: React.FC<ThreePetCanvasProps> = ({
     chestMesh: THREE.Mesh;
     bowlGroup: THREE.Group;
     foodMesh: THREE.Mesh;
+    bandanaGroup: THREE.Group;
     salakotHat?: THREE.Group;
     beanieHat?: THREE.Group;
     sunglasses?: THREE.Group;
@@ -288,10 +307,10 @@ export const ThreePetCanvas: React.FC<ThreePetCanvasProps> = ({
 
     const scene = new THREE.Scene();
 
-    // Natural camera angle: eye-to-eye level, looking slightly down at seated puppy
+    // Perfectly framed camera: whole dog is 100% visible, no cut-offs at top of head or bottom
     const camera = new THREE.PerspectiveCamera(36, width / height, 0.1, 50);
-    camera.position.set(0, 0.95, 3.2);
-    camera.lookAt(0, 0.58, 0);
+    camera.position.set(0, 0.46, 2.7);
+    camera.lookAt(0, 0.42, 0);
 
     const renderer = new THREE.WebGLRenderer({
       antialias: true,
@@ -303,27 +322,25 @@ export const ThreePetCanvas: React.FC<ThreePetCanvasProps> = ({
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFShadowMap;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.06;
+    renderer.toneMappingExposure = 1.08;
 
     container.replaceChildren(renderer.domElement);
 
-    // --- Realistic Warm Studio Lighting ---
+    // --- Warm Studio Lighting ---
     const isNight = timeOfDay === 'night';
     const isSunset = timeOfDay === 'sunset';
 
-    // Ambient fill
     const ambientLight = new THREE.AmbientLight(
       isNight ? 0xa5b4fc : isSunset ? 0xfef08a : 0xfffaf0,
-      isNight ? 1.05 : isSunset ? 1.35 : 1.4
+      isNight ? 1.15 : isSunset ? 1.45 : 1.5
     );
     scene.add(ambientLight);
 
-    // Warm Sun Key Light with soft shadows
     const keyLight = new THREE.DirectionalLight(
       isNight ? 0xc7d2fe : isSunset ? 0xfb923c : 0xfffbeb,
-      isNight ? 1.1 : 1.65
+      isNight ? 1.15 : 1.7
     );
-    keyLight.position.set(2.0, 3.8, 2.8);
+    keyLight.position.set(1.8, 3.5, 2.6);
     keyLight.castShadow = true;
     keyLight.shadow.mapSize.width = 1024;
     keyLight.shadow.mapSize.height = 1024;
@@ -336,26 +353,23 @@ export const ThreePetCanvas: React.FC<ThreePetCanvasProps> = ({
     keyLight.shadow.bias = -0.0006;
     scene.add(keyLight);
 
-    // Soft Rim Light (simulates backlit fuzzy golden fur silhouette)
     const rimLight = new THREE.DirectionalLight(
       isNight ? 0x818cf8 : isSunset ? 0xf472b6 : 0xfde68a,
-      0.85
+      0.9
     );
-    rimLight.position.set(-2.2, 2.4, -2.6);
+    rimLight.position.set(-2.0, 2.2, -2.4);
     scene.add(rimLight);
 
-    // Soft Ground Bounce
-    const bounceLight = new THREE.DirectionalLight(0xe2f8d8, 0.35);
+    const bounceLight = new THREE.DirectionalLight(0xe4f9dc, 0.4);
     bounceLight.position.set(0, -2, 1);
     scene.add(bounceLight);
 
     // -----------------------------------------------------------------------
-    // Soft Ambient Occlusion Contact Shadow (NO harsh grey cylinder!)
+    // Contact Shadow & Zen Ring
     // -----------------------------------------------------------------------
     const groundGroup = new THREE.Group();
 
-    // Multi-ring soft diffused shadow that blends into any room background
-    const shadowGeo = new THREE.CircleGeometry(0.72, 32);
+    const shadowGeo = new THREE.CircleGeometry(0.68, 32);
     const shadowMat = new THREE.MeshBasicMaterial({
       color: 0x0a140d,
       transparent: true,
@@ -366,8 +380,8 @@ export const ThreePetCanvas: React.FC<ThreePetCanvasProps> = ({
     shadowDisc.position.y = 0.005;
     groundGroup.add(shadowDisc);
 
-    // Calming Zen / Mindful Grounding Ring (pulses during 'calm' or 'overwhelmed')
-    const zenRingGeo = new THREE.RingGeometry(0.78, 0.88, 48);
+    // Mindful Grounding Ring
+    const zenRingGeo = new THREE.RingGeometry(0.74, 0.84, 48);
     const zenRingMat = new THREE.MeshBasicMaterial({
       color: 0x34d399,
       side: THREE.DoubleSide,
@@ -382,248 +396,286 @@ export const ThreePetCanvas: React.FC<ThreePetCanvasProps> = ({
     scene.add(groundGroup);
 
     // -----------------------------------------------------------------------
-    // Anatomical Realistic Canine Sculpting (Golden Retriever Puppy)
+    // Anatomical Canine / Feline Sculpting (NO TAIL)
     // -----------------------------------------------------------------------
     const petGroup = new THREE.Group();
     const isDog = species === 'dog';
 
-    // Textures
+    // Procedural Textures
     const furTexture = createRealisticFurTexture(isDog);
     const eyeTexture = createRealisticEyeTexture(isDog);
     const noseTexture = createRealisticNoseTexture();
+    const blushTexture = createBlushTexture();
 
-    // Realistic PBR Materials
+    // PBR Materials
     const furMaterial = new THREE.MeshStandardMaterial({
       map: furTexture,
       bumpMap: furTexture,
-      bumpScale: 0.012,
-      roughness: 0.74,
-      metalness: 0.03,
+      bumpScale: 0.008,
+      roughness: 0.68,
+      metalness: 0.02,
     });
 
     const creamFurMaterial = new THREE.MeshStandardMaterial({
-      color: 0xfff5e4,
-      roughness: 0.82,
+      color: 0xfdf4e4,
+      roughness: 0.78,
       metalness: 0.02,
     });
 
     const darkEarFurMaterial = new THREE.MeshStandardMaterial({
       color: isDog ? 0xb56c1d : 0xab5010,
       map: furTexture,
-      roughness: 0.78,
+      roughness: 0.74,
       metalness: 0.02,
     });
 
     const noseMaterial = new THREE.MeshStandardMaterial({
-      color: isDog ? 0x1f1612 : 0xe88a9c,
+      color: isDog ? 0x18120e : 0xe88a9c,
       bumpMap: noseTexture,
       bumpScale: 0.03,
-      roughness: 0.28,
+      roughness: 0.22,
       metalness: 0.08,
     });
 
     const eyeCorneaMaterial = new THREE.MeshStandardMaterial({
       map: eyeTexture,
-      roughness: 0.04,
-      metalness: 0.1,
-    });
-
-    const tongueMaterial = new THREE.MeshStandardMaterial({
-      color: 0xff6680,
-      roughness: 0.26,
-      metalness: 0.04,
-    });
-
-    const lipMaterial = new THREE.MeshStandardMaterial({
-      color: 0x18100c,
-      roughness: 0.6,
-    });
-
-    const earInnerMaterial = new THREE.MeshStandardMaterial({
-      color: isDog ? 0xf0b0b0 : 0xfca5a5,
-      roughness: 0.88,
+      roughness: 0.03,
+      metalness: 0.12,
     });
 
     const pawPadMaterial = new THREE.MeshStandardMaterial({
-      color: 0x221711,
-      roughness: 0.62,
+      color: 0x241812,
+      roughness: 0.65,
     });
 
-    // --- Body Group (Deep chest, tucked flank, seated hips) ---
+    // --- Body Group (Chubby, seated companion torso) ---
     const bodyGroup = new THREE.Group();
-    bodyGroup.position.set(0, 0.44, 0);
+    bodyGroup.position.set(0, 0.30, 0);
 
-    // 1. Deep Contoured Ribcage (Thorax)
-    const chestGeo = new THREE.SphereGeometry(0.42, 32, 28);
-    chestGeo.scale(0.96, 1.12, 1.15);
-    const chestMesh = new THREE.Mesh(chestGeo, furMaterial);
+    // Torso: Plump cuddly companion body
+    const torsoGeo = new THREE.SphereGeometry(0.33, 32, 28);
+    torsoGeo.scale(0.96, 1.05, 0.95);
+    const chestMesh = new THREE.Mesh(torsoGeo, furMaterial);
     chestMesh.castShadow = true;
     chestMesh.receiveShadow = true;
     bodyGroup.add(chestMesh);
 
-    // 2. Soft Cream Brisket & Chest Fur (seamlessly contoured)
-    const brisketGeo = new THREE.SphereGeometry(0.32, 24, 20);
-    brisketGeo.scale(0.8, 1.05, 0.65);
-    const brisket = new THREE.Mesh(brisketGeo, creamFurMaterial);
-    brisket.position.set(0, -0.02, 0.38);
-    bodyGroup.add(brisket);
-
-    // 3. Tummy / Belly Undercoat
-    const bellyGeo = new THREE.SphereGeometry(0.36, 24, 20);
-    bellyGeo.scale(0.84, 0.82, 0.72);
-    const belly = new THREE.Mesh(bellyGeo, creamFurMaterial);
-    belly.position.set(0, -0.15, 0.12);
-    bodyGroup.add(belly);
-
-    // 4. Seated Rump / Pelvis
-    const rumpGeo = new THREE.SphereGeometry(0.4, 28, 24);
-    rumpGeo.scale(0.95, 0.9, 0.95);
-    const rump = new THREE.Mesh(rumpGeo, furMaterial);
-    rump.position.set(0, -0.08, -0.28);
-    rump.castShadow = true;
-    bodyGroup.add(rump);
+    // Soft Cream Chest Fluff (peeks out under bandana)
+    const chestFluffGeo = new THREE.SphereGeometry(0.24, 24, 20);
+    chestFluffGeo.scale(0.74, 0.88, 0.44);
+    const chestFluff = new THREE.Mesh(chestFluffGeo, creamFurMaterial);
+    chestFluff.position.set(0, -0.02, 0.17);
+    bodyGroup.add(chestFluff);
 
     // --- Neck & Head Articulation ---
     const neckGroup = new THREE.Group();
-    neckGroup.position.set(0, 0.28, 0.22);
-    neckGroup.rotation.x = 0.12; // Natural puppy neck posture
+    neckGroup.position.set(0, 0.25, 0.05);
     bodyGroup.add(neckGroup);
 
     const headGroup = new THREE.Group();
-    headGroup.position.set(0, 0.22, 0.08);
+    headGroup.position.set(0, 0.23, 0.06);
     neckGroup.add(headGroup);
 
-    // Sculpted Canine Cranium (Smooth forehead dome)
-    const skullGeo = new THREE.SphereGeometry(0.38, 32, 28);
-    skullGeo.scale(1.04, 0.96, 0.98);
+    // Sculpted Head Cranium (Warm golden honey, chubby cheeks)
+    const skullGeo = new THREE.SphereGeometry(0.31, 32, 28);
+    skullGeo.scale(1.08, 0.96, 1.0);
     const skullMesh = new THREE.Mesh(skullGeo, furMaterial);
     skullMesh.castShadow = true;
     headGroup.add(skullMesh);
 
-    // Soft Cheek Feathers (tucked smoothly into jawline, NOT protruding spheres!)
-    const cheekGeo = new THREE.SphereGeometry(0.18, 20, 18);
-    cheekGeo.scale(0.88, 0.85, 0.65);
-    const leftCheek = new THREE.Mesh(cheekGeo, creamFurMaterial);
-    leftCheek.position.set(-0.21, -0.09, 0.18);
-    headGroup.add(leftCheek);
+    // Soft Airbrushed Rosy Cheeks (Radial gradient blush)
+    const blushMat = new THREE.MeshBasicMaterial({
+      map: blushTexture,
+      transparent: true,
+      opacity: 0.88,
+      depthWrite: false,
+    });
+    const blushGeo = new THREE.CircleGeometry(0.085, 24);
 
-    const rightCheek = leftCheek.clone();
-    rightCheek.position.x = 0.21;
-    headGroup.add(rightCheek);
-
-    // Subtle Cute Puppy Cheerful Blush
-    const blushMat = new THREE.MeshBasicMaterial({ color: 0xff8b80, transparent: true, opacity: 0.38 });
-    const blushGeo = new THREE.CircleGeometry(0.065, 16);
     const leftBlush = new THREE.Mesh(blushGeo, blushMat);
-    leftBlush.position.set(-0.26, -0.03, 0.26);
-    leftBlush.rotation.y = -0.32;
+    leftBlush.position.set(-0.20, -0.04, 0.23);
+    leftBlush.rotation.set(-0.05, -0.32, 0);
     headGroup.add(leftBlush);
 
     const rightBlush = leftBlush.clone();
-    rightBlush.position.x = 0.26;
-    rightBlush.rotation.y = 0.32;
+    rightBlush.position.x = 0.20;
+    rightBlush.rotation.set(-0.05, 0.32, 0);
     headGroup.add(rightBlush);
 
-    // --- Muzzle & Snout (Realistic Smooth Sloping Canine Nasal Bridge) ---
+    // Expressive Warm Puppy Eyebrows (above eyes for soulful gaze)
+    if (isDog) {
+      const browMat = new THREE.MeshBasicMaterial({ color: 0x6e3d15 });
+      const browGeo = new THREE.CylinderGeometry(0.011, 0.007, 0.07, 8);
+      browGeo.rotateZ(Math.PI * 0.5);
+
+      const leftBrow = new THREE.Mesh(browGeo, browMat);
+      leftBrow.position.set(-0.115, 0.145, 0.26);
+      leftBrow.rotation.set(0.12, 0.14, -0.24);
+      headGroup.add(leftBrow);
+
+      const rightBrow = new THREE.Mesh(browGeo, browMat);
+      rightBrow.position.set(0.115, 0.145, 0.26);
+      rightBrow.rotation.set(0.12, -0.14, 0.24);
+      headGroup.add(rightBrow);
+    }
+
+    // --- Muzzle & Button Nose ---
     const snoutGroup = new THREE.Group();
-    snoutGroup.position.set(0, -0.05, 0.28);
+    snoutGroup.position.set(0, -0.015, 0.20);
     headGroup.add(snoutGroup);
 
     if (isDog) {
-      // Sloping Nasal Bridge (starts below forehead stop, tapers to nose)
-      const bridgeGeo = new THREE.CylinderGeometry(0.12, 0.17, 0.28, 24);
-      bridgeGeo.rotateX(Math.PI * 0.5);
-      bridgeGeo.scale(1.08, 0.72, 1.0);
-      const bridgeMesh = new THREE.Mesh(bridgeGeo, creamFurMaterial);
-      bridgeMesh.position.set(0, -0.01, 0.12);
-      snoutGroup.add(bridgeMesh);
+      // Upper Muzzle Pad (sits strictly above mouth so mouth is never blocked!)
+      const muzzleGeo = new THREE.SphereGeometry(0.088, 20, 16);
+      muzzleGeo.scale(1.15, 0.65, 0.85);
+      const muzzle = new THREE.Mesh(muzzleGeo, creamFurMaterial);
+      muzzle.position.set(0, 0.02, 0.02);
+      snoutGroup.add(muzzle);
 
-      // Chin / Mandible Under-Jaw
-      const chinGeo = new THREE.SphereGeometry(0.14, 18, 16);
-      chinGeo.scale(0.9, 0.55, 0.9);
-      const chin = new THREE.Mesh(chinGeo, creamFurMaterial);
-      chin.position.set(0, -0.1, 0.14);
-      snoutGroup.add(chin);
-
-      // Leathery Wet Truffle Nose with distinct Nostril cavities
-      const noseGeo = new THREE.SphereGeometry(0.068, 20, 16);
-      noseGeo.scale(1.22, 0.78, 0.85);
+      // Truffle Black Button Nose
+      const noseGeo = new THREE.SphereGeometry(0.044, 20, 16);
+      noseGeo.scale(1.22, 0.82, 0.85);
       const noseMesh = new THREE.Mesh(noseGeo, noseMaterial);
-      noseMesh.position.set(0, 0.04, 0.25);
+      noseMesh.position.set(0, 0.045, 0.085);
       snoutGroup.add(noseMesh);
 
-      // Distinct Nostril curves
-      const nostrilMat = new THREE.MeshBasicMaterial({ color: 0x080605 });
-      const nostrilGeo = new THREE.SphereGeometry(0.018, 10, 8);
-      nostrilGeo.scale(0.8, 1.1, 0.5);
-
+      // Nostrils
+      const nostrilMat = new THREE.MeshBasicMaterial({ color: 0x050302 });
+      const nostrilGeo = new THREE.SphereGeometry(0.010, 8, 8);
       const leftNostril = new THREE.Mesh(nostrilGeo, nostrilMat);
-      leftNostril.position.set(-0.032, 0.035, 0.29);
+      leftNostril.position.set(-0.020, 0.042, 0.115);
       snoutGroup.add(leftNostril);
 
       const rightNostril = leftNostril.clone();
-      rightNostril.position.x = 0.032;
+      rightNostril.position.x = 0.020;
       snoutGroup.add(rightNostril);
     } else {
-      // Cat Delicate Muzzle
-      const catMuzzleGeo = new THREE.SphereGeometry(0.16, 20, 16);
-      catMuzzleGeo.scale(1.08, 0.65, 0.8);
-      const catMuzzle = new THREE.Mesh(catMuzzleGeo, creamFurMaterial);
-      catMuzzle.position.set(0, -0.02, 0.1);
-      snoutGroup.add(catMuzzle);
+      // Cat Muzzle Pads
+      const catPadGeo = new THREE.SphereGeometry(0.075, 18, 14);
+      catPadGeo.scale(1.0, 0.82, 0.78);
+      const leftPad = new THREE.Mesh(catPadGeo, creamFurMaterial);
+      leftPad.position.set(-0.045, 0.01, 0.05);
+      snoutGroup.add(leftPad);
 
-      const catNoseGeo = new THREE.ConeGeometry(0.048, 0.045, 4);
+      const rightPad = leftPad.clone();
+      rightPad.position.x = 0.045;
+      snoutGroup.add(rightPad);
+
+      // Cat Button Pink Nose
+      const catNoseGeo = new THREE.ConeGeometry(0.032, 0.030, 12);
       catNoseGeo.rotateX(Math.PI);
       const catNose = new THREE.Mesh(catNoseGeo, noseMaterial);
-      catNose.position.set(0, 0.015, 0.2);
+      catNose.position.set(0, 0.03, 0.10);
       snoutGroup.add(catNose);
+
+      // Whiskers (3 on each side)
+      const whiskerMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.85 });
+      const whiskerGeo = new THREE.CylinderGeometry(0.003, 0.002, 0.20, 6);
+      whiskerGeo.rotateZ(Math.PI * 0.5);
+      [-0.08, 0, 0.08].forEach((angle, i) => {
+        const leftW = new THREE.Mesh(whiskerGeo, whiskerMat);
+        leftW.position.set(-0.14, 0.01 + (i - 1) * 0.02, 0.07);
+        leftW.rotation.set(0, 0.25, angle);
+        snoutGroup.add(leftW);
+
+        const rightW = new THREE.Mesh(whiskerGeo, whiskerMat);
+        rightW.position.set(0.14, 0.01 + (i - 1) * 0.02, 0.07);
+        rightW.rotation.set(0, -0.25, -angle);
+        snoutGroup.add(rightW);
+      });
     }
 
-    // --- Black Canine Lips (Flews) & Panting Tongue ---
+    // --- Joyful Open Smiling Mouth & Pink Tongue (100% VISIBLE!) ---
     const jawGroup = new THREE.Group();
-    jawGroup.position.set(0, -0.13, 0.22);
+    jawGroup.position.set(0, -0.05, 0.22);
     headGroup.add(jawGroup);
 
-    const lipGeo = new THREE.TorusGeometry(0.11, 0.018, 10, 20, Math.PI);
-    lipGeo.rotateX(Math.PI * 0.5);
-    const lips = new THREE.Mesh(lipGeo, lipMaterial);
-    lips.position.set(0, 0.015, 0.06);
-    jawGroup.add(lips);
+    // Mouth Cavity (Dark smiling crescent opening)
+    const mouthShape = new THREE.Shape();
+    mouthShape.moveTo(-0.085, 0.018);
+    mouthShape.quadraticCurveTo(0, 0.032, 0.085, 0.018);
+    mouthShape.quadraticCurveTo(0.075, -0.062, 0, -0.075);
+    mouthShape.quadraticCurveTo(-0.075, -0.062, -0.085, 0.018);
 
+    const mouthGeo = new THREE.ShapeGeometry(mouthShape);
+    const mouthMat = new THREE.MeshBasicMaterial({ color: 0x1f070c, side: THREE.DoubleSide });
+    const mouthMesh = new THREE.Mesh(mouthGeo, mouthMat);
+    mouthMesh.position.set(0, 0, 0.055);
+    mouthMesh.rotation.x = -0.08;
+    jawGroup.add(mouthMesh);
+
+    // Bright Pink Puppy Tongue resting happily in the smile
     const tongueGroup = new THREE.Group();
-    tongueGroup.position.set(0, 0.015, 0.08);
+    tongueGroup.position.set(0, -0.015, 0.065);
 
-    const tongueGeo = new THREE.CylinderGeometry(0.055, 0.07, 0.14, 16);
-    tongueGeo.scale(1.08, 0.26, 1.15);
-    const tongueMesh = new THREE.Mesh(tongueGeo, tongueMaterial);
-    tongueMesh.position.set(0, -0.035, 0.05);
-    tongueMesh.rotation.x = 0.42;
+    const tongueShape = new THREE.Shape();
+    tongueShape.moveTo(-0.046, 0.010);
+    tongueShape.quadraticCurveTo(0, 0.020, 0.046, 0.010);
+    tongueShape.quadraticCurveTo(0.042, -0.050, 0, -0.060);
+    tongueShape.quadraticCurveTo(-0.042, -0.050, -0.046, 0.010);
+
+    const tongueGeo = new THREE.ShapeGeometry(tongueShape);
+    const tongueMat = new THREE.MeshStandardMaterial({
+      color: 0xff5277,
+      roughness: 0.28,
+      side: THREE.DoubleSide,
+    });
+    const tongueMesh = new THREE.Mesh(tongueGeo, tongueMat);
+    tongueMesh.position.set(0, 0, 0.005);
+    tongueMesh.rotation.x = -0.06;
     tongueGroup.add(tongueMesh);
-    tongueGroup.scale.set(0.001, 0.001, 0.001); // hidden until happy/eating
     jawGroup.add(tongueGroup);
 
-    // --- Soulful Eyes with Realistic Eyelids ---
-    const eyeGeo = new THREE.SphereGeometry(0.082, 24, 20);
+    // Upper smile lip contour
+    const upperLipGeo = new THREE.TorusGeometry(0.076, 0.007, 8, 20, Math.PI);
+    upperLipGeo.rotateX(Math.PI);
+    const upperLipMat = new THREE.MeshBasicMaterial({ color: 0x180b06 });
+    const upperLip = new THREE.Mesh(upperLipGeo, upperLipMat);
+    upperLip.position.set(0, 0.018, 0.060);
+    jawGroup.add(upperLip);
 
-    // Left Eye (angled 10° outward naturally)
+    // Tiny white corner teeth peeks
+    const toothMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+    const toothGeo = new THREE.SphereGeometry(0.009, 8, 8);
+    const leftTooth = new THREE.Mesh(toothGeo, toothMat);
+    leftTooth.position.set(-0.042, 0.008, 0.062);
+    jawGroup.add(leftTooth);
+
+    const rightTooth = leftTooth.clone();
+    rightTooth.position.x = 0.042;
+    jawGroup.add(rightTooth);
+
+    // Cream Lower Chin (under mouth)
+    const chinGeo = new THREE.SphereGeometry(0.06, 16, 12);
+    chinGeo.scale(1.0, 0.6, 0.75);
+    const chin = new THREE.Mesh(chinGeo, creamFurMaterial);
+    chin.position.set(0, -0.055, 0.035);
+    jawGroup.add(chin);
+
+    // --- Soulful Anime / Pixar Eyes with Catchlights ---
+    const eyeGeo = new THREE.SphereGeometry(0.072, 24, 20);
+
+    // Left Eye
     const leftEyeGroup = new THREE.Group();
-    leftEyeGroup.position.set(-0.17, 0.05, 0.32);
-    leftEyeGroup.rotation.y = -0.12;
+    leftEyeGroup.position.set(-0.125, 0.055, 0.235);
+    leftEyeGroup.rotation.y = -0.06;
     const leftEyeMesh = new THREE.Mesh(eyeGeo, eyeCorneaMaterial);
+    leftEyeMesh.rotation.y = 0;
     leftEyeGroup.add(leftEyeMesh);
     headGroup.add(leftEyeGroup);
 
     // Right Eye
     const rightEyeGroup = new THREE.Group();
-    rightEyeGroup.position.set(0.17, 0.05, 0.32);
-    rightEyeGroup.rotation.y = 0.12;
+    rightEyeGroup.position.set(0.125, 0.055, 0.235);
+    rightEyeGroup.rotation.y = 0.06;
     const rightEyeMesh = new THREE.Mesh(eyeGeo, eyeCorneaMaterial);
+    rightEyeMesh.rotation.y = 0;
     rightEyeGroup.add(rightEyeMesh);
     headGroup.add(rightEyeGroup);
 
-    // Eyelids (Upper and Lower for fluid blinking, happy crescent smiles, sleepy droop)
-    const upperLidGeo = new THREE.SphereGeometry(0.09, 20, 12, 0, Math.PI * 2, 0, Math.PI * 0.5);
-    const lowerLidGeo = new THREE.SphereGeometry(0.089, 20, 12, 0, Math.PI * 2, Math.PI * 0.5, Math.PI * 0.5);
+    // Eyelids (Upper and Lower for fluid blinking)
+    const upperLidGeo = new THREE.SphereGeometry(0.079, 20, 12, 0, Math.PI * 2, 0, Math.PI * 0.5);
+    const lowerLidGeo = new THREE.SphereGeometry(0.078, 20, 12, 0, Math.PI * 2, Math.PI * 0.5, Math.PI * 0.5);
 
     const leftUpperLid = new THREE.Mesh(upperLidGeo, furMaterial);
     leftUpperLid.position.copy(leftEyeGroup.position);
@@ -645,132 +697,177 @@ export const ThreePetCanvas: React.FC<ThreePetCanvasProps> = ({
     rightLowerLid.rotation.x = Math.PI * 0.5;
     headGroup.add(rightLowerLid);
 
-    // --- Floppy Dog Ears (Draping naturally down along the cheeks!) ---
+    // --- Floppy Puppy Ears / Cat Ears ---
     const leftEarGroup = new THREE.Group();
     const rightEarGroup = new THREE.Group();
 
     if (isDog) {
-      // Natural floppy retriever ears hanging gracefully alongside cheeks
-      leftEarGroup.position.set(-0.32, 0.18, 0.04);
-      rightEarGroup.position.set(0.32, 0.18, 0.04);
+      // Natural, silky floppy golden ears that drape forward to frame the cheeks!
+      leftEarGroup.position.set(-0.24, 0.14, 0.03);
+      rightEarGroup.position.set(0.24, 0.14, 0.03);
 
-      // Curved floppy ear flap
-      const earFlapGeo = new THREE.CylinderGeometry(0.12, 0.16, 0.48, 16);
-      earFlapGeo.scale(0.85, 1.0, 0.25);
-      earFlapGeo.rotateZ(0.2);
+      const earGeo = new THREE.SphereGeometry(0.125, 22, 18);
+      earGeo.scale(0.85, 1.70, 0.38);
 
-      const leftEarMesh = new THREE.Mesh(earFlapGeo, darkEarFurMaterial);
-      leftEarMesh.position.set(-0.06, -0.22, 0);
-      leftEarGroup.add(leftEarMesh);
+      const earL = new THREE.Mesh(earGeo, darkEarFurMaterial);
+      earL.position.set(-0.04, -0.13, 0.02);
+      earL.rotation.set(0.15, 0.18, 0.15);
+      leftEarGroup.add(earL);
 
-      const rightEarMesh = new THREE.Mesh(earFlapGeo, darkEarFurMaterial);
-      rightEarMesh.position.set(0.06, -0.22, 0);
-      rightEarMesh.rotation.y = Math.PI;
-      rightEarGroup.add(rightEarMesh);
+      const earR = new THREE.Mesh(earGeo, darkEarFurMaterial);
+      earR.position.set(0.04, -0.13, 0.02);
+      earR.rotation.set(0.15, -0.18, -0.15);
+      rightEarGroup.add(earR);
     } else {
-      // Pointed Cat Ears
-      leftEarGroup.position.set(-0.24, 0.34, 0.04);
-      rightEarGroup.position.set(0.24, 0.34, 0.04);
+      // Pointed, perky cat ears
+      leftEarGroup.position.set(-0.19, 0.22, 0.02);
+      rightEarGroup.position.set(0.19, 0.22, 0.02);
 
-      const catEarGeo = new THREE.ConeGeometry(0.18, 0.32, 4);
-      catEarGeo.scale(0.9, 1, 0.36);
-      catEarGeo.rotateY(Math.PI * 0.25);
-
+      const catEarGeo = new THREE.ConeGeometry(0.12, 0.22, 16);
+      catEarGeo.scale(1.0, 1.0, 0.45);
       const leftCatEar = new THREE.Mesh(catEarGeo, furMaterial);
-      leftCatEar.rotation.z = 0.22;
-      leftCatEar.rotation.x = -0.1;
+      leftCatEar.rotation.z = 0.24;
+      leftCatEar.rotation.x = -0.12;
       leftEarGroup.add(leftCatEar);
 
-      const leftInner = new THREE.Mesh(catEarGeo, earInnerMaterial);
-      leftInner.scale.set(0.72, 0.72, 0.72);
-      leftInner.position.set(0, 0, 0.025);
+      const earInnerMat = new THREE.MeshStandardMaterial({ color: 0xfca5a5, roughness: 0.88 });
+      const catInnerGeo = new THREE.ConeGeometry(0.085, 0.17, 12);
+      catInnerGeo.scale(1.0, 1.0, 0.35);
+      const leftInner = new THREE.Mesh(catInnerGeo, earInnerMat);
+      leftInner.rotation.z = 0.24;
+      leftInner.rotation.x = -0.12;
+      leftInner.position.set(0, -0.01, 0.02);
       leftEarGroup.add(leftInner);
 
       const rightCatEar = new THREE.Mesh(catEarGeo, furMaterial);
-      rightCatEar.rotation.z = -0.22;
-      rightCatEar.rotation.x = -0.1;
+      rightCatEar.rotation.z = -0.24;
+      rightCatEar.rotation.x = -0.12;
       rightEarGroup.add(rightCatEar);
 
-      const rightInner = new THREE.Mesh(catEarGeo, earInnerMaterial);
-      rightInner.scale.set(0.72, 0.72, 0.72);
-      rightInner.position.set(0, 0, 0.025);
+      const rightInner = new THREE.Mesh(catInnerGeo, earInnerMat);
+      rightInner.rotation.z = -0.24;
+      rightInner.rotation.x = -0.12;
+      rightInner.position.set(0, -0.01, 0.02);
       rightEarGroup.add(rightInner);
     }
 
     headGroup.add(leftEarGroup);
     headGroup.add(rightEarGroup);
 
-    // --- Articulated Multi-Joint Fluffy Puppy Tail ---
-    const tailGroup = new THREE.Group();
-    tailGroup.position.set(0, 0.36, -0.38);
-    tailGroup.rotation.x = Math.PI * 0.32;
+    // -----------------------------------------------------------------------
+    // Signature Green Bandana with 100% VISIBLE White Sprout Emblem
+    // -----------------------------------------------------------------------
+    const bandanaGroup = new THREE.Group();
+    bandanaGroup.position.set(0, 0.06, 0.02);
 
-    const tailJoints: THREE.Group[] = [];
-    let parentJoint = tailGroup;
+    const bandanaMat = new THREE.MeshStandardMaterial({
+      color: 0x48bb37, // Fresh soothing Hangin Green
+      roughness: 0.65,
+      side: THREE.DoubleSide,
+    });
 
-    for (let i = 0; i < 4; i++) {
-      const joint = new THREE.Group();
-      if (i > 0) joint.position.set(0, 0.12, 0.02);
+    // Folded Band Collar around neck
+    const bandCollarGeo = new THREE.TorusGeometry(0.24, 0.036, 14, 28);
+    bandCollarGeo.scale(1.0, 0.75, 1.0);
+    bandCollarGeo.rotateX(Math.PI * 0.5);
+    const bandCollar = new THREE.Mesh(bandCollarGeo, bandanaMat);
+    bandCollar.position.set(0, 0.02, 0.02);
+    bandanaGroup.add(bandCollar);
 
-      const rTop = 0.07 - i * 0.012;
-      const rBot = 0.09 - i * 0.012;
-      const tSegGeo = new THREE.CylinderGeometry(rTop, rBot, 0.14, 14);
-      const tMesh = new THREE.Mesh(tSegGeo, i === 3 ? creamFurMaterial : furMaterial);
-      tMesh.position.y = 0.07;
-      joint.add(tMesh);
+    // Triangular Bandana Bib extending down chest
+    const bibShape = new THREE.Shape();
+    bibShape.moveTo(-0.16, 0.03);
+    bibShape.lineTo(0.16, 0.03);
+    bibShape.quadraticCurveTo(0.14, -0.10, 0, -0.22); // pointed bottom tip
+    bibShape.quadraticCurveTo(-0.14, -0.10, -0.16, 0.03);
 
-      parentJoint.add(joint);
-      tailJoints.push(joint);
-      parentJoint = joint;
-    }
-    petGroup.add(tailGroup);
+    const bibGeo = new THREE.ShapeGeometry(bibShape);
+    const bibMesh = new THREE.Mesh(bibGeo, bandanaMat);
+    bibMesh.position.set(0, -0.01, 0.22);
+    bibMesh.rotation.set(-0.20, 0, 0);
+    bibMesh.castShadow = true;
+    bandanaGroup.add(bibMesh);
 
-    // --- Forelegs & Defined Rounded Paws with Pads ---
+    // Crisp White Hangin Sprout Logo (3D Mesh on front of Bandana - 100% Guaranteed Visible!)
+    const whiteLogoMat = new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide });
+
+    // Sprout Stem
+    const sproutStemGeo = new THREE.CylinderGeometry(0.006, 0.006, 0.055, 10);
+    const sproutStem = new THREE.Mesh(sproutStemGeo, whiteLogoMat);
+    sproutStem.position.set(0, -0.08, 0.235);
+    sproutStem.rotation.set(-0.20, 0, 0);
+    bandanaGroup.add(sproutStem);
+
+    // Sprout Left Leaf
+    const sproutLeftLeafGeo = new THREE.SphereGeometry(0.024, 14, 10);
+    sproutLeftLeafGeo.scale(1.3, 0.65, 0.25);
+    const sproutLeftLeaf = new THREE.Mesh(sproutLeftLeafGeo, whiteLogoMat);
+    sproutLeftLeaf.position.set(-0.026, -0.062, 0.236);
+    sproutLeftLeaf.rotation.set(-0.20, 0, -0.62);
+    bandanaGroup.add(sproutLeftLeaf);
+
+    // Sprout Right Leaf
+    const sproutRightLeaf = new THREE.Mesh(sproutLeftLeafGeo, whiteLogoMat);
+    sproutRightLeaf.position.set(0.026, -0.062, 0.236);
+    sproutRightLeaf.rotation.set(-0.20, 0, 0.62);
+    bandanaGroup.add(sproutRightLeaf);
+
+    neckGroup.add(bandanaGroup);
+
+    // --- Chubby Forelegs & Soft Defined Rounded Paws ---
     const frontLeftLeg = new THREE.Group();
-    frontLeftLeg.position.set(-0.2, 0.34, 0.24);
+    frontLeftLeg.position.set(-0.085, 0.14, 0.18);
 
-    const legGeo = new THREE.CylinderGeometry(0.075, 0.07, 0.36, 16);
+    const legGeo = new THREE.CylinderGeometry(0.060, 0.054, 0.22, 16);
     const frontLLegMesh = new THREE.Mesh(legGeo, furMaterial);
-    frontLLegMesh.position.y = -0.15;
+    frontLLegMesh.position.y = -0.04;
     frontLeftLeg.add(frontLLegMesh);
 
-    // Rounded puppy front paw
-    const pawGeo = new THREE.SphereGeometry(0.095, 18, 16);
-    pawGeo.scale(1.15, 0.65, 1.25);
+    // Rounded cream front paw base
+    const pawGeo = new THREE.SphereGeometry(0.075, 18, 14);
+    pawGeo.scale(1.1, 0.55, 1.2);
     const frontLPaw = new THREE.Mesh(pawGeo, creamFurMaterial);
-    frontLPaw.position.set(0, -0.32, 0.05);
+    frontLPaw.position.set(0, -0.14, 0.04);
     frontLPaw.castShadow = true;
     frontLeftLeg.add(frontLPaw);
 
-    // Dark paw pad on bottom
-    const padGeo = new THREE.CircleGeometry(0.055, 14);
+    // 3 Rounded soft toe beans on front of paw
+    [-0.036, 0, 0.036].forEach((toex) => {
+      const toeGeo = new THREE.SphereGeometry(0.024, 10, 8);
+      const toe = new THREE.Mesh(toeGeo, creamFurMaterial);
+      toe.position.set(toex, -0.14, 0.095);
+      frontLeftLeg.add(toe);
+    });
+
+    // Paw pad on bottom
+    const padGeo = new THREE.CircleGeometry(0.045, 14);
     const frontLPad = new THREE.Mesh(padGeo, pawPadMaterial);
     frontLPad.rotation.x = Math.PI * 0.5;
-    frontLPad.position.set(0, -0.36, 0.04);
+    frontLPad.position.set(0, -0.17, 0.04);
     frontLeftLeg.add(frontLPad);
 
     const frontRightLeg = frontLeftLeg.clone();
-    frontRightLeg.position.x = 0.2;
+    frontRightLeg.position.x = 0.085;
 
     petGroup.add(frontLeftLeg);
     petGroup.add(frontRightLeg);
 
-    // --- Seated Rear Legs & Resting Paws ---
+    // --- Seated Rear Legs & Cozy Haunches ---
     const backLeftLeg = new THREE.Group();
-    backLeftLeg.position.set(-0.32, 0.28, -0.12);
+    backLeftLeg.position.set(-0.21, 0.14, -0.02);
 
-    const thighGeo = new THREE.SphereGeometry(0.22, 18, 16);
-    thighGeo.scale(0.85, 1.15, 1.05);
+    const thighGeo = new THREE.SphereGeometry(0.17, 18, 16);
+    thighGeo.scale(0.85, 1.0, 1.1);
     const backLThigh = new THREE.Mesh(thighGeo, furMaterial);
     backLeftLeg.add(backLThigh);
 
     const backLPaw = frontLPaw.clone();
-    backLPaw.position.set(0.05, -0.26, 0.28);
+    backLPaw.position.set(0.03, -0.14, 0.18);
     backLeftLeg.add(backLPaw);
 
     const backRightLeg = backLeftLeg.clone();
-    backRightLeg.position.x = 0.32;
-    backRightLeg.children[1].position.x = -0.05;
+    backRightLeg.position.x = 0.21;
+    backRightLeg.children[1].position.x = -0.03;
 
     petGroup.add(backLeftLeg);
     petGroup.add(backRightLeg);
@@ -781,13 +878,11 @@ export const ThreePetCanvas: React.FC<ThreePetCanvasProps> = ({
     // -----------------------------------------------------------------------
     // Equipped Accessories (Salakot, Beanie, Glasses, Scarf, Collar)
     // -----------------------------------------------------------------------
-    const accessoriesGroup = new THREE.Group();
-
     // 1. Salakot Hat
     const salakotGroup = new THREE.Group();
     const salakotMat = new THREE.MeshStandardMaterial({ color: 0xd4a373, roughness: 0.9 });
-    const salakotCone = new THREE.Mesh(new THREE.ConeGeometry(0.48, 0.2, 32), salakotMat);
-    salakotCone.position.set(0, 0.38, 0.02);
+    const salakotCone = new THREE.Mesh(new THREE.ConeGeometry(0.42, 0.17, 32), salakotMat);
+    salakotCone.position.set(0, 0.30, 0.02);
     salakotCone.rotation.x = -0.08;
     salakotGroup.add(salakotCone);
     salakotGroup.visible = equipped.hat === 'salakot';
@@ -796,8 +891,8 @@ export const ThreePetCanvas: React.FC<ThreePetCanvasProps> = ({
     // 2. Beanie Hat
     const beanieGroup = new THREE.Group();
     const beanieMat = new THREE.MeshStandardMaterial({ color: 0x059669, roughness: 0.85 });
-    const beanieDome = new THREE.Mesh(new THREE.SphereGeometry(0.4, 24, 20, 0, Math.PI * 2, 0, Math.PI * 0.55), beanieMat);
-    beanieDome.position.set(0, 0.16, 0);
+    const beanieDome = new THREE.Mesh(new THREE.SphereGeometry(0.34, 24, 20, 0, Math.PI * 2, 0, Math.PI * 0.55), beanieMat);
+    beanieDome.position.set(0, 0.15, 0);
     beanieGroup.add(beanieDome);
     beanieGroup.visible = equipped.hat === 'beanie';
     headGroup.add(beanieGroup);
@@ -807,23 +902,23 @@ export const ThreePetCanvas: React.FC<ThreePetCanvasProps> = ({
     const frameMat = new THREE.MeshStandardMaterial({ color: 0x18181b, roughness: 0.2, metalness: 0.4 });
     const lensMat = new THREE.MeshStandardMaterial({ color: 0x09090b, roughness: 0.08, metalness: 0.85 });
 
-    const leftFrame = new THREE.Mesh(new THREE.TorusGeometry(0.1, 0.018, 12, 24), frameMat);
-    leftFrame.position.set(-0.17, 0.05, 0.38);
-    const leftLens = new THREE.Mesh(new THREE.CircleGeometry(0.09, 20), lensMat);
-    leftLens.position.set(-0.17, 0.05, 0.385);
+    const leftFrame = new THREE.Mesh(new THREE.TorusGeometry(0.085, 0.015, 12, 24), frameMat);
+    leftFrame.position.set(-0.125, 0.055, 0.30);
+    const leftLens = new THREE.Mesh(new THREE.CircleGeometry(0.078, 20), lensMat);
+    leftLens.position.set(-0.125, 0.055, 0.305);
     glassesGroup.add(leftFrame);
     glassesGroup.add(leftLens);
 
     const rightFrame = leftFrame.clone();
-    rightFrame.position.x = 0.17;
+    rightFrame.position.x = 0.125;
     const rightLens = leftLens.clone();
-    rightLens.position.x = 0.17;
+    rightLens.position.x = 0.125;
     glassesGroup.add(rightFrame);
     glassesGroup.add(rightLens);
 
-    const bridge = new THREE.Mesh(new THREE.CylinderGeometry(0.014, 0.014, 0.14), frameMat);
+    const bridge = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.11), frameMat);
     bridge.rotation.z = Math.PI * 0.5;
-    bridge.position.set(0, 0.06, 0.38);
+    bridge.position.set(0, 0.055, 0.30);
     glassesGroup.add(bridge);
     glassesGroup.visible = !!equipped.glasses;
     headGroup.add(glassesGroup);
@@ -831,27 +926,30 @@ export const ThreePetCanvas: React.FC<ThreePetCanvasProps> = ({
     // 4. Cozy Scarf
     const scarfGroup = new THREE.Group();
     const scarfMat = new THREE.MeshStandardMaterial({ color: 0xe11d48, roughness: 0.85 });
-    const scarfRing = new THREE.Mesh(new THREE.TorusGeometry(0.38, 0.09, 16, 32), scarfMat);
+    const scarfRing = new THREE.Mesh(new THREE.TorusGeometry(0.28, 0.065, 16, 32), scarfMat);
     scarfRing.rotateX(Math.PI * 0.5);
-    scarfRing.position.set(0, 0.14, 0.12);
+    scarfRing.position.set(0, 0.04, 0.05);
     scarfGroup.add(scarfRing);
     scarfGroup.visible = !!equipped.scarf;
-    bodyGroup.add(scarfGroup);
+    neckGroup.add(scarfGroup);
+
+    // If scarf is equipped, hide the bandana; otherwise show the signature green sprout bandana!
+    bandanaGroup.visible = !equipped.scarf;
 
     // 5. Mindful Bell Collar
     const collarGroup = new THREE.Group();
     const collarMat = new THREE.MeshStandardMaterial({ color: 0x059669, roughness: 0.6 });
     const bellMat = new THREE.MeshStandardMaterial({ color: 0xfbbf24, roughness: 0.2, metalness: 0.85 });
-    const collarRing = new THREE.Mesh(new THREE.TorusGeometry(0.36, 0.038, 14, 30), collarMat);
+    const collarRing = new THREE.Mesh(new THREE.TorusGeometry(0.27, 0.03, 14, 30), collarMat);
     collarRing.rotateX(Math.PI * 0.5);
-    collarRing.position.set(0, 0.18, 0.1);
+    collarRing.position.set(0, 0.08, 0.04);
     collarGroup.add(collarRing);
 
-    const bell = new THREE.Mesh(new THREE.SphereGeometry(0.05, 16, 14), bellMat);
-    bell.position.set(0, 0.13, 0.44);
+    const bell = new THREE.Mesh(new THREE.SphereGeometry(0.040, 16, 14), bellMat);
+    bell.position.set(0, 0.04, 0.30);
     collarGroup.add(bell);
-    collarGroup.visible = !!equipped.collar;
-    bodyGroup.add(collarGroup);
+    collarGroup.visible = !!equipped.collar && !!equipped.scarf;
+    neckGroup.add(collarGroup);
 
     // -----------------------------------------------------------------------
     // Floating Emotional Particle Systems
@@ -931,16 +1029,15 @@ export const ThreePetCanvas: React.FC<ThreePetCanvasProps> = ({
       bubblesGroup.add(bubble);
     };
 
-    // =======================================================================
+    // -----------------------------------------------------------------------
     // 3D Ceramic Pet Food Bowl (Directly on floor in front of the pet!)
-    // =======================================================================
+    // -----------------------------------------------------------------------
     const bowlGroup = new THREE.Group();
     bowlGroup.position.set(0, 0.04, 0.44);
 
-    // Ceramic outer bowl basin
     const bowlOuterGeo = new THREE.CylinderGeometry(0.18, 0.14, 0.08, 32);
     const bowlOuterMat = new THREE.MeshStandardMaterial({
-      color: isDog ? 0xf59e0b : 0x06b6d4, // Warm Amber bowl for dog, Cyan/Aquamarine for cat!
+      color: isDog ? 0xf59e0b : 0x06b6d4,
       roughness: 0.18,
       metalness: 0.25,
     });
@@ -949,7 +1046,6 @@ export const ThreePetCanvas: React.FC<ThreePetCanvasProps> = ({
     bowlOuter.receiveShadow = true;
     bowlGroup.add(bowlOuter);
 
-    // Smooth White Ceramic Rim
     const rimGeo = new THREE.TorusGeometry(0.18, 0.016, 16, 32);
     rimGeo.rotateX(Math.PI / 2);
     const rimMat = new THREE.MeshStandardMaterial({
@@ -961,7 +1057,6 @@ export const ThreePetCanvas: React.FC<ThreePetCanvasProps> = ({
     rim.position.y = 0.04;
     bowlGroup.add(rim);
 
-    // Realistic Food Fill (Brown Beef Kibble for Dog / Steamed Salmon & Tuna for Cat)
     const foodGeo = new THREE.CylinderGeometry(0.15, 0.12, 0.035, 24);
     const foodMat = new THREE.MeshStandardMaterial({
       color: isDog ? 0x78350f : 0xf97316,
@@ -971,7 +1066,6 @@ export const ThreePetCanvas: React.FC<ThreePetCanvasProps> = ({
     foodMesh.position.y = 0.03;
     bowlGroup.add(foodMesh);
 
-    // Cute White Paw Emblem on the front of the Bowl
     const pawEmblemGeo = new THREE.CircleGeometry(0.028, 16);
     const pawEmblemMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
     const pawEmblem = new THREE.Mesh(pawEmblemGeo, pawEmblemMat);
@@ -1014,8 +1108,6 @@ export const ThreePetCanvas: React.FC<ThreePetCanvasProps> = ({
       snoutGroup,
       jawGroup,
       tongueGroup,
-      tailGroup,
-      tailJoints,
       leftEarGroup,
       rightEarGroup,
       leftUpperLid,
@@ -1031,14 +1123,15 @@ export const ThreePetCanvas: React.FC<ThreePetCanvasProps> = ({
       chestMesh,
       bowlGroup,
       foodMesh,
+      bandanaGroup,
       salakotHat: salakotGroup,
       beanieHat: beanieGroup,
       sunglasses: glassesGroup,
       cozyScarf: scarfGroup,
       collar: collarGroup,
+      animState,
       particlesGroup,
       bubblesGroup,
-      animState,
     };
 
     const handlePointerDown = (e: MouseEvent | TouchEvent) => {
@@ -1057,7 +1150,7 @@ export const ThreePetCanvas: React.FC<ThreePetCanvasProps> = ({
 
       const raycaster = new THREE.Raycaster();
       raycaster.setFromCamera(mouse, camera);
-      const intersects = raycaster.intersectObjects([chestMesh, skullMesh, leftCheek, rightCheek], true);
+      const intersects = raycaster.intersectObjects([chestMesh, skullMesh], true);
 
       if (intersects.length > 0) {
         animState.petReaction = 1.0;
@@ -1079,12 +1172,11 @@ export const ThreePetCanvas: React.FC<ThreePetCanvasProps> = ({
         animState.prevMouseX = clientX;
         animState.prevMouseY = clientY;
       } else {
-        // Natural gentle head tracking: subtle eye contact
         const rect = container.getBoundingClientRect();
         const normX = ((clientX - rect.left) / rect.width) * 2 - 1;
         const normY = -(((clientY - rect.top) / rect.height) * 2 - 1);
-        animState.targetLookY = normX * 0.28;
-        animState.targetLookX = -normY * 0.16;
+        animState.targetLookY = normX * 0.25;
+        animState.targetLookX = -normY * 0.14;
       }
     };
 
@@ -1120,7 +1212,7 @@ export const ThreePetCanvas: React.FC<ThreePetCanvasProps> = ({
         animState.blinkTimer = 3.0 + Math.random() * 3.5;
       }
 
-      // Smooth Head Tracking Interpolation
+      // Smooth Head Tracking
       animState.headLookX += (animState.targetLookX - animState.headLookX) * 0.08;
       animState.headLookY += (animState.targetLookY - animState.headLookY) * 0.08;
 
@@ -1149,8 +1241,8 @@ export const ThreePetCanvas: React.FC<ThreePetCanvasProps> = ({
         leftLowerLid.rotation.x = 0;
         rightLowerLid.rotation.x = 0;
       } else if (isHappy) {
-        leftUpperLid.rotation.x = -0.3;
-        rightUpperLid.rotation.x = -0.3;
+        leftUpperLid.rotation.x = -0.32;
+        rightUpperLid.rotation.x = -0.32;
         leftLowerLid.rotation.x = 0.28;
         rightLowerLid.rotation.x = 0.28;
       } else if (isSad) {
@@ -1178,191 +1270,151 @@ export const ThreePetCanvas: React.FC<ThreePetCanvasProps> = ({
 
       // 2. Emotional Movement & Respiration Dynamics
       if (isHappy) {
-        // Joyful Playful Puppy: Bouncy hops, panting, fast organic tail wag
-        const happyHop = Math.abs(Math.sin(t * 7.5)) * 0.06;
-        bodyGroup.position.y = 0.44 + happyHop;
+        // Joyful Playful Puppy: Bouncy hops, panting, glowing happiness
+        const happyHop = Math.abs(Math.sin(t * 7.5)) * 0.05;
+        bodyGroup.position.y = 0.30 + happyHop;
 
-        // 4-joint harmonic S-wave tail wag
-        const wagFreq = 22;
-        tailJoints.forEach((joint, idx) => {
-          joint.rotation.y = Math.sin(t * wagFreq - idx * 0.35) * (0.35 + idx * 0.1);
-        });
-
-        // Panting head & tongue
-        headGroup.position.set(0, 0.22 + happyHop * 0.7, 0.08);
+        headGroup.position.set(0, 0.23 + happyHop * 0.7, 0.06);
         headGroup.rotation.set(
-          animState.headLookX + Math.sin(t * 8) * 0.06,
-          animState.headLookY + Math.sin(t * 6) * 0.06,
-          Math.sin(t * 4) * 0.08
+          animState.headLookX + Math.sin(t * 8) * 0.05,
+          animState.headLookY + Math.sin(t * 6) * 0.05,
+          Math.sin(t * 4) * 0.06
         );
 
-        tongueGroup.scale.set(1, 1, 1);
-        tongueGroup.rotation.y = Math.sin(t * 8) * 0.12;
-        tongueGroup.position.y = 0.015 + Math.sin(t * 10) * 0.015;
+        tongueGroup.scale.set(1.15, 1.15, 1.15);
+        tongueGroup.position.y = -0.010 + Math.sin(t * 9) * 0.012;
 
-        // Floppy ears spring
         if (isDog) {
-          leftEarGroup.rotation.z = 0.12 + Math.sin(t * 14) * 0.15;
-          rightEarGroup.rotation.z = -0.12 - Math.sin(t * 14) * 0.15;
+          leftEarGroup.rotation.set(0.15 + Math.sin(t * 12) * 0.12, 0.18, 0.15);
+          rightEarGroup.rotation.set(0.15 + Math.sin(t * 12) * 0.12, -0.18, -0.15);
         }
 
-        frontLeftLeg.position.y = 0.34 + happyHop * 0.4;
-        frontRightLeg.position.y = 0.34 + (Math.abs(Math.cos(t * 7.5)) * 0.03);
+        frontLeftLeg.position.y = 0.14 + happyHop * 0.35;
+        frontRightLeg.position.y = 0.14 + (Math.abs(Math.cos(t * 7.5)) * 0.025);
 
         if (Math.random() < 0.06) {
-          spawnParticle(0, 1.0, 0, 'sparkle');
+          spawnParticle(0, 0.9, 0, 'sparkle');
         }
 
         shadowDisc.scale.set(1 - happyHop * 1.2, 1 - happyHop * 1.2, 1);
         zenRing.material.opacity = 0;
       } else if (isCalm) {
-        // Serene Diaphragmatic Breathing: chest expands softly
+        // Serene Diaphragmatic Breathing
         const breathCycle = Math.sin(t * 1.6);
-        const breath = breathCycle * 0.025;
+        const breath = breathCycle * 0.02;
 
-        chestMesh.scale.set(0.96 + breath * 0.6, 1.12 + breath * 0.5, 1.15 - breath * 0.3);
-        bodyGroup.position.y = 0.44 + breath * 0.3;
+        chestMesh.scale.set(0.96 + breath * 0.5, 1.05 + breath * 0.4, 0.95 - breath * 0.2);
+        bodyGroup.position.y = 0.30 + breath * 0.25;
 
-        headGroup.position.set(0, 0.22 + breath * 0.4, 0.08);
+        headGroup.position.set(0, 0.23 + breath * 0.35, 0.06);
         headGroup.rotation.set(
-          animState.headLookX + breath * 0.04,
+          animState.headLookX + breath * 0.03,
           animState.headLookY,
-          Math.sin(t * 0.8) * 0.025
+          Math.sin(t * 0.8) * 0.02
         );
 
-        // Gentle slow floor-tap tail
-        tailJoints.forEach((joint, idx) => {
-          joint.rotation.y = Math.sin(t * 3.2 - idx * 0.3) * (0.12 + idx * 0.04);
-        });
+        tongueGroup.scale.set(1.0, 1.0, 1.0);
+        tongueGroup.position.y = -0.015;
 
-        tongueGroup.scale.set(0.001, 0.001, 0.001);
-
-        leftEarGroup.rotation.set(0, 0, 0.04);
-        rightEarGroup.rotation.set(0, 0, -0.04);
+        if (isDog) {
+          leftEarGroup.rotation.set(0.12, 0.18, 0.15);
+          rightEarGroup.rotation.set(0.12, -0.18, -0.15);
+        }
 
         zenRing.material.opacity = 0.32 + (breathCycle + 1) * 0.18;
         zenRing.scale.set(1 + breath * 1.1, 1 + breath * 1.1, 1);
       } else if (isSad) {
-        // Empathetic comforting posture: head lowers gently, soulful upward puppy gaze
+        // Comforting posture: sweet empathetic head tilt
         const sighBreath = Math.sin(t * 1.2);
-        const sigh = sighBreath * 0.015;
+        const sigh = sighBreath * 0.012;
 
-        bodyGroup.position.set(0, 0.42, 0.06);
-        chestMesh.scale.set(0.98 + sigh, 1.1, 1.14);
+        bodyGroup.position.set(0, 0.28, 0.03);
+        chestMesh.scale.set(0.98 + sigh, 1.05, 0.95);
 
-        headGroup.position.set(0, 0.18, 0.12);
-        headGroup.rotation.set(
-          -0.08 + sigh * 0.04,
-          animState.headLookY * 0.5,
-          0.12 // sweet empathetic head tilt
-        );
+        headGroup.position.set(0, 0.19, 0.08);
+        headGroup.rotation.set(-0.06 + sigh * 0.03, animState.headLookY * 0.5, 0.12);
 
         if (isDog) {
-          leftEarGroup.rotation.set(0.12, 0, -0.12);
-          rightEarGroup.rotation.set(0.12, 0, 0.12);
+          leftEarGroup.rotation.set(0.18, 0.12, 0.08);
+          rightEarGroup.rotation.set(0.18, -0.12, -0.08);
         }
 
-        tailJoints.forEach((joint, idx) => {
-          joint.rotation.y = Math.sin(t * 3.4 - idx * 0.35) * (0.14 + idx * 0.04);
-        });
-
-        tongueGroup.scale.set(0.001, 0.001, 0.001);
+        tongueGroup.scale.set(0.9, 0.9, 0.9);
+        tongueGroup.position.y = -0.018;
         zenRing.material.opacity = 0;
       } else if (isOverwhelmed) {
-        // Mindful Box Breathing Grounding: exactly 4.0s Inhale -> 4.0s Exhale
+        // Mindful Box Breathing Grounding (4s Inhale / 4s Exhale)
         const boxPhase = (t % 8.0) / 8.0;
         const boxExpand = boxPhase < 0.5 ? boxPhase / 0.5 : 1.0 - ((boxPhase - 0.5) / 0.5);
         const smoothBox = (1 - Math.cos(boxExpand * Math.PI)) / 2;
 
-        bodyGroup.position.set(0, 0.44 + smoothBox * 0.03, 0);
-        chestMesh.scale.set(0.96 + smoothBox * 0.08, 1.12 + smoothBox * 0.06, 1.15);
+        bodyGroup.position.set(0, 0.30 + smoothBox * 0.025, 0);
+        chestMesh.scale.set(0.96 + smoothBox * 0.07, 1.05 + smoothBox * 0.05, 0.95);
 
-        headGroup.position.set(0, 0.22 + smoothBox * 0.04, 0.08);
+        headGroup.position.set(0, 0.23 + smoothBox * 0.035, 0.06);
         headGroup.rotation.set(animState.headLookX * 0.35, animState.headLookY * 0.35, 0);
 
-        tailJoints.forEach((joint) => {
-          joint.rotation.set(0.15, 0, 0);
-        });
-
-        tongueGroup.scale.set(0.001, 0.001, 0.001);
+        tongueGroup.scale.set(1.0, 1.0, 1.0);
+        tongueGroup.position.y = -0.015;
 
         zenRing.material.opacity = 0.25 + smoothBox * 0.6;
         zenRing.scale.set(1.0 + smoothBox * 0.3, 1.0 + smoothBox * 0.3, 1);
       } else if (isTired) {
         // Sleepy Yawn & Rest
-        const tiredSway = Math.sin(t * 1.4) * 0.015;
-        bodyGroup.position.set(0, 0.42, 0);
+        const tiredSway = Math.sin(t * 1.4) * 0.012;
+        bodyGroup.position.set(0, 0.28, 0);
 
         const yawnCycle = (t % 9.0);
         if (yawnCycle > 6.0 && yawnCycle < 8.2) {
           const yp = Math.sin(((yawnCycle - 6.0) / 2.2) * Math.PI);
-          headGroup.position.set(0, 0.2 + yp * 0.05, 0.1);
-          headGroup.rotation.set(0.2 * yp, 0, 0);
-          tongueGroup.scale.set(yp * 1.05, yp * 1.05, yp * 1.05);
+          headGroup.position.set(0, 0.20 + yp * 0.04, 0.07);
+          headGroup.rotation.set(0.18 * yp, 0, 0);
+          tongueGroup.scale.set(1.25 * yp, 1.25 * yp, 1.25 * yp);
         } else {
-          headGroup.position.set(0, 0.18 + tiredSway, 0.1);
-          headGroup.rotation.set(0.1, animState.headLookY * 0.5, 0);
-          tongueGroup.scale.set(0.001, 0.001, 0.001);
+          headGroup.position.set(0, 0.20 + tiredSway, 0.07);
+          headGroup.rotation.set(0.08, animState.headLookY * 0.5, 0);
+          tongueGroup.scale.set(0.95, 0.95, 0.95);
+          tongueGroup.position.y = -0.016;
         }
-
-        tailJoints.forEach((joint, idx) => {
-          joint.rotation.y = Math.sin(t * 1.8 - idx * 0.3) * (0.06 + idx * 0.02);
-        });
         zenRing.material.opacity = 0;
       } else if (isSleeping) {
         // Curled Sleep
-        const sleepBreath = Math.sin(t * 1.5) * 0.03;
-        bodyGroup.position.set(0, 0.38, 0);
-        chestMesh.scale.set(1.0 + sleepBreath * 0.4, 1.0 - sleepBreath * 0.2, 1.12 + sleepBreath * 0.3);
+        const sleepBreath = Math.sin(t * 1.5) * 0.025;
+        bodyGroup.position.set(0, 0.26, 0);
+        chestMesh.scale.set(0.98 + sleepBreath * 0.3, 1.02 - sleepBreath * 0.15, 0.96 + sleepBreath * 0.2);
 
-        headGroup.position.set(0.1, 0.12, 0.14);
-        headGroup.rotation.set(0.28, 0.18, 0.14);
+        headGroup.position.set(0.08, 0.13, 0.10);
+        headGroup.rotation.set(0.24, 0.16, 0.12);
 
-        tailJoints.forEach((joint) => {
-          joint.rotation.set(0.06, 0, 0);
-        });
         tongueGroup.scale.set(0.001, 0.001, 0.001);
         zenRing.material.opacity = 0;
       } else if (isBathing) {
         // Wet Dog Shake
         const shakeCycle = Math.sin(t * 26);
-        bodyGroup.rotation.y = shakeCycle * 0.16;
-        headGroup.rotation.y = -shakeCycle * 0.24;
-        headGroup.rotation.z = Math.sin(t * 14) * 0.1;
+        bodyGroup.rotation.y = shakeCycle * 0.14;
+        headGroup.rotation.y = -shakeCycle * 0.22;
+        headGroup.rotation.z = Math.sin(t * 14) * 0.08;
 
         if (isDog) {
-          leftEarGroup.rotation.z = 0.2 + Math.sin(t * 26) * 0.3;
-          rightEarGroup.rotation.z = -0.2 - Math.sin(t * 26) * 0.3;
+          leftEarGroup.rotation.z = 0.15 + Math.sin(t * 26) * 0.25;
+          rightEarGroup.rotation.z = -0.15 - Math.sin(t * 26) * 0.25;
         }
-
-        tailJoints.forEach((joint) => {
-          joint.rotation.y = -shakeCycle * 0.35;
-        });
 
         if (Math.random() < 0.25) spawnBubble();
         zenRing.material.opacity = 0;
       } else if (isEating) {
-        // Deep realistic 3D eating dive into the 3D food bowl!
+        // Deep eating dive into 3D food bowl
         const chewSpeed = t * 16;
-        const chewBob = Math.sin(chewSpeed) * 0.035;
-        const headDips = 0.46 + Math.sin(t * 8) * 0.08;
+        const chewBob = Math.sin(chewSpeed) * 0.03;
+        const headDips = 0.44 + Math.sin(t * 8) * 0.06;
 
-        // Head dips down directly over the 3D ceramic bowl!
-        headGroup.position.set(0, 0.07 + chewBob, 0.32);
-        headGroup.rotation.set(headDips, Math.sin(t * 6) * 0.05, Math.sin(t * 8) * 0.04);
+        headGroup.position.set(0, 0.09 + chewBob, 0.26);
+        headGroup.rotation.set(headDips, Math.sin(t * 6) * 0.04, Math.sin(t * 8) * 0.03);
 
-        // Jaw rhythmically chews & mouth opens/closes
-        jawGroup.rotation.x = -0.15 - Math.abs(Math.sin(chewSpeed)) * 0.22;
-        tongueGroup.scale.set(0.9, 0.9, 0.9);
-        tongueGroup.position.set(0, -0.015 + Math.sin(chewSpeed) * 0.02, 0.08);
+        jawGroup.rotation.x = -0.12 - Math.abs(Math.sin(chewSpeed)) * 0.20;
+        tongueGroup.scale.set(1.1, 1.1, 1.1);
+        tongueGroup.position.set(0, -0.015 + Math.sin(chewSpeed) * 0.015, 0.07);
 
-        // Tail wags with high happiness in an energetic S-curve!
-        tailJoints.forEach((joint, idx) => {
-          joint.rotation.y = Math.sin(t * 22 - idx * 0.35) * (0.35 + idx * 0.08);
-          joint.rotation.x = 0.18 + Math.sin(t * 12) * 0.08;
-        });
-
-        // Little happy food crumbs / crunch sparkles pop up from the bowl!
         if (Math.random() < 0.14) {
           spawnParticle(
             (Math.random() - 0.5) * 0.16,
@@ -1373,61 +1425,43 @@ export const ThreePetCanvas: React.FC<ThreePetCanvasProps> = ({
         }
         zenRing.material.opacity = 0;
       } else if (isSniffing) {
-        // The pet smells food! Head reaches forward, nose wiggles, ears perk up, tail wags in high excitement!
-        const sniffTwitch = Math.sin(t * 24) * 0.02;
-        headGroup.position.set(0, 0.26 + sniffTwitch, 0.16);
-        headGroup.rotation.set(-0.12 + Math.sin(t * 10) * 0.05, animState.headLookY * 0.6, 0);
+        const sniffTwitch = Math.sin(t * 24) * 0.018;
+        headGroup.position.set(0, 0.23 + sniffTwitch, 0.13);
+        headGroup.rotation.set(-0.10 + Math.sin(t * 10) * 0.04, animState.headLookY * 0.6, 0);
+        snoutGroup.position.y = -0.015 + sniffTwitch * 0.5;
 
-        // Nose twitch
-        snoutGroup.position.y = sniffTwitch * 0.5;
-
-        // Ears perk forward in eager anticipation
         if (isDog) {
-          leftEarGroup.rotation.set(-0.18, 0, 0.08);
-          rightEarGroup.rotation.set(-0.18, 0, -0.08);
-        } else {
-          leftEarGroup.rotation.set(-0.25, 0, 0.1);
-          rightEarGroup.rotation.set(-0.25, 0, -0.1);
+          leftEarGroup.rotation.set(-0.10, 0.12, 0.10);
+          rightEarGroup.rotation.set(-0.10, -0.12, -0.10);
         }
 
-        // Happy mouth slightly open, tongue panting
-        tongueGroup.scale.set(0.65, 0.65, 0.65);
-        tongueGroup.position.y = 0.01 + Math.sin(t * 14) * 0.01;
+        tongueGroup.scale.set(1.05, 1.05, 1.05);
+        tongueGroup.position.y = -0.012 + Math.sin(t * 14) * 0.008;
 
-        // Eager tail wagging
-        tailJoints.forEach((joint, idx) => {
-          joint.rotation.y = Math.sin(t * 18 - idx * 0.35) * (0.28 + idx * 0.06);
-        });
-
-        // Little sparkle of excitement
         if (Math.random() < 0.08) {
           spawnParticle(0, 0.7, 0.2, 'sparkle');
         }
         zenRing.material.opacity = 0;
       } else {
-        // Natural Living Idle: gentle breathing, direct warm eye contact
-        const breath = Math.sin(t * 2.0) * 0.018;
-        bodyGroup.position.set(0, 0.44 + breath, 0);
-        chestMesh.scale.set(0.96 + breath * 0.4, 1.12 + breath * 0.5, 1.15 - breath * 0.2);
+        // Natural Living Idle: gentle breathing, direct warm eye contact, joyful open smile
+        const breath = Math.sin(t * 2.0) * 0.014;
+        bodyGroup.position.set(0, 0.30 + breath, 0);
+        chestMesh.scale.set(0.96 + breath * 0.35, 1.05 + breath * 0.35, 0.95 - breath * 0.18);
 
-        headGroup.position.set(0, 0.22 + breath * 0.5, 0.08);
+        headGroup.position.set(0, 0.23 + breath * 0.45, 0.06);
         headGroup.rotation.set(
-          animState.headLookX + Math.sin(t * 1.5) * 0.02,
+          animState.headLookX + Math.sin(t * 1.5) * 0.018,
           animState.headLookY,
-          Math.sin(t * 1.1) * 0.025
+          Math.sin(t * 1.1) * 0.018
         );
 
-        tailJoints.forEach((joint, idx) => {
-          joint.rotation.y = Math.sin(t * 4.2 - idx * 0.35) * (0.18 + idx * 0.06);
-        });
+        // Open mouth smile with cute tongue tip resting comfortably
+        tongueGroup.scale.set(1.0, 1.0, 1.0);
+        tongueGroup.position.y = -0.015 + Math.sin(t * 3.5) * 0.004;
 
-        tongueGroup.scale.set(0.001, 0.001, 0.001);
-
-        if (Math.sin(t * 3.2) > 0.95 && isDog) {
-          leftEarGroup.rotation.z = 0.18;
-        } else {
-          leftEarGroup.rotation.set(0, 0, 0);
-          rightEarGroup.rotation.set(0, 0, 0);
+        if (isDog) {
+          leftEarGroup.rotation.set(0.12 + Math.sin(t * 2.0) * 0.03, 0.18, 0.15);
+          rightEarGroup.rotation.set(0.12 + Math.sin(t * 2.0) * 0.03, -0.18, -0.15);
         }
 
         zenRing.material.opacity = 0;
@@ -1448,19 +1482,20 @@ export const ThreePetCanvas: React.FC<ThreePetCanvasProps> = ({
         const b = bubblesGroup.children[i] as THREE.Mesh;
         b.position.y += b.userData.vy;
         b.position.x += b.userData.vx;
-        b.userData.life -= delta * 0.7;
+        b.userData.life -= delta * 0.6;
         (b.material as THREE.MeshStandardMaterial).opacity = Math.max(0, b.userData.life * 0.65);
         if (b.userData.life <= 0) bubblesGroup.remove(b);
       }
 
-      // Smooth Orbit Camera Interpolation
-      const targetCamX = Math.sin(animState.orbitAngle) * 3.2;
-      const targetCamZ = Math.cos(animState.orbitAngle) * 3.2;
-      const targetCamY = 0.95 + animState.orbitPitch * 1.5;
+      // Smooth Orbit Camera Interpolation (Generous framing, zero top clipping)
+      const camDist = 2.7;
+      const targetCamX = Math.sin(animState.orbitAngle) * camDist;
+      const targetCamZ = Math.cos(animState.orbitAngle) * camDist;
+      const targetCamY = 0.46 + animState.orbitPitch * 0.9;
       camera.position.x += (targetCamX - camera.position.x) * 0.1;
       camera.position.y += (targetCamY - camera.position.y) * 0.1;
       camera.position.z += (targetCamZ - camera.position.z) * 0.1;
-      camera.lookAt(0, 0.58, 0);
+      camera.lookAt(0, 0.42, 0);
 
       renderer.render(scene, camera);
     };
@@ -1493,12 +1528,13 @@ export const ThreePetCanvas: React.FC<ThreePetCanvasProps> = ({
 
   useEffect(() => {
     if (!sceneRef.current) return;
-    const { salakotHat, beanieHat, sunglasses, cozyScarf, collar } = sceneRef.current;
+    const { salakotHat, beanieHat, sunglasses, cozyScarf, collar, bandanaGroup } = sceneRef.current;
     if (salakotHat) salakotHat.visible = equipped.hat === 'salakot';
     if (beanieHat) beanieHat.visible = equipped.hat === 'beanie';
     if (sunglasses) sunglasses.visible = !!equipped.glasses;
     if (cozyScarf) cozyScarf.visible = !!equipped.scarf;
-    if (collar) collar.visible = !!equipped.collar;
+    if (bandanaGroup) bandanaGroup.visible = !equipped.scarf;
+    if (collar) collar.visible = !!equipped.collar && !!equipped.scarf;
   }, [equipped]);
 
   const dimensions = {

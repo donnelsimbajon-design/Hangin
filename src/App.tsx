@@ -1436,9 +1436,6 @@ export default function App() {
                   onOpenChat={() =>
                     setIsChatOpen(true)
                   }
-                  onChangeSpecies={
-                    handleToggleSpecies
-                  }
                 />
 
                 <DailyAffirmationWidget
@@ -1502,9 +1499,6 @@ export default function App() {
                   }
                   onTriggerCrisisSafety={() =>
                     setIsCrisisOpen(true)
-                  }
-                  onChangeSpecies={
-                    handleToggleSpecies
                   }
                 />
               </motion.div>
@@ -1676,9 +1670,6 @@ export default function App() {
                   onTriggerCrisisSafety={() =>
                     setIsCrisisOpen(true)
                   }
-                  onChangeSpecies={
-                    handleToggleSpecies
-                  }
                   onLaunchMinimizer={() =>
                     setPhoneMode(
                       'minimizer'
@@ -1720,6 +1711,7 @@ export default function App() {
                 }}
               >
                 <ExpandedMarket
+                  species={appState.species}
                   points={appState.points}
                   inventory={
                     appState.inventory
