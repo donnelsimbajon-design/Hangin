@@ -394,20 +394,30 @@ export const RedditCommunity: React.FC<RedditCommunityProps> = ({
       </div>
 
       {/* ============================================================
-          CREATE POST SUBFORM — revealed under the search bar by the Plus
-          button. All existing composer controls are kept as-is.
+          CREATE POST MODAL — opened by the Plus button. Same controls as
+          before; only the container changed. Click the backdrop or X to close.
           ============================================================ */}
-      <AnimatePresence initial={false}>
+      <AnimatePresence>
         {isCreatePostOpen && (
           <motion.div
-            key="create-post"
-            initial={{ opacity: 0, height: 0, y: -6 }}
-            animate={{ opacity: 1, height: 'auto', y: 0 }}
-            exit={{ opacity: 0, height: 0, y: -6 }}
-            transition={{ duration: 0.22, ease: 'easeOut' }}
-            className="overflow-hidden"
+            key="create-post-modal"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setIsCreatePostOpen(false)}
+            className="fixed inset-0 z-50 bg-[#0b1411]/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 select-none"
           >
-            <div className="rounded-2xl bg-white dark:bg-[#13221b] border border-emerald-200 dark:border-emerald-800/80 shadow-xs p-3 sm:p-4 space-y-3">
+            <motion.div
+              initial={{ scale: 0.95, y: 12, opacity: 0 }}
+              animate={{ scale: 1, y: 0, opacity: 1 }}
+              exit={{ scale: 0.95, y: 12, opacity: 0 }}
+              transition={{ duration: 0.2, ease: 'easeOut' }}
+              onClick={(e) => e.stopPropagation()}
+              role="dialog"
+              aria-modal="true"
+              aria-label="Create a post"
+              className="w-full max-w-md max-h-[90vh] overflow-y-auto bg-white dark:bg-[#13221b] rounded-3xl p-4 sm:p-5 border border-emerald-200 dark:border-emerald-800 shadow-2xl space-y-3"
+            >
               <div className="flex items-center justify-between border-b border-emerald-100 dark:border-emerald-900/60 pb-2.5">
                 <div className="flex items-center gap-2 min-w-0">
                   <span className="w-7 h-7 rounded-full bg-emerald-600 text-white font-bold flex items-center justify-center text-[11px] shrink-0">
@@ -531,13 +541,13 @@ export const RedditCommunity: React.FC<RedditCommunityProps> = ({
                   POST TO H/
                 </button>
               </div>
-            </div>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
 
       {/* ============================================================
-          CATEGORIES — sits below the create-post subform
+          CATEGORIES — sits below the search bar
           ============================================================ */}
       <div className="space-y-2">
         <div className="flex items-center gap-1.5 px-1">
