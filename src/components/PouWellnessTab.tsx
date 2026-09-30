@@ -563,7 +563,7 @@ export const PouWellnessTab: React.FC<PouWellnessTabProps> = ({
     if (roomMood === 'playing') return 'excited';
     if (roomMood !== 'idle') return roomMood;
     if (activeRoom === 'outside' && isOutsideStormy) {
-      return species === 'cat' ? 'serious' : 'sad';
+      return 'sad';
     }
     if (stats.isSick || stats.energy < 20) return 'tired';
     if (stats.hunger < 25) return 'anxious';
@@ -837,8 +837,8 @@ export const PouWellnessTab: React.FC<PouWellnessTabProps> = ({
       setIsShowerRunning(true);
       setSoapBubbles([]);
       // Dogs put up with a rinse cheerfully; a cat sits through it visibly
-      // unimpressed.
-      setRoomMood(species === 'cat' ? 'serious' : 'happy');
+      // unimpressed — but not angry, just anxious/sad about the water.
+      setRoomMood(species === 'cat' ? 'anxious' : 'happy');
       onUpdateStats({
         cleanliness: 100,
         happiness: Math.min(100, stats.happiness + 8),
@@ -866,7 +866,8 @@ export const PouWellnessTab: React.FC<PouWellnessTabProps> = ({
       if (blowerTimerRef.current) clearTimeout(blowerTimerRef.current);
       setIsBlowerRunning(true);
       setSoapBubbles([]);
-      setRoomMood(species === 'cat' ? 'serious' : 'happy');
+      // Cats dislike the loud blower — anxious, not angry.
+      setRoomMood(species === 'cat' ? 'anxious' : 'happy');
       onUpdateStats({
         cleanliness: 100,
         happiness: Math.min(100, stats.happiness + 4),
