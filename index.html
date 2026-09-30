@@ -24,6 +24,24 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&family=Caveat:wght@600;700&display=swap" rel="stylesheet">
+    <!--
+      Theme bootstrap — resolves the saved (or system) theme and sets the
+      `.dark` class before first paint, so dark-mode visitors never see a
+      white flash while React boots. Keep in sync with `initThemeScript()`
+      in src/hooks/useTheme.ts, which owns the full behaviour.
+    -->
+    <script>
+      (function () {
+        try {
+          var stored = localStorage.getItem('hangin_theme');
+          var theme = stored === 'light' || stored === 'dark'
+            ? stored
+            : (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+          if (theme === 'dark') { document.documentElement.classList.add('dark'); }
+          document.documentElement.style.colorScheme = theme;
+        } catch (error) {}
+      })();
+    </script>
   </head>
   <body class="bg-[#f4f8f5] dark:bg-[#0b1411] text-[#17352a] dark:text-[#e6f1eb] antialiased selection:bg-[#a8d8ba] selection:text-[#17352a] overflow-x-hidden min-h-screen">
     <div id="root" class="min-h-screen flex flex-col"></div>

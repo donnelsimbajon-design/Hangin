@@ -144,7 +144,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
             </p>
 
             {/* REVEAL STAGE */}
-            <div className="w-full h-56 sm:h-60 my-4 rounded-3xl bg-gradient-to-b from-[#e7efe9] via-[#dcefe4] to-[#d3e7da] dark:from-[#182a22] dark:to-[#182a22] border border-emerald-200/80 dark:border-emerald-800/40 relative overflow-hidden flex flex-col items-center justify-center p-4">
+            <div className="w-full h-56 sm:h-60 my-4 rounded-3xl bg-gradient-to-b from-[#e7efe9] via-[#dcefe4] to-[#d3e7da] dark:from-[#182a22] dark:via-[#182a22] dark:to-[#182a22] border border-emerald-200/80 dark:border-emerald-800/40 relative overflow-hidden flex flex-col items-center justify-center p-4">
               <AnimatePresence mode="wait">
                 {!isRevealed ? (
                   /* MYSTERY 5-PRESS EGG / BASKET */
@@ -304,7 +304,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
                     <CuteCompanion
                       species={species}
                       mood="happy"
-                      equipped={{ hat: null, glasses: false, scarf: false, collar: true }}
+                      equipped={{ hat: null, clothing: null, glasses: false, scarf: false, collar: true }}
                       interactive={true}
                       size="md"
                     />
@@ -340,7 +340,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
                     className={`p-3 rounded-2xl border flex items-center justify-center gap-2 cursor-pointer transition-all ${
                       species === 'dog'
                         ? 'bg-emerald-800 text-white border-emerald-900 shadow-sm font-bold'
-                        : 'bg-emerald-50 dark:bg-[#182a22] text-emerald-900 dark:text-emerald-200 border-emerald-200 hover:bg-emerald-100'
+                        : 'bg-emerald-50 dark:bg-[#182a22] text-emerald-900 dark:text-emerald-200 border-emerald-200 dark:border-emerald-800/40 hover:bg-emerald-100 dark:hover:bg-emerald-900/50'
                     }`}
                   >
                     <span className="text-xl">🐶</span>
@@ -359,7 +359,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
                     className={`p-3 rounded-2xl border flex items-center justify-center gap-2 cursor-pointer transition-all ${
                       species === 'cat'
                         ? 'bg-emerald-800 text-white border-emerald-900 shadow-sm font-bold'
-                        : 'bg-emerald-50 dark:bg-[#182a22] text-emerald-900 dark:text-emerald-200 border-emerald-200 hover:bg-emerald-100'
+                        : 'bg-emerald-50 dark:bg-[#182a22] text-emerald-900 dark:text-emerald-200 border-emerald-200 dark:border-emerald-800/40 hover:bg-emerald-100 dark:hover:bg-emerald-900/50'
                     }`}
                   >
                     <span className="text-xl">🐱</span>
@@ -468,7 +468,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
                         className={`w-4.5 h-4.5 rounded-md flex items-center justify-center border ${
                           isSelected
                             ? 'bg-emerald-700 border-emerald-800 text-white'
-                            : 'border-emerald-300'
+                            : 'border-emerald-300 dark:border-emerald-700'
                         }`}
                       >
                         {isSelected && <Check className="w-3 h-3" />}

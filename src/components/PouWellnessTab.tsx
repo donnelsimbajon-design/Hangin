@@ -210,6 +210,14 @@ const kitchenItemsFor = (species: PetSpecies): KitchenItem[] => [
   { id: 'herbalTea', name: 'Herbal Tea', icon: Leaf, color: 'text-amber-600 dark:text-amber-400', type: 'drink' as const, inventoryKey: 'herbalTea' as keyof Inventory, xp: 3 },
 ];
 
+/** The SCENE_PLACES entry behind a room, resolved from the SAME list the place
+    rail renders from. Reading the label and the glyph from one source is what
+    keeps a place's heading from drifting away from the name on its own rail
+    button. Every `activeRoom` is a CareRoom and only "games" is scene-only, so
+    this resolves for every selectable place; the undefined case is a guard. */
+const placeFor = (room: CareRoom): ScenePlace | undefined =>
+  SCENE_PLACES.find((place) => place.id === room);
+
 interface MeadowFlowerProps {
   grown: boolean;
   swaying: boolean;
@@ -489,6 +497,11 @@ export const PouWellnessTab: React.FC<PouWellnessTabProps> = ({
   // Ball bouncing in outside room
   const [isBallThrown, setIsBallThrown] = useState(false);
 
+  // A real pet sniffs what it is served before it eats or drinks (or turns it
+  // down), and shakes itself dry right after a rinse.
+  const [isSniffingServed, setIsSniffingServed] = useState(false);
+  const [isShakingOff, setIsShakingOff] = useState(false);
+
   // Mindful Mini-Games modal
   const [showGamesModal, setShowGamesModal] = useState(false);
 
@@ -510,8 +523,22 @@ export const PouWellnessTab: React.FC<PouWellnessTabProps> = ({
   // browsers fire at the end of a drag.
   const dragJustHappenedRef = useRef(false);
 
+  // Timers for the multi-step pet behaviours (sniff -> eat, rinse -> shake off).
+  // Tracked so they can all be cleared if the tab goes away mid-sequence.
+  const pendingTimersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+
   // The kitchen's own food + drink list, shared with the in-scene pantry shelf.
   const kitchenItems = kitchenItemsFor(species);
+
+  // Which place the user is actually standing in, so the pantry card below is
+  // titled for that place instead of always claiming to be the kitchen's.
+  // Kitchen -> "Kitchen Pantry", Bathroom -> "Bathroom Pantry", and so on for
+  // every place in SCENE_PLACES, including any added later.
+  const activePlace = placeFor(activeRoom);
+  const pantryTitle = `${activePlace?.label ?? 'Room'} Pantry`;
+  // The heading carries the selected place's own glyph rather than one fixed
+  // mark, so the card reads as belonging to the place that is on screen.
+  const PantryIcon: IconComponent = activePlace?.icon ?? PawPrint;
 
   // While the pet is being bathed or rinsed it walks over to the shower head
   // (mounted top-right) so the water visibly falls ON it.
@@ -525,11 +552,37 @@ export const PouWellnessTab: React.FC<PouWellnessTabProps> = ({
       ? '9rem'
       : '50%';
 
+  // What the pet actually looks like right now. An action in progress (eating,
+  // bathing, being petted...) always wins; otherwise the pet reacts to its
+  // surroundings and how it is feeling, the way a real one would: asleep when
+  // put to bed, miserable in the rain (a cat is openly displeased), drowsy when
+  // worn out or unwell, and pleading when it is hungry.
+  const displayMood: string = (() => {
+    if (stats.isSleeping) return 'sleeping';
+    // CuteCompanion has no "playing" pose; a pet chasing a ball is excited.
+    if (roomMood === 'playing') return 'excited';
+    if (roomMood !== 'idle') return roomMood;
+    if (activeRoom === 'outside' && isOutsideStormy) {
+      return 'sad';
+    }
+    if (stats.isSick || stats.energy < 20) return 'tired';
+    if (stats.hunger < 25) return 'anxious';
+    return 'idle';
+  })();
+
   // Clear the blower on unmount so a pending timeout can't set state after the
   // tab has gone.
   useEffect(() => {
     return () => {
       if (blowerTimerRef.current) clearTimeout(blowerTimerRef.current);
+    };
+  }, []);
+
+  // Same for the sniff / eat / shake-off sequence timers.
+  useEffect(() => {
+    return () => {
+      pendingTimersRef.current.forEach((id) => clearTimeout(id));
+      pendingTimersRef.current = [];
     };
   }, []);
 
@@ -567,6 +620,27 @@ export const PouWellnessTab: React.FC<PouWellnessTabProps> = ({
     );
   };
 
+  // Runs `fn` after `ms`, remembering the timer so it can be cancelled on unmount.
+  const schedule = (fn: () => void, ms: number) => {
+    const id = setTimeout(() => {
+      pendingTimersRef.current = pendingTimersRef.current.filter((t) => t !== id);
+      fn();
+    }, ms);
+    pendingTimersRef.current.push(id);
+  };
+
+  // Cats are the pickier sniffers; a dog gets its nose in and dives straight in.
+  const sniffMs = species === 'cat' ? 900 : 550;
+
+  // The pet leans in and sniffs first; `then` runs once it has made up its mind.
+  const sniffThen = (ms: number, then: () => void) => {
+    setIsSniffingServed(true);
+    schedule(() => {
+      setIsSniffingServed(false);
+      then();
+    }, ms);
+  };
+
   // Drag End handler: execute action if dropped on pet
   const handleDragEnd = (event: any, info: any, item: DraggableTool) => {
     const clientX = info.point.x;
@@ -602,6 +676,31 @@ export const PouWellnessTab: React.FC<PouWellnessTabProps> = ({
   };
 
   const applyItemAction = (item: DraggableTool) => {
+    // A sleeping pet is not interested in anything until it is woken up.
+    if (stats.isSleeping) {
+      showToast(
+        <>
+          {companionName} is fast asleep — let them rest
+          <Bed className="w-3.5 h-3.5 shrink-0" />
+        </>
+      );
+      return;
+    }
+
+    // Still sniffing or chewing: a real pet finishes one thing before the next.
+    if (
+      (item.type === 'food' || item.type === 'drink') &&
+      (roomMood === 'eating' || isSniffingServed)
+    ) {
+      showToast(
+        <>
+          Let {companionName} finish first
+          <Utensils className="w-3.5 h-3.5 shrink-0" />
+        </>
+      );
+      return;
+    }
+
     if (item.type === 'food' && item.inventoryKey && item.icon) {
       if ((inventory[item.inventoryKey] || 0) <= 0) {
         showToast(
@@ -612,6 +711,21 @@ export const PouWellnessTab: React.FC<PouWellnessTabProps> = ({
         );
         return;
       }
+
+      // A full pet sniffs the bowl and turns it down, like a real one. Nothing
+      // is used up and nothing is earned.
+      if (stats.hunger >= 95) {
+        sniffThen(sniffMs, () =>
+          showToast(
+            <>
+              {companionName} sniffed the {item.name} but isn't hungry right now
+              <Smile className="w-3.5 h-3.5 shrink-0" />
+            </>
+          )
+        );
+        return;
+      }
+
       const success = onUseInventory(item.inventoryKey);
       if (!success) return;
 
@@ -621,7 +735,6 @@ export const PouWellnessTab: React.FC<PouWellnessTabProps> = ({
         color: item.color ?? 'text-amber-800 dark:text-amber-300',
         kind: 'food',
       });
-      setRoomMood('eating');
       onUpdateStats({
         hunger: Math.min(100, stats.hunger + 24),
         happiness: Math.min(100, stats.happiness + 8),
@@ -630,19 +743,23 @@ export const PouWellnessTab: React.FC<PouWellnessTabProps> = ({
       if (item.xp) {
         onAddPoints(item.xp);
       }
-      confetti({ particleCount: 22, spread: 50, origin: { y: 0.65 } });
-      showToast(
-        <>
-          *crunch nom nom* {companionName} loved the tasty {item.name}!
-          <Smile className="w-3.5 h-3.5 shrink-0" />
-        </>
-      );
-      // Straight back to idle: no lingering 'happy' phase, so no interaction
-      // animation or movement survives the end of the meal.
-      setTimeout(() => {
-        setConsumedItem(null);
-        setRoomMood('idle');
-      }, 2200);
+      // Sniff first, then dig in.
+      sniffThen(sniffMs, () => {
+        setRoomMood('eating');
+        confetti({ particleCount: 22, spread: 50, origin: { y: 0.65 } });
+        showToast(
+          <>
+            *crunch nom nom* {companionName} loved the tasty {item.name}!
+            <Smile className="w-3.5 h-3.5 shrink-0" />
+          </>
+        );
+        // Straight back to idle: no lingering 'happy' phase, so no interaction
+        // animation or movement survives the end of the meal.
+        schedule(() => {
+          setConsumedItem(null);
+          setRoomMood('idle');
+        }, 2200);
+      });
     } else if (item.type === 'drink' && item.inventoryKey && item.icon) {
       if ((inventory[item.inventoryKey] || 0) <= 0) {
         showToast(
@@ -662,9 +779,6 @@ export const PouWellnessTab: React.FC<PouWellnessTabProps> = ({
         color: item.color ?? 'text-sky-600 dark:text-sky-300',
         kind: 'drink',
       });
-      // Reuses the existing head-down-to-bowl animation; the lapping motion,
-      // droplets and copy are layered on by the scene below.
-      setRoomMood('eating');
       onUpdateStats({
         hunger: Math.min(100, stats.hunger + 6),
         cleanliness: Math.min(100, stats.cleanliness + 4),
@@ -673,17 +787,23 @@ export const PouWellnessTab: React.FC<PouWellnessTabProps> = ({
       if (item.xp) {
         onAddPoints(item.xp);
       }
-      showToast(
-        <>
-          *lap lap lap* {companionName} sipped the {item.name}!
-          <Droplet className="w-3.5 h-3.5 shrink-0" />
-        </>
-      );
-      // Straight back to idle — the drinking animation stops the moment it ends.
-      setTimeout(() => {
-        setConsumedItem(null);
-        setRoomMood('idle');
-      }, 1800);
+      // A quick sniff of the bowl, then it laps. Reuses the existing
+      // head-down-to-bowl animation; the lapping motion, droplets and copy are
+      // layered on by the scene below.
+      sniffThen(Math.round(sniffMs * 0.6), () => {
+        setRoomMood('eating');
+        showToast(
+          <>
+            *lap lap lap* {companionName} sipped the {item.name}!
+            <Droplet className="w-3.5 h-3.5 shrink-0" />
+          </>
+        );
+        // Straight back to idle — the drinking animation stops the moment it ends.
+        schedule(() => {
+          setConsumedItem(null);
+          setRoomMood('idle');
+        }, 1800);
+      });
     } else if (item.type === 'soap') {
       if (inventory.soap <= 0) {
         showToast(
@@ -716,7 +836,9 @@ export const PouWellnessTab: React.FC<PouWellnessTabProps> = ({
     } else if (item.type === 'shower') {
       setIsShowerRunning(true);
       setSoapBubbles([]);
-      setRoomMood('happy');
+      // Dogs put up with a rinse cheerfully; a cat sits through it visibly
+      // unimpressed — but not angry, just anxious/sad about the water.
+      setRoomMood(species === 'cat' ? 'anxious' : 'happy');
       onUpdateStats({
         cleanliness: 100,
         happiness: Math.min(100, stats.happiness + 8),
@@ -728,9 +850,15 @@ export const PouWellnessTab: React.FC<PouWellnessTabProps> = ({
           <Sparkles className="w-3.5 h-3.5 shrink-0" />
         </>
       );
-      setTimeout(() => {
+      schedule(() => {
         setIsShowerRunning(false);
-        setRoomMood('idle');
+        // Straight out of the water, the pet shakes itself dry — a dog with its
+        // whole body, a cat more daintily.
+        setIsShakingOff(true);
+        schedule(() => {
+          setIsShakingOff(false);
+          setRoomMood('idle');
+        }, 1000);
       }, 2500);
     } else if (item.type === 'blower') {
       // A blow replaces any blow already in progress, so the older timer can
@@ -738,7 +866,8 @@ export const PouWellnessTab: React.FC<PouWellnessTabProps> = ({
       if (blowerTimerRef.current) clearTimeout(blowerTimerRef.current);
       setIsBlowerRunning(true);
       setSoapBubbles([]);
-      setRoomMood('happy');
+      // Cats dislike the loud blower — anxious, not angry.
+      setRoomMood(species === 'cat' ? 'anxious' : 'happy');
       onUpdateStats({
         cleanliness: 100,
         happiness: Math.min(100, stats.happiness + 4),
@@ -799,6 +928,16 @@ export const PouWellnessTab: React.FC<PouWellnessTabProps> = ({
 
   // Outside Toy Play
   const triggerBallPlay = () => {
+    // A worn-out pet won't chase a ball, however nicely you ask.
+    if (stats.energy <= 15) {
+      showToast(
+        <>
+          {companionName} is too tired to play right now
+          <Moon className="w-3.5 h-3.5 shrink-0" />
+        </>
+      );
+      return;
+    }
     setIsBallThrown(true);
     setRoomMood('playing');
     onUpdateStats({
@@ -846,6 +985,10 @@ export const PouWellnessTab: React.FC<PouWellnessTabProps> = ({
       onChangeSpecies(species === 'dog' ? 'cat' : 'dog');
     }
   };
+
+  // How hard the pet shakes itself dry after a rinse: a dog shakes its whole
+  // body, a cat only flicks.
+  const shakeStrength = species === 'dog' ? 1 : 0.55;
 
   return (
     <div className="w-full flex flex-col items-center space-y-4 select-none pb-8">
@@ -1268,10 +1411,10 @@ export const PouWellnessTab: React.FC<PouWellnessTabProps> = ({
                 The back wall of the tub sits at z-10 behind the companion.
                 The front rim & bubbly water sits at z-25 in front of pet's paws,
                 so the animal is genuinely sitting INSIDE the tub! */}
-            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 w-68 sm:w-76 h-28 rounded-t-[42px] bg-gradient-to-b from-[#f8fafc] via-[#f1f5f9] to-[#cbd5e1] border-t-4 border-l-2 border-r-2 border-slate-300 shadow-xl z-10 pointer-events-none" />
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 w-68 sm:w-76 h-28 rounded-t-[42px] bg-gradient-to-b from-[#f8fafc] via-[#f1f5f9] to-[#cbd5e1] border-t-4 border-l-2 border-r-2 border-slate-300 shadow-xl z-10 pointer-events-none dark:from-[#8fa2b5] dark:via-[#75899c] dark:to-[#4d5f72] dark:border-slate-600" />
 
             {/* Front Tub Wall with Water Line (Rendered in front of the pet at z-25) */}
-            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 w-68 sm:w-76 h-14 rounded-t-3xl bg-gradient-to-t from-[#f8fafc] to-[#e2e8f0] border-t-4 border-sky-200 shadow-md z-25 pointer-events-none flex flex-col justify-start overflow-hidden">
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 w-68 sm:w-76 h-14 rounded-t-3xl bg-gradient-to-t from-[#f8fafc] to-[#e2e8f0] border-t-4 border-sky-200 shadow-md z-25 pointer-events-none flex flex-col justify-start overflow-hidden dark:from-[#8fa2b5] dark:to-[#a3b4c6] dark:border-sky-800/70">
               {/* Warm Bubbly Water Surface Line */}
               <div className="w-full h-3 bg-gradient-to-r from-sky-300 via-sky-200 to-sky-300 flex items-center justify-around px-4">
                 <Sparkles className="w-2.5 h-2.5 text-white/90" />
@@ -1323,7 +1466,7 @@ export const PouWellnessTab: React.FC<PouWellnessTabProps> = ({
         )}
 
         {/* =========================================================
-            ROOM 3: BEDROOM WITH REALISTIC COZY BED, LAMP & MOON WINDOW
+            ROOM 3: BEDROOM WITH REALISTIC COZY BED, LAMP TABLE & MOON WINDOW
             ========================================================= */}
         {activeRoom === 'bedroom' && (
           <div
@@ -1342,25 +1485,31 @@ export const PouWellnessTab: React.FC<PouWellnessTabProps> = ({
               <div className="absolute inset-y-0 left-10 w-0.5 bg-indigo-300/40" />
             </div>
 
-            {/* Nightstand with Vintage Bedside Lamp */}
-            <div className="absolute top-5 right-6 z-10 flex flex-col items-center">
+            {/* Vintage Bedside Lamp on a Lamp Table, standing on the floor to
+                the LEFT of the pet (who sleeps centre-stage on the bed).
+
+                Placement notes, since this scene is fully hand-positioned:
+                  - `bottom-6` + `left-3/sm:left-5` puts the table's feet inside
+                    the hardwood floor band (the floor is the bottom 72px), so it
+                    reads as standing on the floor rather than floating.
+                  - The whole group is TALLER than the gap between the floor and
+                    the arched window above, which is why the label sits on TOP of
+                    the lamp instead of below the table: below the table there is
+                    no room left before the scene's bottom edge clips it.
+                  - `z-30` (bed is z-10, sleep quilt z-25) is load-bearing, not
+                    cosmetic: the bed is 256-288px wide and centred, so on a
+                    ~360px stage its left edge reaches x≈52 and overlaps this
+                    table. Above the bed, the lamp is never clipped and its click
+                    target is never covered. The bed is `pointer-events-none`.
+                  - The place rail is z-30 too, but it lives on the far right
+                    (`right-1.5 sm:right-3`), so the two never collide. */}
+            <div className="absolute bottom-6 left-3 sm:left-5 z-30 flex flex-col items-center">
               <button
                 onClick={handleToggleBed}
                 className="flex flex-col items-center cursor-pointer group"
                 title="Click to toggle sleep & lamp"
               >
-                {/* Lampshade */}
-                <div
-                  className={`w-14 h-10 rounded-t-sm transition-all ${
-                    stats.isSleeping
-                      ? 'bg-amber-950/70 border border-amber-950 text-slate-400'
-                      : 'bg-amber-300 border-2 border-amber-400 shadow-[0_0_26px_#fde047]'
-                  }`}
-                  style={{ clipPath: 'polygon(20% 0%, 80% 0%, 100% 100%, 0% 100%)' }}
-                />
-                <div className="w-1.5 h-6 bg-amber-800" />
-                <div className="w-8 h-2 rounded-full bg-amber-900" />
-                <span className="text-[10px] font-bold text-amber-950 dark:text-amber-200 mt-1 bg-white/80 dark:bg-[#0b1411]/60 px-2 py-0.5 rounded-full shadow-xs inline-flex items-center gap-1">
+                <span className="text-[10px] font-bold text-amber-950 dark:text-amber-200 mb-1 bg-white/80 dark:bg-[#0b1411]/60 px-2 py-0.5 rounded-full shadow-xs inline-flex items-center gap-1 whitespace-nowrap">
                   {stats.isSleeping ? (
                     <>
                       Turn Lamp On
@@ -1373,6 +1522,33 @@ export const PouWellnessTab: React.FC<PouWellnessTabProps> = ({
                     </>
                   )}
                 </span>
+
+                {/* Lamp — sits directly on the table top, so its base is the
+                    table's upper surface rather than a free-floating disc. */}
+                <div className="flex flex-col items-center">
+                  {/* Lampshade */}
+                  <div
+                    className={`w-14 h-9 rounded-t-sm transition-all ${
+                      stats.isSleeping
+                        ? 'bg-amber-950/70 border border-amber-950 text-slate-400'
+                        : 'bg-amber-300 border-2 border-amber-400 shadow-[0_0_26px_#fde047]'
+                    }`}
+                    style={{ clipPath: 'polygon(20% 0%, 80% 0%, 100% 100%, 0% 100%)' }}
+                  />
+                  {/* Stem */}
+                  <div className="w-1.5 h-5 bg-amber-800" />
+                  {/* Lamp foot, resting on the table top */}
+                  <div className="w-8 h-1.5 rounded-sm bg-amber-900 border border-amber-950/60" />
+                </div>
+
+                {/* Lamp table — top slab, then the cabinet with its drawer */}
+                <div className="w-16 h-2 rounded-sm bg-gradient-to-b from-amber-500 to-amber-700 border border-amber-950 shadow-sm" />
+
+                <div className="w-14 h-14 rounded-b-md bg-gradient-to-b from-amber-600 to-amber-800 border-x border-b border-amber-950 shadow-md relative">
+                  {/* Drawer face + pull */}
+                  <div className="absolute inset-x-1.5 top-2 h-4 rounded-sm bg-amber-700/60 border border-amber-900/60" />
+                  <div className="absolute left-1/2 -translate-x-1/2 top-3.5 w-5 h-1 rounded-full bg-amber-300/90" />
+                </div>
               </button>
             </div>
 
@@ -1385,7 +1561,7 @@ export const PouWellnessTab: React.FC<PouWellnessTabProps> = ({
             {/* REALISTIC WOODEN BED (Backboard & Mattress at z-10) */}
             <div className="absolute bottom-4 left-1/2 -translate-x-1/2 w-64 sm:w-72 h-32 rounded-t-3xl bg-gradient-to-t from-[#312e81] to-[#4338ca] border-t-4 border-indigo-300 shadow-xl z-10 flex flex-col items-center justify-start pt-2 pointer-events-none">
               {/* Fluffy Pillow */}
-              <div className="w-40 h-8 rounded-full bg-white/95 border border-indigo-200 shadow-sm" />
+              <div className="w-40 h-8 rounded-full bg-white/95 border border-indigo-200 shadow-sm dark:bg-[#c7d2fe]/85 dark:border-indigo-400/40" />
             </div>
 
             {/* When Pet is Sleeping: Warm Quilt Blanket Over Body (z-25) */}
@@ -1485,17 +1661,17 @@ export const PouWellnessTab: React.FC<PouWellnessTabProps> = ({
             >
               <div
                 className={`w-18 h-9 rounded-full shadow-xs ${
-                  isOutsideStormy ? 'bg-slate-700' : 'bg-white'
+                  isOutsideStormy ? 'bg-slate-700' : 'bg-white dark:bg-[#c3d0de]'
                 }`}
               />
               <div
                 className={`w-12 h-12 rounded-full -ml-5 -mt-3 shadow-xs ${
-                  isOutsideStormy ? 'bg-slate-800' : 'bg-white'
+                  isOutsideStormy ? 'bg-slate-800' : 'bg-white dark:bg-[#aebfd0]'
                 }`}
               />
               <div
                 className={`w-14 h-8 rounded-full -ml-4 shadow-xs ${
-                  isOutsideStormy ? 'bg-slate-700' : 'bg-white'
+                  isOutsideStormy ? 'bg-slate-700' : 'bg-white dark:bg-[#c3d0de]'
                 }`}
               />
             </motion.div>
@@ -1530,7 +1706,7 @@ export const PouWellnessTab: React.FC<PouWellnessTabProps> = ({
               {[...Array(12)].map((_, i) => (
                 <div
                   key={i}
-                  className="w-2.5 h-10 bg-white border border-slate-300 rounded-t-sm"
+                  className="w-2.5 h-10 bg-white dark:bg-[#aebfd0] border border-slate-300 dark:border-slate-600 rounded-t-sm"
                   style={{ clipPath: 'polygon(50% 0%, 100% 25%, 100% 100%, 0% 100%, 0% 25%)' }}
                 />
               ))}
@@ -1848,7 +2024,9 @@ export const PouWellnessTab: React.FC<PouWellnessTabProps> = ({
               it independently of the container's own centring and eating-scale
               transforms — otherwise the two would fight over `transform`.
               The shake is a short repeat ONLY while the blower runs; otherwise it
-              settles to rest, so nothing keeps moving after the blow ends. */}
+              settles to rest, so nothing keeps moving after the blow ends.
+              The one-shot shake-off after a rinse uses the same group: a dog
+              shakes its whole body, a cat only flicks. */}
           <motion.div
             className="flex flex-col items-center"
             animate={
@@ -1858,23 +2036,37 @@ export const PouWellnessTab: React.FC<PouWellnessTabProps> = ({
                     x: [0, -3, 3, -1, 0],
                     y: [0, -1.5, 0, -0.5, 0],
                   }
+                : isShakingOff
+                ? {
+                    rotate: [0, 9, -9, 7, -7, 3, 0].map((v) => v * shakeStrength),
+                    x: [0, -4, 4, -3, 3, -1, 0].map((v) => v * shakeStrength),
+                    y: [0, -1, 0, -1, 0, 0, 0],
+                  }
                 : { rotate: 0, x: 0, y: 0 }
             }
             transition={
               isBlowerRunning
                 ? { duration: 0.44, repeat: Infinity, ease: 'easeInOut' }
+                : isShakingOff
+                ? { duration: 0.9, ease: 'easeInOut' }
                 : { duration: 0.28, ease: 'easeOut' }
             }
           >
             <CuteCompanion
               species={species}
-              mood={roomMood}
+              mood={displayMood}
               equipped={equipped}
               size="lg"
               interactive={true}
               showBowl={activeRoom === 'kitchen' || roomMood === 'eating'}
               isEating={roomMood === 'eating'}
-              isSniffing={activeDragItem !== null && (activeDragItem.type === 'food' || isHoveringPet)}
+              isSniffing={
+                (activeDragItem !== null &&
+                  (activeDragItem.type === 'food' ||
+                    activeDragItem.type === 'drink' ||
+                    isHoveringPet)) ||
+                isSniffingServed
+              }
               consumedItemIcon={consumedItem?.icon}
               consumedItemKind={consumedItem?.kind}
               onPet={() => {
@@ -1924,8 +2116,8 @@ export const PouWellnessTab: React.FC<PouWellnessTabProps> = ({
         <div className="flex justify-between items-center mb-3">
           <span className="text-xs font-black uppercase tracking-wider text-emerald-900 dark:text-emerald-200 flex items-center gap-1.5">
             <span className="inline-flex items-center gap-1.5">
-              <PawPrint className="w-3.5 h-3.5" />
-              KITCHEN PANTRY
+              <PantryIcon className="w-3.5 h-3.5" />
+              {pantryTitle}
             </span>
           </span>
           {/* Shop button — same onOpenMarket navigation as the old "Market" text
@@ -2013,7 +2205,7 @@ export const PouWellnessTab: React.FC<PouWellnessTabProps> = ({
                     {isOutOfStock ? (
                       <button
                         onClick={onOpenMarket}
-                        className="mt-2 w-full py-1.5 rounded-xl bg-slate-100 hover:bg-emerald-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold text-[10px] cursor-pointer transition-colors shadow-2xs flex items-center justify-center gap-1"
+                        className="mt-2 w-full py-1.5 rounded-xl bg-slate-100 hover:bg-emerald-100 dark:bg-slate-800 dark:hover:bg-emerald-900/50 text-slate-600 dark:text-slate-300 font-bold text-[10px] cursor-pointer transition-colors shadow-2xs flex items-center justify-center gap-1"
                       >
                         <ShoppingBag className="w-3 h-3" />
                         <span>Restock</span>
@@ -2095,7 +2287,7 @@ export const PouWellnessTab: React.FC<PouWellnessTabProps> = ({
                   id: 'tea',
                   name: 'Bedtime Chamomile',
                   icon: Leaf,
-                  type: 'food',
+                  type: 'drink',
                   inventoryKey: 'herbalTea',
                 })
               }
@@ -2105,7 +2297,7 @@ export const PouWellnessTab: React.FC<PouWellnessTabProps> = ({
                   id: 'tea',
                   name: 'Bedtime Chamomile',
                   icon: Leaf,
-                  type: 'food',
+                  type: 'drink',
                   inventoryKey: 'herbalTea',
                 })
               }
@@ -2182,7 +2374,7 @@ export const PouWellnessTab: React.FC<PouWellnessTabProps> = ({
                   id: 'tea',
                   name: 'Herbal Tea',
                   icon: Leaf,
-                  type: 'food',
+                  type: 'drink',
                   inventoryKey: 'herbalTea',
                 })
               }
@@ -2192,7 +2384,7 @@ export const PouWellnessTab: React.FC<PouWellnessTabProps> = ({
                   id: 'tea',
                   name: 'Herbal Tea',
                   icon: Leaf,
-                  type: 'food',
+                  type: 'drink',
                   inventoryKey: 'herbalTea',
                 })
               }

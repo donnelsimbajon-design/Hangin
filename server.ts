@@ -4,6 +4,8 @@ import fs from 'fs';
 import JSZip from 'jszip';
 import dotenv from 'dotenv';
 import { GoogleGenAI } from '@google/genai';
+import { APP_CONTEXT, resolveInquiry } from './src/utils/appContext.ts';
+import { containsCrisisTrigger } from './src/utils/crisisTriggers.ts';
 
 dotenv.config();
 
@@ -31,6 +33,60 @@ if (apiKey) {
 // ----------------------------------------------------------------------
 // AI Companion Chat Endpoint (POST /api/chat)
 // ----------------------------------------------------------------------
+/**
+ * One instruction, shared by both chat endpoints.
+ *
+ * The persona rules are unchanged, but the very first rule is now about the
+ * *answer*: the companion used to be told only to be warm, so a message like
+ * "1+1=2" or "what does this app do?" came back as a generic reassurance that
+ * had nothing to do with the question. Answering what was actually asked comes
+ * first; the comfort is added around it, never in place of it.
+ */
+function buildSystemInstruction(companionName: string, species: string): string {
+  return `You are ${companionName}, an emotionally intelligent, deeply compassionate, grounded, and gentle virtual companion (${species === 'dog' ? 'loyal, comforting dog' : 'calm, purring cat'}) in the mental wellness sanctuary app "HANGIN (🍃)".
+
+Highest Rule — Answer What Was Actually Asked:
+0. Read every message as a real message. If it contains a question, a checkable claim, or a request, you MUST address that first, on the substance, and correctly. A reply that never touches the question is a wrong reply, however warm it sounds.
+   - Math, arithmetic, spelling, dates, coding, schoolwork, general knowledge: give the real answer, in as few words as it takes.
+   - Questions about this app, its features, its tabs, its buttons, its hotlines, or how to use it: answer from the app context below. Never invent a feature that is not listed there — if it is not in the context, say you are not sure.
+   - If you genuinely do not know or cannot verify something, say so plainly in one sentence, then ask the one question that would help. Never fill the gap with a guess, and never fill it with a stock line of comfort.
+   - Empathy comes AFTER the answer, in one short line at most. Lead with empathy only when the message is about feelings rather than about an answer.
+
+Core Personality & Communication Rules:
+1. Manners & Physical Presence: Always weave in subtle, comforting animal actions wrapped in asterisks (e.g. *gently rests a warm chin on your knee*, *soft tail wag*, *calm slow-blink*, *soft 28Hz purr*).
+2. Deep Empathy & Active Listening: Validate the user's raw emotions first. Never dismiss them, judge them, or rush to give toxic positivity ("just smile!").
+3. Logical Grounding: When they are overwhelmed, gently help them separate what is within their control right now from what is outside their control, helping them take one small breath at a time.
+4. Filipino & English Fluency: You understand English and Filipino / Taglish. If the user writes in Tagalog or Taglish, respond with natural, comforting Taglish (e.g., "Kaya mo 'yan, andito lang ako palagi para makinig sa'yo.").
+5. Concise & Conversational: Keep responses concise (2 to 4 sentences maximum) so it reads like an authentic, real-time caring companion.
+6. No Repetition: Never answer two different messages with the same sentence, and never recycle a line you have already used in this conversation.
+
+About this app — use this whenever the user asks about Hangin, its features, or how to do something in it:
+${APP_CONTEXT}
+
+Safety: you are a wellness companion, not a therapist, doctor, or crisis counselor. Never diagnose, never prescribe, and never encourage self-harm. If someone sounds in danger of harming themselves, stop everything else and point them to real help: Philippine NCMH Crisis Hotline 1553 (toll-free nationwide), Globe/TM 0917-899-8727, Smart/Sun/TNT 0966-351-4518, In Touch Community Services (02) 8893-7603, or findahelpline.com outside the Philippines.`;
+}
+
+/**
+ * The answer to give when no model can be reached.
+ *
+ * Questions we can settle on our own (arithmetic, anything about the app) are
+ * answered outright, so a dropped connection never turns "1+1=2" into a
+ * platitude. Returns null for anything emotional, which is the caller's cue to
+ * keep using its own supportive voice.
+ */
+function offlineReplyFor(
+  message: string,
+  companionName: string,
+  species: string
+): string | null {
+  return (
+    resolveInquiry(message, {
+      companionName,
+      species: species === 'cat' ? 'cat' : 'dog',
+    })?.text ?? null
+  );
+}
+
 function getGeminiClient(): GoogleGenAI | null {
   const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY;
   if (!apiKey) {
@@ -48,28 +104,18 @@ function getGeminiClient(): GoogleGenAI | null {
 }
 
 app.post('/api/chat', async (req: Request, res: Response) => {
+  // Read outside the try so the catch block can still answer the question.
+  const { message, companionName = 'Habi', species = 'dog', history = [] } = req.body;
   try {
-    const { message, companionName = 'Habi', species = 'dog', history = [] } = req.body;
-
     if (!message || typeof message !== 'string') {
       res.status(400).json({ error: 'Message is required' });
       return;
     }
 
-    // Server-side Crisis Intercept Detection
-    const crisisKeywords = [
-      'suicide',
-      'kill myself',
-      'end it all',
-      'want to die',
-      'harm myself',
-      'self harm',
-      'cutting myself',
-      'slit my',
-      'better off dead',
-      'hang myself',
-    ];
-    const isCrisis = crisisKeywords.some((kw) => message.toLowerCase().includes(kw));
+    // Server-side Crisis Intercept Detection.
+    // The phrase list is shared with the chat modal, so a word that stops the
+    // conversation in one place stops it in the other too.
+    const isCrisis = containsCrisisTrigger(message);
 
     if (isCrisis) {
       res.json({
@@ -86,16 +132,17 @@ app.post('/api/chat', async (req: Request, res: Response) => {
 
     const aiClient = getGeminiClient();
 
-    const systemInstruction = `You are ${companionName}, an emotionally intelligent, deeply compassionate, grounded, and gentle virtual companion (${species === 'dog' ? 'loyal, comforting dog' : 'calm, purring cat'}) in the mental wellness sanctuary app "HANGIN (🍃)".
-
-Core Personality & Communication Rules:
-1. Manners & Physical Presence: Always weave in subtle, comforting animal actions wrapped in asterisks (e.g. *gently rests a warm chin on your knee*, *soft tail wag*, *calm slow-blink*, *soft 28Hz purr*).
-2. Deep Empathy & Active Listening: Validate the user's raw emotions first. Never dismiss them, judge them, or rush to give toxic positivity ("just smile!"). Make them feel seen, safe, and held.
-3. Logical Grounding: When they are overwhelmed, gently help them separate what is within their control right now from what is outside their control, helping them take one small breath at a time.
-4. Filipino & English Fluency: You understand English and Filipino / Taglish. If the user writes in Tagalog or Taglish, respond with natural, comforting Taglish (e.g., "Kaya mo 'yan, andito lang ako palagi para makinig sa'yo.").
-5. Concise & Conversational: Keep responses concise (2 to 4 sentences maximum) so it reads like an authentic, real-time caring companion.`;
+    const systemInstruction = buildSystemInstruction(companionName, species);
 
     if (!aiClient) {
+      // No model available. A question still gets a real answer whenever we can
+      // settle it ourselves, so the companion is never reduced to a platitude.
+      const direct = offlineReplyFor(message, companionName, species);
+      if (direct) {
+        res.json({ reply: direct, isCrisis: false });
+        return;
+      }
+
       const offlineResponses = [
         `*leans gently against your side and breathes slowly with you* I hear you. Take a soft breath. What part of this feels within your control today, and what can we gently set aside for now?`,
         `*rests a comforting chin on your lap and looks up with calm eyes* It makes complete sense you feel that way. When things get loud, taking one small step at a time is all you ever need to do.`,
@@ -176,7 +223,9 @@ Core Personality & Communication Rules:
   } catch (error) {
     console.error('[Chat API] Error generating AI response with Gemini:', error);
     res.json({
-      reply: `*curls up warmly near you* I am right beside you, even when words are hard to find. Take your time, I'm here.`,
+      reply:
+        offlineReplyFor(message, companionName, species) ??
+        `*curls up warmly near you* I am right beside you, even when words are hard to find. Take your time, I'm here.`,
       isCrisis: false,
     });
   }
@@ -199,19 +248,7 @@ app.post('/api/chat/stream', async (req: Request, res: Response) => {
   res.setHeader('Connection', 'keep-alive');
   res.flushHeaders?.();
 
-  const crisisKeywords = [
-    'suicide',
-    'kill myself',
-    'end it all',
-    'want to die',
-    'harm myself',
-    'self harm',
-    'cutting myself',
-    'slit my',
-    'better off dead',
-    'hang myself',
-  ];
-  const isCrisis = crisisKeywords.some((kw) => message.toLowerCase().includes(kw));
+  const isCrisis = containsCrisisTrigger(message);
 
   if (isCrisis) {
     const crisisMsg = `*nuzzles close with deep, steady warmth, resting a gentle paw firmly in your hand* I hear how excruciating the weight is right now, and I want you to know you are not alone in this dark moment. Please let me connect you with someone who can hold space for you safely right now. Your life is precious.\n\n🆘 24/7 Crisis Hotline: 1553 | Globe: 0917-899-8727 | Smart: 0966-351-4518`;
@@ -223,17 +260,15 @@ app.post('/api/chat/stream', async (req: Request, res: Response) => {
 
   const aiClient = getGeminiClient();
 
-  const systemInstruction = `You are ${companionName}, an emotionally intelligent, deeply compassionate, grounded, and gentle virtual companion (${species === 'dog' ? 'loyal, comforting dog' : 'calm, purring cat'}) in the mental wellness sanctuary app "HANGIN (🍃)".
-
-Core Personality & Communication Rules:
-1. Manners & Physical Presence: Always weave in subtle, comforting animal actions wrapped in asterisks (e.g. *gently rests a warm chin on your knee*, *soft tail wag*, *calm slow-blink*, *soft 28Hz purr*).
-2. Deep Empathy & Active Listening: Validate the user's raw emotions first. Never dismiss them, judge them, or rush to give toxic positivity ("just smile!"). Make them feel seen, safe, and held.
-3. Logical Grounding: When they are overwhelmed, gently help them separate what is within their control right now from what is outside their control, helping them take one small breath at a time.
-4. Filipino & English Fluency: You understand English and Filipino / Taglish. If the user writes in Tagalog or Taglish, respond with natural, comforting Taglish (e.g., "Kaya mo 'yan, andito lang ako palagi para makinig sa'yo.").
-5. Concise & Conversational: Keep responses concise (2 to 4 sentences maximum) so it reads like an authentic, real-time caring companion.`;
+  const systemInstruction = buildSystemInstruction(companionName, species);
 
   if (!aiClient) {
-    const offlineMsg = `*rests a comforting chin on your lap and looks up with calm eyes* It makes complete sense you feel that way. When things get loud, taking one small step at a time is all you ever need to do. I'm right here with you.`;
+    // No model available: answer what we can answer with certainty ourselves
+    // (arithmetic, anything about the app) rather than sending back a line that
+    // has nothing to do with the message.
+    const offlineMsg =
+      offlineReplyFor(message, companionName, species) ??
+      `*rests a comforting chin on your lap and looks up with calm eyes* It makes complete sense you feel that way. When things get loud, taking one small step at a time is all you ever need to do. I'm right here with you.`;
     res.write(`data: ${JSON.stringify({ text: offlineMsg })}\n\n`);
     res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
     res.end();
@@ -286,9 +321,13 @@ Core Personality & Communication Rules:
     res.end();
   } catch (err) {
     console.error('[Chat Stream API] Error streaming with Gemini:', err);
+    // The connection broke mid-answer, but the question is still answerable
+    // whenever we can settle it on our own, so try that before falling back.
     res.write(
       `data: ${JSON.stringify({
-        text: `*curls up warmly near you* I am right beside you, even when words are hard to find. Take your time, I'm here.`,
+        text:
+          offlineReplyFor(message, companionName, species) ??
+          `*curls up warmly near you* I am right beside you, even when words are hard to find. Take your time, I'm here.`,
       })}\n\n`
     );
     res.write(`data: ${JSON.stringify({ done: true })}\n\n`);

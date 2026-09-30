@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   ShoppingBag,
@@ -74,6 +74,11 @@ interface ExpandedMarketProps {
   onClaimNewcomerDay: (day: number) => void;
 }
 
+const LAST_CLAIM_KEY = 'newcomerLastClaimDate';
+
+// Local calendar day, e.g. "2026-09-30"
+const getDayKey = (d = new Date()) => d.toLocaleDateString('en-CA');
+
 export const ExpandedMarket: React.FC<ExpandedMarketProps> = ({
   species = 'dog',
   points,
@@ -95,6 +100,41 @@ export const ExpandedMarket: React.FC<ExpandedMarketProps> = ({
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [currency, setCurrency] = useState<'PHP' | 'USD'>('PHP');
   const [purchasingBundle, setPurchasingBundle] = useState<any | null>(null);
+
+  // --- Newcomer daily claim timing ---
+  const [lastClaimDate, setLastClaimDate] = useState<string | null>(() => {
+    try {
+      return localStorage.getItem(LAST_CLAIM_KEY);
+    } catch {
+      return null;
+    }
+  });
+  const [todayKey, setTodayKey] = useState(getDayKey());
+  const [msToMidnight, setMsToMidnight] = useState(0);
+
+  // Tick every 30s so the button unlocks at midnight and the countdown stays fresh
+  useEffect(() => {
+    const tick = () => {
+      const now = new Date();
+      const midnight = new Date(now);
+      midnight.setHours(24, 0, 0, 0);
+      setTodayKey(getDayKey(now));
+      setMsToMidnight(midnight.getTime() - now.getTime());
+    };
+    tick();
+    const id = setInterval(tick, 30_000);
+    return () => clearInterval(id);
+  }, []);
+
+  const claimedToday = lastClaimDate === todayKey;
+  const allNewcomerClaimed = newcomerClaimedDay >= 7;
+
+  const countdownLabel = (() => {
+    const totalMin = Math.max(1, Math.ceil(msToMidnight / 60000));
+    const h = Math.floor(totalMin / 60);
+    const m = totalMin % 60;
+    return h > 0 ? `${h}h ${m}m` : `${m}m`;
+  })();
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -180,22 +220,41 @@ export const ExpandedMarket: React.FC<ExpandedMarketProps> = ({
   ];
 
   const handleClaimNewcomerDay = (dayNum: number) => {
-    // Only allow claiming the next sequential day (or day 1 if nothing claimed yet)
-    const nextClaimableDay = newcomerClaimedDay + 1;
-    if (dayNum !== nextClaimableDay && !(dayNum === 1 && newcomerClaimedDay === 0)) {
-      showToast('Log in tomorrow to claim the next day reward');
+    if (allNewcomerClaimed) return;
+
+    // Must be the next sequential day
+    if (dayNum !== newcomerClaimedDay + 1) return;
+
+    // One claim per calendar day
+    if (claimedToday) {
+      showToast(`Come back in ${countdownLabel} to claim Day ${dayNum}`);
       return;
     }
+
     onClaimNewcomerDay(dayNum);
+
+    try {
+      localStorage.setItem(LAST_CLAIM_KEY, todayKey);
+    } catch {}
+    setLastClaimDate(todayKey);
+
     confetti({ particleCount: 40, spread: 60 });
-    if (dayNum === 1) onAddPoints(10);
-    if (dayNum === 2) onBuyItem('apple', 0);
-    if (dayNum === 3) onBuyAccessory('hatBeanie', 0);
-    if (dayNum === 4) onAddPoints(20);
-    if (dayNum === 5) onBuyItem('soap', 0);
-    if (dayNum === 6) onBuyAccessory('cozyScarf', 0);
-    if (dayNum === 7) showToast('Blessing Award claimed!');
-    showToast(`Claimed Day ${dayNum} reward`);
+
+    switch (dayNum) {
+      case 1: onAddPoints(10); break;
+      case 2: onBuyItem('apple', 0); break;
+      case 3: onBuyAccessory('hatBeanie', 0); break;
+      case 4: onAddPoints(20); break;
+      case 5: onBuyItem('soap', 0); break;
+      case 6: onBuyAccessory('cozyScarf', 0); break;
+      case 7: break; // Blessing Award – no inventory item to grant
+    }
+
+    showToast(
+      dayNum === 7
+        ? 'Day 7 Blessing Award claimed!'
+        : `Claimed Day ${dayNum} reward`
+    );
   };
 
   const foodCatalog = [
@@ -626,15 +685,21 @@ export const ExpandedMarket: React.FC<ExpandedMarketProps> = ({
             </h4>
           </div>
           <span className="text-[10px] text-emerald-700 dark:text-emerald-300 font-medium">
-            Daily check-in streak
+            {allNewcomerClaimed
+              ? 'All rewards claimed 🎉'
+              : claimedToday
+              ? `Next reward in ${countdownLabel}`
+              : 'Reward ready to claim!'}
           </span>
         </div>
 
         <div className="grid grid-cols-7 gap-1.5 sm:gap-2">
           {newcomerDays.map((d) => {
             const isClaimed = d.day <= newcomerClaimedDay;
-            const canClaim = d.day === newcomerClaimedDay + 1;
-            const isLocked = !isClaimed && !canClaim;
+            const isNext = d.day === newcomerClaimedDay + 1;
+            const canClaim = isNext && !claimedToday;
+            const isWaiting = isNext && claimedToday; // claimed today, unlocks tomorrow
+            const isLocked = !canClaim;
             const Icon = d.Icon;
 
             return (
@@ -649,6 +714,8 @@ export const ExpandedMarket: React.FC<ExpandedMarketProps> = ({
                     ? 'bg-emerald-100/70 dark:bg-emerald-900/60 border-emerald-300 dark:border-[#2d4d41]'
                     : canClaim
                     ? 'bg-emerald-50 dark:bg-emerald-950/60 border-emerald-400 animate-pulse'
+                    : isWaiting
+                    ? 'bg-emerald-50/60 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800/60'
                     : 'bg-white/60 dark:bg-[#182a22] border-emerald-100 dark:border-emerald-800/40 opacity-70'
                 }`}
               >
@@ -663,6 +730,16 @@ export const ExpandedMarket: React.FC<ExpandedMarketProps> = ({
                 </span>
                 {isClaimed && (
                   <Check className="w-3 h-3 text-emerald-700 dark:text-emerald-300 mt-0.5" />
+                )}
+                {canClaim && (
+                  <span className="text-[8px] font-black uppercase text-emerald-700 dark:text-emerald-300 mt-0.5">
+                    Claim
+                  </span>
+                )}
+                {isWaiting && (
+                  <span className="text-[8px] font-semibold text-emerald-600 dark:text-emerald-400 mt-0.5">
+                    {countdownLabel}
+                  </span>
                 )}
               </button>
             );

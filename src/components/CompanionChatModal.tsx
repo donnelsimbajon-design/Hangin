@@ -5,7 +5,6 @@ import {
   Send,
   Sparkles,
   PhoneCall,
-  Shield,
   Smile,
   Zap,
   X,
@@ -17,7 +16,12 @@ import {
   Radio,
 } from 'lucide-react';
 import { CuteCompanion } from './CuteCompanion';
+import { ScenicBackdrop } from './ScenicBackdrop';
 import { PetSpecies, EquippedAccessories } from '../types';
+import { getPhilippineTime, PhilippineTimePhase } from '../utils/timeUtils';
+import { resolveInquiry } from '../utils/appContext';
+import { containsCrisisTrigger, shouldRevealHotline } from '../utils/crisisTriggers';
+import { QUICK_PROMPTS } from '../utils/quickPrompts';
 import confetti from 'canvas-confetti';
 
 interface CompanionChatModalProps {
@@ -299,6 +303,8 @@ const EMOTION_TO_PET_MOOD: Record<PetEmotion, string> = {
 };
 
 // ============================================================
+
+// ============================================================
 // OFFLINE-FALLBACK REPLY POOLS
 // Used only when the live streaming endpoint fails. Several lines per
 // feeling so the companion never answers every message with the exact
@@ -407,6 +413,14 @@ export const CompanionChatModal: React.FC<CompanionChatModalProps> = ({
   // The last fallback line actually said, so a second offline reply for the
   // same mood doesn't repeat it verbatim.
   const lastFallbackRef = useRef<string | undefined>(undefined);
+  // The hotline shortcut stays out of the header until the user's own message
+  // asks for help or names a crisis. Judged per message, so a later ordinary
+  // message puts it away again.
+  const [isHotlineVisible, setIsHotlineVisible] = useState(false);
+  // Real Philippine time decides which sky the shared scenery paints.
+  const [scenicPhase, setScenicPhase] = useState<PhilippineTimePhase>(() =>
+    getPhilippineTime(null).phase
+  );
 
   const purrAudioRef = useRef<{ ctx: AudioContext; osc: OscillatorNode; gain: GainNode } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -567,15 +581,49 @@ export const CompanionChatModal: React.FC<CompanionChatModalProps> = ({
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isStreaming]);
 
-  if (!isOpen) return null;
+  // A long conversation can cross a phase boundary, and the scenery behind it
+  // should follow the real Manila clock exactly like the home scene does.
+  useEffect(() => {
+    if (!isOpen) return;
+    const tick = () => setScenicPhase(getPhilippineTime(null).phase);
+    tick();
+    const interval = setInterval(tick, 60_000);
+    return () => clearInterval(interval);
+  }, [isOpen]);
 
-  const quickPrompts = [
-    'Feeling overwhelmed today 🌊',
-    'Help me separate what I can control 🧭',
-    'Need to vent safely 🍃',
-    'Guide me through a breath 💨',
-    'Pahinga muna tayo? ☕',
-  ];
+  // Sizes the pet to fill its half of the body. Measured, not guessed: the pet's
+  // real unscaled size is compared to the column it stands in, so the scale is
+  // always right for the current screen and the pet never clips or overlaps.
+  const petColRef = useRef<HTMLDivElement>(null);
+  const petInnerRef = useRef<HTMLDivElement>(null);
+  const [petScale, setPetScale] = useState(1);
+  useEffect(() => {
+    if (!isOpen) return;
+    const col = petColRef.current;
+    const inner = petInnerRef.current;
+    if (!col || !inner) return;
+    const fit = () => {
+      const w = inner.offsetWidth;
+      const h = inner.offsetHeight;
+      if (!w || !h) return;
+      // CuteCompanion draws its art inside a transparent 240px box (size="lg"),
+      // and the art only fills about 60-75% of that box. Fit the ART to the
+      // column, not the box, so the pet visibly takes its half of the body.
+      const ART_FILL = 1.35;
+      const s = Math.min(
+        (col.clientWidth / w) * ART_FILL,
+        (col.clientHeight / h) * 1.2
+      );
+      setPetScale(Math.min(3.2, Math.max(0.6, s)));
+    };
+    fit();
+    const ro = new ResizeObserver(fit);
+    ro.observe(col);
+    ro.observe(inner);
+    return () => ro.disconnect();
+  }, [isOpen]);
+
+  if (!isOpen) return null;
 
   // The pet holds the feeling the user last shared, so it stays beside them
   // instead of snapping back to cheerful once the reply finishes.
@@ -633,9 +681,12 @@ export const CompanionChatModal: React.FC<CompanionChatModalProps> = ({
 
     let fullAccumulatedText = '';
 
-    // CRISIS TRIGGER WORDS DETECTION (PHILIPPINES MENTAL HEALTH HOTLINES)
-    const CRISIS_TRIGGER_REGEX = /(suicide|kill myself|magpakamatay|mamatay|end my life|hurt myself|harm myself|cutting|ayaw ko na mabuhay|ayoko na mabuhay|gusto ko na mawala|overdose|hang myself|jump off|i want to die|self harm|end it all)/i;
-    const isCrisisTrigger = CRISIS_TRIGGER_REGEX.test(userText);
+    // CRISIS + HELP TRIGGER DETECTION (PHILIPPINES MENTAL HEALTH HOTLINES).
+    // The phrase lists are configured in one place and shared with the server.
+    // `isHotlineVisible` is what lets the header show the number at all, and it
+    // is decided from this message alone.
+    setIsHotlineVisible(shouldRevealHotline(userText));
+    const isCrisisTrigger = containsCrisisTrigger(userText);
 
     if (isCrisisTrigger) {
       if (onTriggerCrisisSafety) {
@@ -703,8 +754,11 @@ export const CompanionChatModal: React.FC<CompanionChatModalProps> = ({
                 const jsonStr = trimmed.slice(6);
                 const data = JSON.parse(jsonStr);
 
-                if (data.isCrisis && onTriggerCrisisSafety) {
-                  onTriggerCrisisSafety();
+                if (data.isCrisis) {
+                  setIsHotlineVisible(true);
+                  if (onTriggerCrisisSafety) {
+                    onTriggerCrisisSafety();
+                  }
                 }
 
                 if (data.text) {
@@ -740,9 +794,14 @@ export const CompanionChatModal: React.FC<CompanionChatModalProps> = ({
       speakCompanionReply(fullAccumulatedText);
     } catch (err) {
       console.warn('[CompanionChat] Streaming fallback to offline:', err);
-      // Picked from a pool matching the mood just classified, and never the
-      // exact line said last time, so repeated offline replies still vary.
-      const fallback = pickFallbackReply(detectedMood, lastFallbackRef.current);
+      // A question we can settle on our own (arithmetic, anything about the
+      // app) is answered straight, so a dropped stream never replaces the
+      // answer to "1+1=2" with a feeling that was never asked for. Anything
+      // emotional falls through to the pool that matches the mood classified
+      // above, and never the exact line said last time.
+      const direct = resolveInquiry(userText, { companionName, species });
+      const fallback =
+        direct?.text ?? pickFallbackReply(detectedMood, lastFallbackRef.current);
       lastFallbackRef.current = fallback;
 
       setMessages((prev) =>
@@ -775,71 +834,159 @@ export const CompanionChatModal: React.FC<CompanionChatModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 bg-[#0b1411]/80 backdrop-blur-md flex items-center justify-center p-2 sm:p-4 select-none">
-      {/* RESPONSIVE SANCTUARY CHAT CONTAINER */}
+      {/*
+       * RESPONSIVE SANCTUARY CHAT CONTAINER
+       * One column, painted over the home scenery: the conversation reads
+       * through a translucent blur, the companion stands at the foot of it,
+       * and the whole thing shares a single rounded shell with a fixed
+       * height cap so nothing ever pushes past the edges.
+       */}
       <motion.div
         initial={{ opacity: 0, scale: 0.95, y: 15 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 15 }}
-        className="w-full max-w-3xl h-[720px] max-h-[94vh] rounded-3xl bg-white dark:bg-[#13221b] border border-emerald-100 dark:border-emerald-800/50 shadow-2xl flex flex-col md:flex-row overflow-hidden relative"
+        className="relative flex w-full max-w-4xl flex-col overflow-hidden rounded-3xl border border-emerald-100 shadow-2xl h-[min(880px,94vh)] dark:border-emerald-800/50"
       >
         {/* ============================================================
-            COMPANION SIDEBAR (kept) + 2D PET PINNED BOTTOM-LEFT
+            THE HOME SCENERY, now the background of the whole conversation.
+            The exact same component the Home scene paints, so the modal
+            never invents a second landscape. Non-interactive: the vines
+            keep swaying but cannot swallow a click meant for the pet or
+            the messages.
             ============================================================ */}
-        <div className="hidden md:flex flex-col items-center w-72 bg-emerald-50/50 dark:bg-[#13221b] p-4 border-r border-emerald-100 dark:border-emerald-800/50 shrink-0 relative overflow-x-hidden overflow-y-auto">
-          {/* Ambient glow behind the pet. Deliberately a warm neutral rather than
-              the brand emerald: a large translucent green pool sitting behind
-              the mascot cast a green wash over its amber (dog) and ginger (cat)
-              coat, and the themed `emerald-400` also re-resolves very differently
-              in Light vs Dark Mode. Neutral keeps the pet's own colours intact
-              in both. */}
-          <div className="absolute bottom-16 left-1/2 -translate-x-1/2 w-56 h-56 bg-[#f5c987]/20 dark:bg-[#f5c987]/10 rounded-full blur-2xl pointer-events-none" />
+        <ScenicBackdrop phase={scenicPhase} interactive={false} />
 
-          {/* Companion name — identity only, never an emotion read-out */}
-          <div className="w-full flex items-center shrink-0 z-10">
-            <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-white dark:bg-emerald-950/80 border border-emerald-200 dark:border-[#2d4d41]/75 shadow-xs min-w-0">
-              <span className="text-xs shrink-0">{species === 'dog' ? '🐶' : '🐱'}</span>
-              <span className="text-xs font-black text-emerald-900 dark:text-emerald-100 truncate">
-                {companionName}
-              </span>
+        {/* ============================================================
+            TOP CHROME — the header and its privacy banner, untouched.
+            They keep their own translucent panel so the controls read
+            exactly as they always have, which leaves the body below free
+            to be painted straight onto the scenery.
+            ============================================================ */}
+        <div className="relative z-10 flex shrink-0 flex-col bg-white/80 backdrop-blur-xl dark:bg-[#13221b]/85">
+          {/* ============================================================
+              TOP CHAT HEADER
+              ============================================================ */}
+          <div className="px-3.5 sm:px-5 py-3 border-b border-emerald-100 dark:border-emerald-800/60 flex items-center justify-between shrink-0 z-20">
+            {/* Left: Back button & Companion Profile */}
+            <div className="flex items-center gap-2.5 min-w-0">
+              <button
+                onClick={onClose}
+                className="p-2 rounded-xl hover:bg-emerald-50 dark:hover:bg-emerald-900/60 text-emerald-700 dark:text-emerald-200 cursor-pointer transition-colors shrink-0"
+                title="Back to Sanctuary"
+              >
+                <ArrowLeft className="w-4 h-4" />
+              </button>
+
+              <div
+                onClick={handlePetMini}
+                className="w-10 h-10 rounded-2xl bg-emerald-100 dark:bg-emerald-900/80 border border-emerald-300 dark:border-[#2d4d41] flex items-center justify-center text-xl cursor-pointer hover:scale-105 active:scale-95 transition-transform shadow-xs shrink-0"
+                title={`Tap to gently pet ${companionName}!`}
+              >
+                {species === 'dog' ? '🐶' : '🐱'}
+              </div>
+
+              <div className="min-w-0">
+                <h3 className="text-sm font-extrabold text-emerald-950 dark:text-emerald-50 leading-tight truncate flex items-center gap-1.5">
+                  <span>{companionName}</span>
+                  <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-950/80 px-2 py-0.5 rounded-full">
+                    AI Friend
+                  </span>
+                </h3>
+                <div className="flex items-center gap-1.5 text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+                  <span className="truncate">{liveStatus}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Right: Actions with consistent h-8 heights */}
+            <div className="flex items-center gap-1 shrink-0">
+              {/* Live Text-to-Speech Voice Toggle */}
+              <button
+                onClick={() => {
+                  const next = !isVoiceSpeechEnabled;
+                  setIsVoiceSpeechEnabled(next);
+                  if (!next && 'speechSynthesis' in window) {
+                    window.speechSynthesis.cancel();
+                  }
+                }}
+                className={`h-8 w-8 rounded-full flex items-center justify-center transition-all cursor-pointer ${
+                  isVoiceSpeechEnabled
+                    ? 'bg-emerald-600 text-white shadow-xs'
+                    : 'bg-emerald-50 text-emerald-500 hover:bg-emerald-100 dark:bg-emerald-900/60 dark:text-emerald-300'
+                }`}
+                title={isVoiceSpeechEnabled ? 'Voice Aloud: ON' : 'Turn Voice Aloud ON'}
+              >
+                {isVoiceSpeechEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+              </button>
+
+              {/* 24/7 Crisis Hotline Trigger.
+                  Hidden by default: the number only appears once the user's own
+                  message contains a configured crisis or help trigger, so the
+                  header stays calm and the number is there the moment it can
+                  actually help. Kept in an urgent color on purpose — a safety
+                  exit should stay visually distinct from the calm emerald theme. */}
+              {isHotlineVisible && onTriggerCrisisSafety && (
+                <button
+                  onClick={onTriggerCrisisSafety}
+                  className="h-8 px-2.5 rounded-full text-xs font-extrabold bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 dark:bg-rose-950/60 dark:text-rose-300 dark:border-rose-900/60 cursor-pointer shadow-xs flex items-center gap-1"
+                  title="24/7 Philippines Crisis Support (1553)"
+                >
+                  <span>🆘</span>
+                  <span>1553</span>
+                </button>
+              )}
+
+              <button
+                onClick={onClose}
+                className="h-8 w-8 rounded-full flex items-center justify-center hover:bg-emerald-50 dark:hover:bg-emerald-900/60 cursor-pointer text-emerald-600 dark:text-emerald-300 transition-colors"
+                title="Close chat"
+              >
+                <X className="w-4 h-4" />
+              </button>
             </div>
           </div>
 
-          {/* Companion Live Talking Speech Bubble (sits above the pet) */}
-          <div className="relative mt-3 w-full p-3 bg-white dark:bg-[#182a22] rounded-2xl border border-emerald-200/90 dark:border-[#2d4d41]/70 shadow-md text-xs text-emerald-950 dark:text-emerald-50 text-center font-medium leading-relaxed z-10 shrink-0">
-            {/* Tail now points down toward the pet */}
-            <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-0 h-0 border-x-8 border-x-transparent border-t-8 border-t-white dark:border-t-[#182a22]" />
-            <p className="line-clamp-3">
-              {isStreaming
-                ? `*listens attentively and focuses warmly on you*`
-                : companionMood === 'excited'
-                ? `*happily barks/purrs and wags with joy!*`
-                : messages.length > 0 && messages[messages.length - 1].sender === 'companion'
-                ? messages[messages.length - 1].text.slice(0, 100) + '...'
-                : `Nandito lang ako para sa'yo, kaibigan. Anong nasa isip mo?`}
-            </p>
+          {/* Calm Mindful Atmosphere Banner */}
+          <div className="px-4 py-1.5 bg-emerald-50/70 dark:bg-emerald-950/30 border-b border-emerald-100 dark:border-emerald-900/40 flex items-center justify-between text-[11px] text-emerald-800 dark:text-emerald-300 font-medium shrink-0">
+            <div className="flex items-center gap-1.5">
+              <span>🌿</span>
+              <span className="truncate">Ligtas at pribadong espasyo para sa iyong damdamin</span>
+            </div>
           </div>
+        </div>
 
-          {/* ============================================================
-              THE COMPANION, AT THE BOTTOM-LEFT OF THE SIDEBAR.
-              No card, no panel, no emotion chip — the pet's face and
-              drift carry the feeling, and it sits straight on the
-              sanctuary background. shrink-0 + z-20 keep it from being
-              squashed or hidden by the sidebar's flex/overflow.
-              ============================================================ */}
-          <div className="mt-auto pt-3 w-full flex flex-col items-center shrink-0 z-20">
+        {/* ============================================================
+            THE BODY — the companion on the left, the conversation beside it
+            ============================================================
+            The home scenery is the background of the whole body. The pet
+            stands on the LEFT, on the same grass and at the same size, mood
+            and animations the home scene gives it, and the conversation runs
+            down the right of it: the companion's replies in wide bubbles
+            nearest the pet, the user's messages in smaller ones on the far
+            right. Nothing here is boxed in a panel of its own — the bubbles
+            are the only surfaces, so the landscape is never covered up.
+            ============================================================ */}
+        <div className="relative z-10 flex min-h-0 w-full flex-1 flex-row">
+          {/* ---- THE COMPANION, big, standing on the grass.
+              Below md it is scaled down from its bottom-left corner into a
+              fixed strip so the chat keeps its room; from md up it is full
+              size in a wider column. No border, no background, no veil
+              between the pet and the hill it is planted on. ---- */}
+          <div
+            ref={petColRef}
+            className="relative flex w-1/2 shrink-0 items-end justify-center pb-2"
+          >
             <motion.div
+              ref={petInnerRef}
               onClick={handlePetMini}
-              className="relative z-10 w-60 h-60 shrink-0 flex items-center justify-center cursor-pointer group"
+              style={{ scale: petScale, originY: 1, y: petScale * 18 }}
+              className="group relative shrink-0 cursor-pointer"
               title={`Tap to gently pet ${companionName}!`}
             >
-              {/* Soft light from above and a blurred contact shadow below, so the
-                  mascot reads as a lit, grounded presence rather than a flat
-                  sticker floating over the background. Both are warm neutrals:
-                  a strong white haze here sat right behind the pet's head and
-                  hat and flattened the contrast its cream muzzle and pale
-                  accessories depend on in Light Mode. */}
-              <div className="absolute inset-x-8 top-1 h-20 rounded-full bg-[#fff6e6]/40 dark:bg-white/10 blur-2xl pointer-events-none" />
-              <div className="absolute bottom-3 left-1/2 -translate-x-1/2 w-32 h-6 rounded-full bg-[#3a2410]/25 dark:bg-[#0b1411]/40 blur-md pointer-events-none" />
+              {/* Blurred contact shadow, so the paws read as planted on the
+                  grass rather than floating over the scene. */}
+              <span className="pointer-events-none absolute bottom-[6%] left-1/2 h-4 w-40 -translate-x-1/2 rounded-[50%] bg-emerald-950/25 blur-[6px] dark:bg-black/40" />
 
               {/* A slow, continuous breathing drift — small enough to read as
                   "alive" rather than as an obvious loop. */}
@@ -857,219 +1004,101 @@ export const CompanionChatModal: React.FC<CompanionChatModalProps> = ({
                   force2D
                 />
               </motion.div>
-              <div className="absolute bottom-1 z-20 text-[10px] font-bold text-emerald-700 dark:text-emerald-300 opacity-0 group-hover:opacity-100 transition-opacity bg-white/90 dark:bg-[#0b1411]/70 px-2 py-0.5 rounded-full shadow-xs pointer-events-none">
-                Tap to Pet 💚
-              </div>
+
             </motion.div>
           </div>
 
-          {/* Safety reassurance footnote — the purr control now lives only in
-              the header above, so it isn't offered twice on desktop. */}
-          <div className="w-full shrink-0 flex items-center justify-center gap-1.5 z-10 pt-3 mt-1 border-t border-emerald-100 dark:border-emerald-800/40 text-[10px] text-emerald-700 dark:text-emerald-400">
-            <Shield className="w-3 h-3" />
-            <span>Safe &bull; Confidential &bull; Judgment-free</span>
-          </div>
-        </div>
-
-        {/* ============================================================
-            MAIN CHAT COLUMN (MESSAGES + INPUT)
-            ============================================================ */}
-        <div className="flex-1 flex flex-col h-full overflow-hidden">
-        {/* ============================================================
-            TOP CHAT HEADER
-            ============================================================ */}
-        <div className="px-3.5 sm:px-5 py-3 bg-white dark:bg-[#13221b] border-b border-emerald-100 dark:border-emerald-800/60 flex items-center justify-between shrink-0 z-20">
-          {/* Left: Back button & Companion Profile */}
-          <div className="flex items-center gap-2.5 min-w-0">
-            <button
-              onClick={onClose}
-              className="p-2 rounded-xl hover:bg-emerald-50 dark:hover:bg-emerald-900/60 text-emerald-700 dark:text-emerald-200 cursor-pointer transition-colors shrink-0"
-              title="Back to Sanctuary"
-            >
-              <ArrowLeft className="w-4 h-4" />
-            </button>
-
-            <div
-              onClick={handlePetMini}
-              className="w-10 h-10 rounded-2xl bg-emerald-100 dark:bg-emerald-900/80 border border-emerald-300 dark:border-[#2d4d41] flex items-center justify-center text-xl cursor-pointer hover:scale-105 active:scale-95 transition-transform shadow-xs shrink-0"
-              title={`Tap to gently pet ${companionName}!`}
-            >
-              {species === 'dog' ? '🐶' : '🐱'}
-            </div>
-
-            <div className="min-w-0">
-              <h3 className="text-sm font-extrabold text-emerald-950 dark:text-emerald-50 leading-tight truncate flex items-center gap-1.5">
-                <span>{companionName}</span>
-                <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-950/80 px-2 py-0.5 rounded-full">
-                  AI Friend
-                </span>
-              </h3>
-              <div className="flex items-center gap-1.5 text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
-                <span className="truncate">{liveStatus}</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Right: Actions with consistent h-8 heights */}
-          <div className="flex items-center gap-1 shrink-0">
-            {/* Live Text-to-Speech Voice Toggle */}
-            <button
-              onClick={() => {
-                const next = !isVoiceSpeechEnabled;
-                setIsVoiceSpeechEnabled(next);
-                if (!next && 'speechSynthesis' in window) {
-                  window.speechSynthesis.cancel();
-                }
-              }}
-              className={`h-8 w-8 rounded-full flex items-center justify-center transition-all cursor-pointer ${
-                isVoiceSpeechEnabled
-                  ? 'bg-emerald-600 text-white shadow-xs'
-                  : 'bg-emerald-50 text-emerald-500 hover:bg-emerald-100 dark:bg-emerald-900/60 dark:text-emerald-300'
-              }`}
-              title={isVoiceSpeechEnabled ? 'Voice Aloud: ON' : 'Turn Voice Aloud ON'}
-            >
-              {isVoiceSpeechEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
-            </button>
-
-            {/* 28Hz Feline Purr Somatic Calming Button */}
-
-            {/* 24/7 Crisis Hotline Trigger — kept in an urgent color on purpose:
-                a safety exit should stay visually distinct from the calm
-                emerald/white theme everywhere else. */}
-            {onTriggerCrisisSafety && (
-              <button
-                onClick={onTriggerCrisisSafety}
-                className="h-8 px-2.5 rounded-full text-xs font-extrabold bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 dark:bg-rose-950/60 dark:text-rose-300 dark:border-rose-900/60 cursor-pointer shadow-xs flex items-center gap-1"
-                title="24/7 Philippines Crisis Support (1553)"
-              >
-                <span>🆘</span>
-                <span>1553</span>
-              </button>
-            )}
-
-            <button
-              onClick={onClose}
-              className="h-8 w-8 rounded-full flex items-center justify-center hover:bg-emerald-50 dark:hover:bg-emerald-900/60 cursor-pointer text-emerald-600 dark:text-emerald-300 transition-colors"
-              title="Close chat"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-
-        {/* Calm Mindful Atmosphere Banner */}
-        <div className="px-4 py-1.5 bg-emerald-50/70 dark:bg-emerald-950/30 border-b border-emerald-100 dark:border-emerald-900/40 flex items-center justify-between text-[11px] text-emerald-800 dark:text-emerald-300 font-medium shrink-0">
-          <div className="flex items-center gap-1.5">
-            <span>🌿</span>
-            <span>Ligtas at pribadong espasyo para sa iyong damdamin</span>
-          </div>
-        </div>
-
-        {/* ============================================================
-            CHAT MESSAGES VIEWPORT
-            Companion bubbles hug the LEFT, user bubbles hug the RIGHT.
-            No per-message avatar — the 2D pet lives in the sidebar.
-            ============================================================ */}
-        <div className="flex-1 p-4 overflow-y-auto space-y-3.5 relative z-10 bg-white dark:bg-[#13221b]">
-          {messages.map((msg) => (
-            <div
-              key={msg.id}
-              className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}
-            >
-              <motion.div
-                initial={{ opacity: 0, y: 8, scale: 0.98 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                transition={{ duration: 0.25, ease: 'easeOut' }}
-                className={`max-w-[82%] rounded-2xl px-4 py-2.5 text-xs sm:text-sm leading-relaxed shadow-xs ${
-                  msg.sender === 'user'
-                    ? 'bg-emerald-600 text-white rounded-br-xs font-medium'
-                    : msg.isCrisis
-                    ? 'bg-rose-100 dark:bg-rose-950/90 text-rose-900 dark:text-rose-100 border-2 border-rose-300 dark:border-rose-700 rounded-bl-xs'
-                    : 'bg-white dark:bg-[#182a22] text-emerald-950 dark:text-emerald-100 border border-emerald-100 dark:border-emerald-800/80 rounded-bl-xs'
-                }`}
-              >
-                <p className="whitespace-pre-wrap">
-                  {msg.text}
-                  {msg.isStreaming && (
-                    <span className="inline-block w-2 h-4 ml-1 bg-emerald-600 animate-pulse rounded-xs" />
-                  )}
-                </p>
-                <span
-                  className={`block text-[10px] mt-1 text-right font-medium ${
-                    msg.sender === 'user'
-                      ? 'text-emerald-100'
-                      : 'text-emerald-400/80'
-                  }`}
+          {/* ---- THE CONVERSATION, flowing down the right of the pet.
+              This is the only part of the body that scrolls; the pet stays
+              planted beside it, in view for the whole exchange. ---- */}
+          <div className="relative z-10 flex min-w-0 flex-1 flex-col">
+            <div className="flex-1 min-h-0 space-y-3 overflow-y-auto overflow-x-hidden p-3 sm:p-4">
+              {messages.map((msg) => (
+                <div
+                  key={msg.id}
+                  className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}
                 >
-                  {msg.timestamp}
-                </span>
-              </motion.div>
+                  <motion.div
+                    initial={{ opacity: 0, y: 8, scale: 0.98 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    transition={{ duration: 0.25, ease: 'easeOut' }}
+                    className={`relative rounded-2xl px-3.5 py-2.5 shadow-xs ${
+                      msg.sender === 'user'
+                        ? 'max-w-[58%] rounded-br-xs bg-emerald-600 text-[11px] font-medium leading-relaxed text-white sm:max-w-[52%] sm:text-xs'
+                        : msg.isCrisis
+                        ? 'max-w-[94%] rounded-bl-xs border-2 border-rose-300 bg-rose-100 text-xs leading-relaxed text-rose-900 dark:border-rose-700 dark:bg-rose-950/90 dark:text-rose-100 sm:max-w-[88%] sm:text-sm'
+                        : 'max-w-[94%] rounded-bl-xs border border-emerald-100 bg-white text-xs leading-relaxed text-emerald-950 dark:border-emerald-800/80 dark:bg-[#182a22] dark:text-emerald-100 sm:max-w-[88%] sm:text-sm'
+                    }`}
+                  >
+                    {/* Tail pointing back at the pet (side-by-side layouts only) */}
+                    {msg.sender === 'companion' && (
+                      <span
+                        aria-hidden
+                        className={`absolute -left-1.5 top-4 h-3 w-3 rotate-45 border-b border-l ${
+                          msg.isCrisis
+                            ? 'border-rose-300 bg-rose-100 dark:border-rose-700 dark:bg-rose-950/90'
+                            : 'border-emerald-100 bg-white dark:border-emerald-800/80 dark:bg-[#182a22]'
+                        }`}
+                      />
+                    )}
+                    {/* Tail on the user's side */}
+                    {msg.sender === 'user' && (
+                      <span
+                        aria-hidden
+                        className="absolute -right-1 bottom-3 h-2.5 w-2.5 rotate-45 bg-emerald-600"
+                      />
+                    )}
+
+                    <p className="whitespace-pre-wrap break-words">
+                      {msg.text}
+                      {msg.isStreaming && (
+                        <span className="ml-1 inline-block h-4 w-2 animate-pulse rounded-xs bg-emerald-600" />
+                      )}
+                    </p>
+                    <span
+                      className={`mt-1 block text-right text-[10px] font-medium ${
+                        msg.sender === 'user'
+                          ? 'text-emerald-100'
+                          : 'text-emerald-400/80'
+                      }`}
+                    >
+                      {msg.timestamp}
+                    </span>
+                  </motion.div>
+                </div>
+              ))}
+
+              <div ref={messagesEndRef} />
             </div>
-          ))}
 
-          <div ref={messagesEndRef} />
-        </div>
-
-        {/* ============================================================
-            COMPACT COMPANION
-            The left sidebar is `hidden md:flex`, so below the md
-            breakpoint the mascot would vanish entirely. No card, no
-            chip — just the same 2D pet sitting on the background.
-            ============================================================ */}
-        <div className="md:hidden shrink-0 z-20 flex items-center pl-3 -mt-1">
-          <motion.div
-            onClick={handlePetMini}
-            className="relative z-10 w-24 h-24 shrink-0 flex items-center justify-center cursor-pointer"
-            title={`Tap to gently pet ${companionName}!`}
-          >
-            {/* Same grounding shadow + gentle drift as the desktop mascot, scaled down */}
-            <div className="absolute bottom-1 left-1/2 -translate-x-1/2 w-14 h-3 rounded-full bg-emerald-950/20 dark:bg-[#0b1411]/35 blur-sm pointer-events-none" />
-            <motion.div
-              animate={{ y: [0, -2.5, 0] }}
-              transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
-              className="relative z-10"
-            >
-              <CuteCompanion
-                species={species}
-                mood={petMood}
-                equipped={equipped}
-                size="sm"
-                interactive={true}
-                force2D
-              />
-            </motion.div>
-          </motion.div>
-          <span className="text-xs font-black text-emerald-800 dark:text-emerald-200 truncate">
-            {companionName}
-          </span>
-        </div>
-
-        {/* ============================================================
-            QUICK CHAT — SUGGESTION PILLS
-            ============================================================ */}
-        <div className="bg-white dark:bg-[#13221b] z-20 shrink-0 border-t border-emerald-100 dark:border-emerald-900/40">
-          <div className="px-3.5 pt-2 flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-[0.14em] text-emerald-700/80 dark:text-emerald-400/80">
-            <Zap className="w-3 h-3" />
-            <span>Quick Chat</span>
-          </div>
-          <div className="px-3 py-1.5 flex gap-1.5 overflow-x-auto">
-            {quickPrompts.map((p) => (
-              <button
-                key={p}
-                onClick={() => handleSendText(p)}
-                disabled={isStreaming}
-                className="whitespace-nowrap px-3 py-1 rounded-full bg-white dark:bg-[#182a22] border border-emerald-200 dark:border-emerald-800 text-[11px] font-bold text-emerald-800 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-800/50 active:scale-95 disabled:opacity-50 cursor-pointer transition-all shrink-0 shadow-2xs"
-              >
-                {p}
-              </button>
-            ))}
+            {/* ============================================================
+                QUICK CHAT — SUGGESTION PILLS
+                Unchanged, and still the last thing above the input bar.
+                ============================================================ */}
+            <div className="shrink-0 px-3 pb-2 pt-1 sm:px-4">
+              <div className="flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-[0.14em] text-emerald-50 [text-shadow:0_1px_2px_rgba(0,0,0,0.6)] dark:text-emerald-300">
+                <Zap className="h-3 w-3" />
+                <span>Quick Chat</span>
+              </div>
+              <div className="mt-1 flex gap-1.5 overflow-x-auto md:flex-wrap md:overflow-x-visible">
+                {QUICK_PROMPTS.map((p) => (
+                  <button
+                    key={p}
+                    onClick={() => handleSendText(p)}
+                    disabled={isStreaming}
+                    className="whitespace-nowrap px-3 py-1 rounded-full bg-white dark:bg-[#182a22] border border-emerald-200 dark:border-emerald-800 text-[11px] font-bold text-emerald-800 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-800/50 active:scale-95 disabled:opacity-50 cursor-pointer transition-all shrink-0 shadow-2xs"
+                  >
+                    {p}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
 
         {/* Live Mic Listening Notice Banner */}
         {isListeningMic && (
-          <div className="px-4 py-1.5 bg-emerald-50 dark:bg-emerald-950/60 border-t border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-200 text-xs font-bold flex items-center justify-between">
+          <div className="px-4 py-1.5 bg-emerald-50 dark:bg-emerald-950/60 border-t border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-200 text-xs font-bold flex items-center justify-between shrink-0">
             <span className="flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
               <span>Listening to your voice... Speak now!</span>
@@ -1088,7 +1117,7 @@ export const CompanionChatModal: React.FC<CompanionChatModalProps> = ({
             ============================================================ */}
         <form
           onSubmit={handleSend}
-          className="p-3 bg-white dark:bg-[#13221b] border-t border-emerald-100 dark:border-emerald-800/60 flex items-center gap-2 shrink-0 z-20"
+          className="flex items-center gap-2 shrink-0 z-20 border-t border-emerald-100 dark:border-emerald-800/60 bg-white/80 px-3 py-3 backdrop-blur-xl sm:px-5 dark:bg-[#13221b]/85"
         >
           {/* Live Mic Speech-To-Text Button */}
           <button
@@ -1111,7 +1140,7 @@ export const CompanionChatModal: React.FC<CompanionChatModalProps> = ({
             onChange={(e) => setInputText(e.target.value)}
             placeholder={isListeningMic ? 'Listening...' : `Talk live with ${companionName}...`}
             disabled={isStreaming}
-            className="flex-1 px-4 py-2.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/70 border border-emerald-100 dark:border-emerald-800 text-emerald-950 dark:text-emerald-100 text-xs sm:text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none placeholder:text-emerald-400 dark:placeholder:text-emerald-500"
+            className="flex-1 min-w-0 px-4 py-2.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/70 border border-emerald-100 dark:border-emerald-800 text-emerald-950 dark:text-emerald-100 text-xs sm:text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none placeholder:text-emerald-400 dark:placeholder:text-emerald-500"
           />
 
           <button
@@ -1123,7 +1152,6 @@ export const CompanionChatModal: React.FC<CompanionChatModalProps> = ({
             <Send className="w-4 h-4" />
           </button>
         </form>
-        </div>
       </motion.div>
     </div>
   );

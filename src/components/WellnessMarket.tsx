@@ -119,7 +119,7 @@ export const WellnessMarket: React.FC<WellnessMarketProps> = ({
                       className={`px-3 py-1.5 rounded-xl text-xs font-semibold cursor-pointer transition-colors ${
                         isEquipped
                           ? 'bg-emerald-800 text-white'
-                          : 'bg-emerald-200 dark:bg-emerald-800 text-emerald-900 dark:text-emerald-100 hover:bg-emerald-300'
+                          : 'bg-emerald-200 dark:bg-emerald-800 text-emerald-900 dark:text-emerald-100 hover:bg-emerald-300 dark:hover:bg-emerald-700'
                       }`}
                     >
                       {isEquipped ? 'Equipped ✓' : 'Equip'}
