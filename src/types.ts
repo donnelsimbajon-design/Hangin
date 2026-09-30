@@ -9,6 +9,7 @@ export type PetAnimationMood =
   | 'sad'
   | 'tired'
   | 'overwhelmed'
+  | 'anxious'
   | 'eating'
   | 'bathing'
   | 'sleeping'
