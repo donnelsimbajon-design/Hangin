@@ -497,6 +497,11 @@ export const PouWellnessTab: React.FC<PouWellnessTabProps> = ({
   // Ball bouncing in outside room
   const [isBallThrown, setIsBallThrown] = useState(false);
 
+  // A real pet sniffs what it is served before it eats or drinks (or turns it
+  // down), and shakes itself dry right after a rinse.
+  const [isSniffingServed, setIsSniffingServed] = useState(false);
+  const [isShakingOff, setIsShakingOff] = useState(false);
+
   // Mindful Mini-Games modal
   const [showGamesModal, setShowGamesModal] = useState(false);
 
@@ -517,6 +522,10 @@ export const PouWellnessTab: React.FC<PouWellnessTabProps> = ({
   // Lets a tap serve an item while still ignoring the synthetic click that
   // browsers fire at the end of a drag.
   const dragJustHappenedRef = useRef(false);
+
+  // Timers for the multi-step pet behaviours (sniff -> eat, rinse -> shake off).
+  // Tracked so they can all be cleared if the tab goes away mid-sequence.
+  const pendingTimersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
 
   // The kitchen's own food + drink list, shared with the in-scene pantry shelf.
   const kitchenItems = kitchenItemsFor(species);
@@ -543,11 +552,37 @@ export const PouWellnessTab: React.FC<PouWellnessTabProps> = ({
       ? '9rem'
       : '50%';
 
+  // What the pet actually looks like right now. An action in progress (eating,
+  // bathing, being petted...) always wins; otherwise the pet reacts to its
+  // surroundings and how it is feeling, the way a real one would: asleep when
+  // put to bed, miserable in the rain (a cat is openly displeased), drowsy when
+  // worn out or unwell, and pleading when it is hungry.
+  const displayMood: string = (() => {
+    if (stats.isSleeping) return 'sleeping';
+    // CuteCompanion has no "playing" pose; a pet chasing a ball is excited.
+    if (roomMood === 'playing') return 'excited';
+    if (roomMood !== 'idle') return roomMood;
+    if (activeRoom === 'outside' && isOutsideStormy) {
+      return species === 'cat' ? 'serious' : 'sad';
+    }
+    if (stats.isSick || stats.energy < 20) return 'tired';
+    if (stats.hunger < 25) return 'anxious';
+    return 'idle';
+  })();
+
   // Clear the blower on unmount so a pending timeout can't set state after the
   // tab has gone.
   useEffect(() => {
     return () => {
       if (blowerTimerRef.current) clearTimeout(blowerTimerRef.current);
+    };
+  }, []);
+
+  // Same for the sniff / eat / shake-off sequence timers.
+  useEffect(() => {
+    return () => {
+      pendingTimersRef.current.forEach((id) => clearTimeout(id));
+      pendingTimersRef.current = [];
     };
   }, []);
 
@@ -585,6 +620,27 @@ export const PouWellnessTab: React.FC<PouWellnessTabProps> = ({
     );
   };
 
+  // Runs `fn` after `ms`, remembering the timer so it can be cancelled on unmount.
+  const schedule = (fn: () => void, ms: number) => {
+    const id = setTimeout(() => {
+      pendingTimersRef.current = pendingTimersRef.current.filter((t) => t !== id);
+      fn();
+    }, ms);
+    pendingTimersRef.current.push(id);
+  };
+
+  // Cats are the pickier sniffers; a dog gets its nose in and dives straight in.
+  const sniffMs = species === 'cat' ? 900 : 550;
+
+  // The pet leans in and sniffs first; `then` runs once it has made up its mind.
+  const sniffThen = (ms: number, then: () => void) => {
+    setIsSniffingServed(true);
+    schedule(() => {
+      setIsSniffingServed(false);
+      then();
+    }, ms);
+  };
+
   // Drag End handler: execute action if dropped on pet
   const handleDragEnd = (event: any, info: any, item: DraggableTool) => {
     const clientX = info.point.x;
@@ -620,6 +676,31 @@ export const PouWellnessTab: React.FC<PouWellnessTabProps> = ({
   };
 
   const applyItemAction = (item: DraggableTool) => {
+    // A sleeping pet is not interested in anything until it is woken up.
+    if (stats.isSleeping) {
+      showToast(
+        <>
+          {companionName} is fast asleep — let them rest
+          <Bed className="w-3.5 h-3.5 shrink-0" />
+        </>
+      );
+      return;
+    }
+
+    // Still sniffing or chewing: a real pet finishes one thing before the next.
+    if (
+      (item.type === 'food' || item.type === 'drink') &&
+      (roomMood === 'eating' || isSniffingServed)
+    ) {
+      showToast(
+        <>
+          Let {companionName} finish first
+          <Utensils className="w-3.5 h-3.5 shrink-0" />
+        </>
+      );
+      return;
+    }
+
     if (item.type === 'food' && item.inventoryKey && item.icon) {
       if ((inventory[item.inventoryKey] || 0) <= 0) {
         showToast(
@@ -630,6 +711,21 @@ export const PouWellnessTab: React.FC<PouWellnessTabProps> = ({
         );
         return;
       }
+
+      // A full pet sniffs the bowl and turns it down, like a real one. Nothing
+      // is used up and nothing is earned.
+      if (stats.hunger >= 95) {
+        sniffThen(sniffMs, () =>
+          showToast(
+            <>
+              {companionName} sniffed the {item.name} but isn't hungry right now
+              <Smile className="w-3.5 h-3.5 shrink-0" />
+            </>
+          )
+        );
+        return;
+      }
+
       const success = onUseInventory(item.inventoryKey);
       if (!success) return;
 
@@ -639,7 +735,6 @@ export const PouWellnessTab: React.FC<PouWellnessTabProps> = ({
         color: item.color ?? 'text-amber-800 dark:text-amber-300',
         kind: 'food',
       });
-      setRoomMood('eating');
       onUpdateStats({
         hunger: Math.min(100, stats.hunger + 24),
         happiness: Math.min(100, stats.happiness + 8),
@@ -648,19 +743,23 @@ export const PouWellnessTab: React.FC<PouWellnessTabProps> = ({
       if (item.xp) {
         onAddPoints(item.xp);
       }
-      confetti({ particleCount: 22, spread: 50, origin: { y: 0.65 } });
-      showToast(
-        <>
-          *crunch nom nom* {companionName} loved the tasty {item.name}!
-          <Smile className="w-3.5 h-3.5 shrink-0" />
-        </>
-      );
-      // Straight back to idle: no lingering 'happy' phase, so no interaction
-      // animation or movement survives the end of the meal.
-      setTimeout(() => {
-        setConsumedItem(null);
-        setRoomMood('idle');
-      }, 2200);
+      // Sniff first, then dig in.
+      sniffThen(sniffMs, () => {
+        setRoomMood('eating');
+        confetti({ particleCount: 22, spread: 50, origin: { y: 0.65 } });
+        showToast(
+          <>
+            *crunch nom nom* {companionName} loved the tasty {item.name}!
+            <Smile className="w-3.5 h-3.5 shrink-0" />
+          </>
+        );
+        // Straight back to idle: no lingering 'happy' phase, so no interaction
+        // animation or movement survives the end of the meal.
+        schedule(() => {
+          setConsumedItem(null);
+          setRoomMood('idle');
+        }, 2200);
+      });
     } else if (item.type === 'drink' && item.inventoryKey && item.icon) {
       if ((inventory[item.inventoryKey] || 0) <= 0) {
         showToast(
@@ -680,9 +779,6 @@ export const PouWellnessTab: React.FC<PouWellnessTabProps> = ({
         color: item.color ?? 'text-sky-600 dark:text-sky-300',
         kind: 'drink',
       });
-      // Reuses the existing head-down-to-bowl animation; the lapping motion,
-      // droplets and copy are layered on by the scene below.
-      setRoomMood('eating');
       onUpdateStats({
         hunger: Math.min(100, stats.hunger + 6),
         cleanliness: Math.min(100, stats.cleanliness + 4),
@@ -691,17 +787,23 @@ export const PouWellnessTab: React.FC<PouWellnessTabProps> = ({
       if (item.xp) {
         onAddPoints(item.xp);
       }
-      showToast(
-        <>
-          *lap lap lap* {companionName} sipped the {item.name}!
-          <Droplet className="w-3.5 h-3.5 shrink-0" />
-        </>
-      );
-      // Straight back to idle — the drinking animation stops the moment it ends.
-      setTimeout(() => {
-        setConsumedItem(null);
-        setRoomMood('idle');
-      }, 1800);
+      // A quick sniff of the bowl, then it laps. Reuses the existing
+      // head-down-to-bowl animation; the lapping motion, droplets and copy are
+      // layered on by the scene below.
+      sniffThen(Math.round(sniffMs * 0.6), () => {
+        setRoomMood('eating');
+        showToast(
+          <>
+            *lap lap lap* {companionName} sipped the {item.name}!
+            <Droplet className="w-3.5 h-3.5 shrink-0" />
+          </>
+        );
+        // Straight back to idle — the drinking animation stops the moment it ends.
+        schedule(() => {
+          setConsumedItem(null);
+          setRoomMood('idle');
+        }, 1800);
+      });
     } else if (item.type === 'soap') {
       if (inventory.soap <= 0) {
         showToast(
@@ -734,7 +836,9 @@ export const PouWellnessTab: React.FC<PouWellnessTabProps> = ({
     } else if (item.type === 'shower') {
       setIsShowerRunning(true);
       setSoapBubbles([]);
-      setRoomMood('happy');
+      // Dogs put up with a rinse cheerfully; a cat sits through it visibly
+      // unimpressed.
+      setRoomMood(species === 'cat' ? 'serious' : 'happy');
       onUpdateStats({
         cleanliness: 100,
         happiness: Math.min(100, stats.happiness + 8),
@@ -746,9 +850,15 @@ export const PouWellnessTab: React.FC<PouWellnessTabProps> = ({
           <Sparkles className="w-3.5 h-3.5 shrink-0" />
         </>
       );
-      setTimeout(() => {
+      schedule(() => {
         setIsShowerRunning(false);
-        setRoomMood('idle');
+        // Straight out of the water, the pet shakes itself dry — a dog with its
+        // whole body, a cat more daintily.
+        setIsShakingOff(true);
+        schedule(() => {
+          setIsShakingOff(false);
+          setRoomMood('idle');
+        }, 1000);
       }, 2500);
     } else if (item.type === 'blower') {
       // A blow replaces any blow already in progress, so the older timer can
@@ -756,7 +866,7 @@ export const PouWellnessTab: React.FC<PouWellnessTabProps> = ({
       if (blowerTimerRef.current) clearTimeout(blowerTimerRef.current);
       setIsBlowerRunning(true);
       setSoapBubbles([]);
-      setRoomMood('happy');
+      setRoomMood(species === 'cat' ? 'serious' : 'happy');
       onUpdateStats({
         cleanliness: 100,
         happiness: Math.min(100, stats.happiness + 4),
@@ -817,6 +927,16 @@ export const PouWellnessTab: React.FC<PouWellnessTabProps> = ({
 
   // Outside Toy Play
   const triggerBallPlay = () => {
+    // A worn-out pet won't chase a ball, however nicely you ask.
+    if (stats.energy <= 15) {
+      showToast(
+        <>
+          {companionName} is too tired to play right now
+          <Moon className="w-3.5 h-3.5 shrink-0" />
+        </>
+      );
+      return;
+    }
     setIsBallThrown(true);
     setRoomMood('playing');
     onUpdateStats({
@@ -864,6 +984,10 @@ export const PouWellnessTab: React.FC<PouWellnessTabProps> = ({
       onChangeSpecies(species === 'dog' ? 'cat' : 'dog');
     }
   };
+
+  // How hard the pet shakes itself dry after a rinse: a dog shakes its whole
+  // body, a cat only flicks.
+  const shakeStrength = species === 'dog' ? 1 : 0.55;
 
   return (
     <div className="w-full flex flex-col items-center space-y-4 select-none pb-8">
@@ -1899,7 +2023,9 @@ export const PouWellnessTab: React.FC<PouWellnessTabProps> = ({
               it independently of the container's own centring and eating-scale
               transforms — otherwise the two would fight over `transform`.
               The shake is a short repeat ONLY while the blower runs; otherwise it
-              settles to rest, so nothing keeps moving after the blow ends. */}
+              settles to rest, so nothing keeps moving after the blow ends.
+              The one-shot shake-off after a rinse uses the same group: a dog
+              shakes its whole body, a cat only flicks. */}
           <motion.div
             className="flex flex-col items-center"
             animate={
@@ -1909,23 +2035,37 @@ export const PouWellnessTab: React.FC<PouWellnessTabProps> = ({
                     x: [0, -3, 3, -1, 0],
                     y: [0, -1.5, 0, -0.5, 0],
                   }
+                : isShakingOff
+                ? {
+                    rotate: [0, 9, -9, 7, -7, 3, 0].map((v) => v * shakeStrength),
+                    x: [0, -4, 4, -3, 3, -1, 0].map((v) => v * shakeStrength),
+                    y: [0, -1, 0, -1, 0, 0, 0],
+                  }
                 : { rotate: 0, x: 0, y: 0 }
             }
             transition={
               isBlowerRunning
                 ? { duration: 0.44, repeat: Infinity, ease: 'easeInOut' }
+                : isShakingOff
+                ? { duration: 0.9, ease: 'easeInOut' }
                 : { duration: 0.28, ease: 'easeOut' }
             }
           >
             <CuteCompanion
               species={species}
-              mood={roomMood}
+              mood={displayMood}
               equipped={equipped}
               size="lg"
               interactive={true}
               showBowl={activeRoom === 'kitchen' || roomMood === 'eating'}
               isEating={roomMood === 'eating'}
-              isSniffing={activeDragItem !== null && (activeDragItem.type === 'food' || isHoveringPet)}
+              isSniffing={
+                (activeDragItem !== null &&
+                  (activeDragItem.type === 'food' ||
+                    activeDragItem.type === 'drink' ||
+                    isHoveringPet)) ||
+                isSniffingServed
+              }
               consumedItemIcon={consumedItem?.icon}
               consumedItemKind={consumedItem?.kind}
               onPet={() => {
@@ -2146,7 +2286,7 @@ export const PouWellnessTab: React.FC<PouWellnessTabProps> = ({
                   id: 'tea',
                   name: 'Bedtime Chamomile',
                   icon: Leaf,
-                  type: 'food',
+                  type: 'drink',
                   inventoryKey: 'herbalTea',
                 })
               }
@@ -2156,7 +2296,7 @@ export const PouWellnessTab: React.FC<PouWellnessTabProps> = ({
                   id: 'tea',
                   name: 'Bedtime Chamomile',
                   icon: Leaf,
-                  type: 'food',
+                  type: 'drink',
                   inventoryKey: 'herbalTea',
                 })
               }
@@ -2233,7 +2373,7 @@ export const PouWellnessTab: React.FC<PouWellnessTabProps> = ({
                   id: 'tea',
                   name: 'Herbal Tea',
                   icon: Leaf,
-                  type: 'food',
+                  type: 'drink',
                   inventoryKey: 'herbalTea',
                 })
               }
@@ -2243,7 +2383,7 @@ export const PouWellnessTab: React.FC<PouWellnessTabProps> = ({
                   id: 'tea',
                   name: 'Herbal Tea',
                   icon: Leaf,
-                  type: 'food',
+                  type: 'drink',
                   inventoryKey: 'herbalTea',
                 })
               }
