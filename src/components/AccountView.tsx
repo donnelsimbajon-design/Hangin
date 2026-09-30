@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import QRCode from 'react-qr-code';
 import {
   User,
   ShieldCheck,
@@ -20,6 +21,11 @@ import {
   X,
   EyeOff,
   Eye,
+  Palette,
+  Sun,
+  Moon,
+  Copy,
+  QrCode as QrCodeIcon,
 } from 'lucide-react';
 import { CuteCompanion } from './CuteCompanion';
 import { PetSpecies, EquippedAccessories } from '../types';
@@ -33,9 +39,9 @@ interface AccountViewProps {
   equipped: EquippedAccessories;
 
   /**
-   * Theme controls are no longer surfaced on this page — the light/dark toggle
-   * lives in the app header. Kept on the interface so the call site is
-   * unchanged.
+   * Appearance preference. The `dark` class on <html> drives every surface in
+   * the app; this row is the discoverable, labelled home of that switch. The
+   * header icon toggles the exact same state, so the two can never disagree.
    */
   darkMode: boolean;
   onToggleDarkMode: () => void;
@@ -113,12 +119,36 @@ const BTN_ICON =
 const ACTION_ROW =
   'group flex w-full items-center gap-3 rounded-xl border border-emerald-100 dark:border-slate-800 bg-white dark:bg-slate-950 px-3.5 py-3 text-left hover:border-emerald-300 dark:hover:border-slate-700 hover:bg-emerald-50/50 dark:hover:bg-slate-800/70 transition-colors cursor-pointer';
 
+/* ------------------------------------------------------------------ *
+ * Appearance toggle
+ * ------------------------------------------------------------------ */
+
+/*
+ * The switch track. Off is a quiet neutral rail; on is the same deep green
+ * used for primary actions, so "enabled" reads consistently everywhere.
+ * The knob is `translate-x-*` rather than a left/right swap so the movement
+ * is animated by the transition on the knob, not a layout change.
+ */
+const TRACK_OFF =
+  'bg-slate-200 dark:bg-slate-700';
+
+const TRACK_ON =
+  'bg-emerald-600 dark:bg-emerald-500';
+
+const KNOB =
+  'absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow-sm ring-1 ring-black/5 transition-transform duration-200 ease-out';
+
+const KNOB_ON =
+  'translate-x-5';
+
 export const AccountView: React.FC<AccountViewProps> = ({
   species,
   companionName,
   userName,
   points,
   equipped,
+  darkMode,
+  onToggleDarkMode,
   onOpenMarket,
   onTriggerCrisisSafety,
   onChangeSpecies,
@@ -148,6 +178,86 @@ export const AccountView: React.FC<AccountViewProps> = ({
       setNameDraft(companionName);
     }
   }, [companionName, isEditingName]);
+
+  /*
+   * --------------------------------------------------------------------------
+   * INSTALL QR
+   * --------------------------------------------------------------------------
+   *
+   * The QR encodes the app's own origin plus "/", which is exactly the
+   * `start_url` declared in public/manifest.json — so scanning it lands on the
+   * installable PWA entry point, and the browser's own install affordance
+   * (Android/Chrome "Install app", iOS/Safari "Add to Home Screen") takes over
+   * from there.
+   *
+   * Deliberately derived from `window.location.origin` at runtime rather than
+   * hard-coded: the same bundle is served from localhost in dev and from the
+   * real host in production, and a baked-in domain would silently point phones
+   * at the wrong place. Read after mount so a non-browser render can't throw.
+   */
+  const [installUrl, setInstallUrl] = useState('');
+
+  useEffect(() => {
+    // `origin` is the string "null" for opaque origins (file://), which would
+    // produce a useless code — fall back to a relative path in that case.
+    const origin = window.location.origin;
+    setInstallUrl(
+      !origin || origin === 'null' ? '/' : `${origin}/`
+    );
+  }, []);
+
+  // "Copied" confirmation, self-clearing. The timer is tracked so a fast
+  // unmount can't fire setState on a gone component.
+  const [copiedInstallLink, setCopiedInstallLink] = useState(false);
+  const copyResetTimer = useRef<number | null>(null);
+
+  useEffect(
+    () => () => {
+      if (copyResetTimer.current !== null) {
+        window.clearTimeout(copyResetTimer.current);
+      }
+    },
+    []
+  );
+
+  const handleCopyInstallLink = async () => {
+    if (!installUrl) return;
+
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(installUrl);
+      } else {
+        /*
+         * Fallback for insecure contexts. The async Clipboard API is only
+         * exposed on https (or localhost), so someone opening Settings over
+         * http://<LAN-IP> to scan a code off their own screen still needs a
+         * working copy button.
+         */
+        const scratch = document.createElement('textarea');
+        scratch.value = installUrl;
+        scratch.setAttribute('readonly', '');
+        scratch.style.position = 'fixed';
+        scratch.style.opacity = '0';
+        document.body.appendChild(scratch);
+        scratch.select();
+        document.execCommand('copy');
+        document.body.removeChild(scratch);
+      }
+
+      setCopiedInstallLink(true);
+
+      if (copyResetTimer.current !== null) {
+        window.clearTimeout(copyResetTimer.current);
+      }
+      copyResetTimer.current = window.setTimeout(
+        () => setCopiedInstallLink(false),
+        2000
+      );
+    } catch {
+      // Clipboard blocked (permissions or no user gesture) — the URL is shown
+      // on screen either way, so the user can still copy it by hand.
+    }
+  };
 
   const canSavePassword =
     currentPassword.length > 0 &&
@@ -688,7 +798,7 @@ export const AccountView: React.FC<AccountViewProps> = ({
 
               </div>
 
-              {/* PWA */}
+              {/* PWA — install on your phone, via QR code */}
               <div>
 
                 <div className="flex items-center gap-3">
@@ -700,15 +810,23 @@ export const AccountView: React.FC<AccountViewProps> = ({
                   <div className="flex-1 min-w-0">
 
                     <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
-                      Install the Phone App
+                      Install on Your Phone
                     </p>
 
                     <p className="text-xs text-slate-500 dark:text-slate-400">
-                      I-install ang Hangin nang direkta mula sa browser.
+                      Scan the code below to open Hangin on your phone and add it
+                      to your home screen.
                     </p>
 
                   </div>
 
+                  {/*
+                   * Native install prompt. This is NOT the primary path any
+                   * more — the QR below is — but it is kept because
+                   * `beforeinstallprompt` only fires on a desktop/Android
+                   * browser, where there is no phone camera to scan with, and
+                   * dropping it would remove the only one-tap install left.
+                   */}
                   {onInstallPWA && (
                     <button
                       onClick={onInstallPWA}
@@ -721,7 +839,108 @@ export const AccountView: React.FC<AccountViewProps> = ({
 
                 </div>
 
+                {/*
+                  The QR card.
+
+                  Two things here are load-bearing, not decoration:
+
+                  1. `bg-white` on the wrapper, in BOTH themes. A QR code is only
+                     reliably decoded against a light background; letting the dark
+                     slate card show through the transparent parts of the SVG
+                     breaks scanning on iOS in particular.
+                  2. The `p-4` (and the quiet zone it creates) is required. The
+                     SVG's viewBox is exactly the module grid with no margin, and
+                     the QR spec demands a 4-module quiet zone. Without this
+                     padding, phone cameras frequently fail to lock on. The
+                     padding is why the wrapper — not the <QRCode> itself — owns
+                     the white background.
+
+                  Layout stacks on narrow screens and goes side-by-side from `sm`
+                  up, where there is room for the code and the steps to sit
+                  together.
+                */}
+                <div className="mt-3 flex flex-col sm:flex-row sm:items-center gap-4 rounded-xl bg-emerald-50/60 dark:bg-slate-800/60 p-4">
+
+                  {/* Code + its forced-light quiet-zone padding */}
+                  <div className="shrink-0 self-center rounded-xl bg-white border border-emerald-200 dark:border-slate-700 p-4 shadow-sm">
+                    {installUrl ? (
+                      <QRCode
+                        value={installUrl}
+                        size={200}
+                        level="H"
+                        bgColor="#FFFFFF"
+                        fgColor="#0B1411"
+                        title={`Install Hangin — ${installUrl}`}
+                      />
+                    ) : (
+                      // Pre-hydration placeholder, same footprint so the card
+                      // never reflows when the code arrives.
+                      <div
+                        className="bg-slate-100 dark:bg-slate-200"
+                        style={{ width: 200, height: 200 }}
+                      />
+                    )}
+                  </div>
+
+                  {/* Instructions, kept alongside the code on wide rows */}
+                  <div className="flex-1 min-w-0 text-center sm:text-left">
+
+                    <p className="inline-flex items-center justify-center gap-1.5 text-sm font-bold text-emerald-900 dark:text-emerald-100">
+                      <QrCodeIcon className="w-4 h-4 shrink-0" />
+                      <span>
+                        Scan to install <span className="tracking-wide">HANGIN</span>
+                      </span>
+                    </p>
+
+                    <p className="mt-1.5 text-xs text-slate-600 dark:text-slate-300">
+                      Point your phone&apos;s camera at the code, open the link it
+                      offers, then add Hangin to your home screen.
+                    </p>
+
+                    {/* The same URL as text — the fallback when a camera can't
+                        focus, and the only way to install on a desktop. */}
+                    <div className="mt-3 flex items-center gap-2">
+                      <code
+                        className="flex-1 min-w-0 truncate rounded-lg bg-white dark:bg-slate-950 border border-emerald-200 dark:border-slate-700 px-2.5 py-1.5 text-[11px] text-slate-600 dark:text-slate-300"
+                        title={installUrl}
+                      >
+                        {installUrl || ' '}
+                      </code>
+
+                      <button
+                        type="button"
+                        onClick={handleCopyInstallLink}
+                        disabled={!installUrl}
+                        aria-label="Copy install link"
+                        title="Copy install link"
+                        className={`${BTN_ICON} shrink-0 px-2.5 py-1.5 disabled:opacity-40 disabled:cursor-not-allowed`}
+                      >
+                        {copiedInstallLink ? (
+                          <Check className="w-4 h-4" />
+                        ) : (
+                          <Copy className="w-4 h-4" />
+                        )}
+                        <span className="text-xs">
+                          {copiedInstallLink ? 'Copied' : 'Copy'}
+                        </span>
+                      </button>
+                    </div>
+
+                  </div>
+
+                </div>
+
                 <div className="mt-3 space-y-1.5 rounded-xl bg-emerald-50/60 dark:bg-slate-800/60 px-4 py-3 text-xs text-slate-600 dark:text-slate-300">
+
+                  {/*
+                   * Per-OS follow-up. The QR above gets the phone to the app;
+                   * it cannot perform the install step itself, so these two
+                   * lines cover the one manual tap that remains. iOS in
+                   * particular has no programmatic install path at all.
+                   */}
+                  <p className="font-semibold text-emerald-900 dark:text-emerald-200">
+                    Then add it to your home screen:
+                  </p>
 
                   <p className="flex items-start gap-2">
 
@@ -778,7 +997,99 @@ export const AccountView: React.FC<AccountViewProps> = ({
         </section>
 
         {/* =============================================================
-            3. SHIELD
+            3. APPEARANCE
+            ============================================================= */}
+        <section className={CARD}>
+
+          <div className={CARD_HEADER}>
+
+            <span className={ICON_TILE}>
+              <Palette className="w-4 h-4" />
+            </span>
+
+            <div className="min-w-0">
+
+              <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100">
+                Appearance
+              </h2>
+
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                How Hangin looks on this device
+              </p>
+
+            </div>
+
+          </div>
+
+          <div className={CARD_BODY}>
+
+            {/*
+              The whole row is the switch. Using `role="switch"` (rather than a
+              plain button) tells assistive tech it toggles a setting on or
+              off, and `aria-checked` exposes the current value — the icon and
+              colour are decorative reinforcement, not the source of truth.
+            */}
+            <button
+              type="button"
+              role="switch"
+              aria-checked={darkMode}
+              onClick={onToggleDarkMode}
+              className={`${ACTION_ROW} group`}
+            >
+
+              <span
+                className={`${ROW_ICON} transition-colors ${
+                  darkMode
+                    ? 'bg-emerald-900/70 text-emerald-200'
+                    : ''
+                }`}
+              >
+                {darkMode ? (
+                  <Moon className="w-4 h-4" />
+                ) : (
+                  <Sun className="w-4 h-4" />
+                )}
+              </span>
+
+              <span className="flex-1 min-w-0">
+
+                <span className="block text-sm font-medium text-slate-900 dark:text-slate-100">
+                  Dark Mode
+                </span>
+
+                <span className="block text-xs text-slate-500 dark:text-slate-400">
+                  {darkMode
+                    ? 'Soft low-light sanctuary palette'
+                    : 'Bright daytime palette'}
+                </span>
+
+              </span>
+
+              {/* Track + knob. Hidden from AT; `aria-checked` above is the truth. */}
+              <span
+                aria-hidden="true"
+                className={`relative shrink-0 h-6 w-11 rounded-full transition-colors duration-200 ${
+                  darkMode ? TRACK_ON : TRACK_OFF
+                }`}
+              >
+                <span
+                  className={`${KNOB} ${
+                    darkMode ? KNOB_ON : 'translate-x-0'
+                  }`}
+                />
+              </span>
+
+            </button>
+
+            <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">
+              Saved on this device, so Hangin opens the way you left it.
+            </p>
+
+          </div>
+        </section>
+
+        {/* =============================================================
+            4. SHIELD
             ============================================================= */}
         <section className={CARD}>
 

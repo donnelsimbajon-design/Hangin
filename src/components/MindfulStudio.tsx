@@ -130,7 +130,7 @@ export const MindfulStudio: React.FC<MindfulStudioProps> = ({
         {activeExercise !== 'menu' && (
           <button
             onClick={() => setActiveExercise('menu')}
-            className="text-xs font-semibold text-emerald-800 dark:text-emerald-200 px-3 py-1 rounded-full bg-emerald-50 dark:bg-emerald-900/40 hover:bg-emerald-100 transition-colors"
+            className="text-xs font-semibold text-emerald-800 dark:text-emerald-200 px-3 py-1 rounded-full bg-emerald-50 dark:bg-emerald-900/40 hover:bg-emerald-100 dark:hover:bg-emerald-800/50 transition-colors"
           >
             &larr; Back to Exercises
           </button>
@@ -277,7 +277,7 @@ export const MindfulStudio: React.FC<MindfulStudioProps> = ({
                 setBreathPhase('Inhale');
                 setBreathCount(4);
               }}
-              className="px-4 py-2 rounded-xl bg-emerald-100 dark:bg-emerald-900/40 text-emerald-900 dark:text-emerald-200 font-semibold text-xs hover:bg-emerald-200 transition-colors"
+              className="px-4 py-2 rounded-xl bg-emerald-100 dark:bg-emerald-900/40 text-emerald-900 dark:text-emerald-200 font-semibold text-xs hover:bg-emerald-200 dark:hover:bg-emerald-800/50 transition-colors"
             >
               Restart
             </button>
@@ -423,7 +423,7 @@ export const MindfulStudio: React.FC<MindfulStudioProps> = ({
                 setFocusRunning(false);
                 setFocusSeconds(300);
               }}
-              className="px-4 py-2.5 rounded-xl bg-emerald-100 dark:bg-emerald-900/30 text-emerald-900 dark:text-emerald-200 font-semibold text-xs hover:bg-emerald-200 transition-colors"
+              className="px-4 py-2.5 rounded-xl bg-emerald-100 dark:bg-emerald-900/30 text-emerald-900 dark:text-emerald-200 font-semibold text-xs hover:bg-emerald-200 dark:hover:bg-emerald-800/50 transition-colors"
             >
               Reset
             </button>

@@ -34,7 +34,7 @@ export const CrisisModal: React.FC<CrisisModalProps> = ({ isOpen, onClose }) => 
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-full hover:bg-rose-50 text-rose-500 transition-colors"
+            className="p-1.5 rounded-full hover:bg-rose-50 dark:hover:bg-rose-900/50 text-rose-500 dark:text-rose-300 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -61,7 +61,7 @@ export const CrisisModal: React.FC<CrisisModalProps> = ({ isOpen, onClose }) => 
               </a>
               <a
                 href="tel:+639178998727"
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white dark:bg-[#182a22] text-rose-700 dark:text-rose-200 border border-rose-200 text-xs font-semibold hover:bg-rose-50 transition-colors"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white dark:bg-[#182a22] text-rose-700 dark:text-rose-200 border border-rose-200 dark:border-rose-900/40 text-xs font-semibold hover:bg-rose-50 dark:hover:bg-rose-900/50 transition-colors"
               >
                 <span>0917-899-8727</span>
               </a>
@@ -101,7 +101,7 @@ export const CrisisModal: React.FC<CrisisModalProps> = ({ isOpen, onClose }) => 
                 href="https://findahelpline.com"
                 target="_blank"
                 rel="noreferrer"
-                className="text-emerald-700 font-semibold underline inline-flex items-center gap-0.5"
+                className="text-emerald-700 dark:text-emerald-300 font-semibold underline inline-flex items-center gap-0.5"
               >
                 findahelpline.com <ExternalLink className="w-3 h-3 inline" />
               </a>{' '}

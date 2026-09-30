@@ -27,7 +27,7 @@ export const DailyHabits: React.FC<DailyHabitsProps> = ({
       case 'rest':
         return <Moon className="w-4 h-4 text-indigo-500" />;
       default:
-        return <Sun className="w-4 h-4 text-emerald-600" />;
+        return <Sun className="w-4 h-4 text-emerald-600 dark:text-emerald-300" />;
     }
   };
 
@@ -79,7 +79,7 @@ export const DailyHabits: React.FC<DailyHabitsProps> = ({
             className={`w-full flex items-center justify-between p-3 rounded-2xl border text-left transition-all cursor-pointer ${
               habit.completed
                 ? 'bg-emerald-50/80 dark:bg-[#182a22] border-emerald-300/80 dark:border-[#2d4d41]/50 text-emerald-950 dark:text-emerald-100'
-                : 'bg-white dark:bg-[#182a22] border-[#e2ece6] dark:border-[#244137] text-emerald-900 dark:text-emerald-200 hover:bg-emerald-50/50'
+                : 'bg-white dark:bg-[#182a22] border-[#e2ece6] dark:border-[#244137] text-emerald-900 dark:text-emerald-200 hover:bg-emerald-50/50 dark:hover:bg-emerald-900/40'
             }`}
           >
             <div className="flex items-center gap-3">

@@ -1,6 +1,12 @@
 import React, { useState, useEffect, useId } from 'react';
 import { motion } from 'motion/react';
-import { PetSpecies, PetAnimationMood, EquippedAccessories } from '../types';
+import {
+  PetSpecies,
+  PetAnimationMood,
+  EquippedAccessories,
+  HatId,
+  ClothingId,
+} from '../types';
 
 interface CuteCompanionProps {
   species: PetSpecies;
@@ -9,7 +15,10 @@ interface CuteCompanionProps {
   interactive?: boolean;
   onPet?: () => void;
   className?: string;
-  size?: 'sm' | 'md' | 'lg' | 'hero';
+  /** `avatar` is a small, self-contained size for the community post/comment
+      headers. Same art, same wardrobe renderers — only the box is smaller, so
+      an avatar can never drift from the companion it is meant to represent. */
+  size?: 'sm' | 'md' | 'lg' | 'hero' | 'avatar';
   showBowl?: boolean;
   isEating?: boolean;
   isSniffing?: boolean;
@@ -49,6 +58,15 @@ const MOOD_DRIFT: Record<
   crying: { y: [0, 3, 0], rotate: [0, -2, 2, -1, 0], duration: 2.2 },
   tired: { y: [0, 3, 0], rotate: [0, 1, -1, 0], duration: 5 },
   sleeping: { y: [0, 2, 0], rotate: [0, 0, 0], duration: 3.2 },
+};
+
+/** Eating / drinking / sniffing motion: the pet dips toward its bowl on every
+    bite, laps more slowly for a drink, and leans in with a small nose-bob when
+    food is dragged close. */
+const EAT_DRIFT = {
+  food: { y: [4, 15, 6, 15, 4], rotate: [2, 7, 3, 7, 2], duration: 0.6 },
+  drink: { y: [6, 16, 6], rotate: [3, 8, 3], duration: 0.9 },
+  sniff: { y: [0, 4, 0, 4, 0], rotate: [0, 3, 0, 3, 0], duration: 0.7 },
 };
 
 /**
@@ -179,10 +197,288 @@ const PetExpression: React.FC<{
   );
 };
 
+/** Chewing jaw for food, lapping tongue for a drink. Drawn in the same 200×200
+    viewBox as the rest of the face, at the mouth position of each species. */
+const EatingMouth: React.FC<{ cx: number; cy: number; drinking: boolean }> = ({
+  cx,
+  cy,
+  drinking,
+}) =>
+  drinking ? (
+    <g>
+      <path
+        d={`M ${cx - 7} ${cy - 2} Q ${cx} ${cy + 2} ${cx + 7} ${cy - 2}`}
+        stroke="#241408"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        fill="none"
+      />
+      <motion.path
+        d={`M ${cx - 3} ${cy} Q ${cx} ${cy + 10} ${cx + 3} ${cy} Z`}
+        fill="#FF6B8B"
+        stroke="#E11D48"
+        strokeWidth="0.8"
+        style={{ transformBox: 'fill-box', transformOrigin: 'top center' }}
+        animate={{ scaleY: [0.4, 1.3, 0.4] }}
+        transition={{ duration: 0.45, repeat: Infinity, ease: 'easeInOut' }}
+      />
+    </g>
+  ) : (
+    <motion.ellipse
+      cx={cx}
+      cy={cy + 1}
+      rx={5}
+      ry={4}
+      fill="#431407"
+      style={{ transformBox: 'fill-box', transformOrigin: 'center' }}
+      animate={{ scaleY: [0.3, 1, 0.3], scaleX: [1.15, 0.85, 1.15] }}
+      transition={{ duration: 0.3, repeat: Infinity, ease: 'easeInOut' }}
+    />
+  );
+
+/**
+ * Shared SVG wardrobe renderer for the 2D mascot.
+ *
+ * Both species' SVGs share the same 200×200 viewBox and near-identical body
+ * geometry, so one set of paths works for both: clothing wraps the torso and
+ * hats sit on the head. The groups are rendered INSIDE the pet's own <svg>,
+ * alongside the ears/head/body, so they inherit the exact same drift, wag and
+ * scale animation as the fur — equipped gear always follows the pet, on every
+ * surface that renders a CuteCompanion.
+ */
+const OUTERWEAR_TORSO =
+  'M 66 116 C 66 98 134 98 134 116 ' +
+  'C 145 132 143 152 132 158 ' +
+  'C 100 163 68 163 68 158 ' +
+  'C 57 152 55 132 66 116 Z';
+
+const PetHat: React.FC<{
+  hatId: HatId | null | undefined;
+}> = ({ hatId }) => {
+  if (!hatId) return null;
+
+  if (hatId === 'beanie') {
+    return (
+      <g>
+        <path d="M 64 56 C 64 30 136 30 136 56 Z" fill="#4F46E5" stroke="#3730A3" strokeWidth="2" />
+        <circle cx="100" cy="30" r="7" fill="#818CF8" />
+      </g>
+    );
+  }
+
+  if (hatId === 'salakot') {
+    return (
+      <g>
+        <path d="M 46 54 Q 100 26 154 54 Q 100 64 46 54 Z" fill="#E0A85C" stroke="#9C6B3E" strokeWidth="2" />
+        <circle cx="100" cy="26" r="4" fill="#B9793A" />
+      </g>
+    );
+  }
+
+  if (hatId === 'cap') {
+    return (
+      <g>
+        {/* Denim crown */}
+        <path d="M 62 56 C 62 30 138 30 138 56 Z" fill="#2563EB" stroke="#1D4ED8" strokeWidth="2" />
+        {/* Top button */}
+        <circle cx="100" cy="31" r="4" fill="#3B82F6" />
+        {/* Curved visor */}
+        <path d="M 118 50 Q 152 44 166 56 Q 152 66 118 60 Z" fill="#1D4ED8" stroke="#172554" strokeWidth="1.5" strokeLinejoin="round" />
+        {/* Stitch line */}
+        <path d="M 64 54 Q 100 60 136 54" stroke="#93C5FD" strokeWidth="1.2" fill="none" strokeDasharray="3 3" opacity="0.7" />
+      </g>
+    );
+  }
+
+  if (hatId === 'bucketHat') {
+    return (
+      <g>
+        {/* Crown */}
+        <path d="M 70 54 C 70 34 130 34 130 54 Z" fill="#D2BE93" stroke="#987F58" strokeWidth="2" />
+        {/* Downturned wide brim */}
+        <path d="M 52 56 Q 100 62 148 56 Q 136 68 100 70 Q 64 68 52 56 Z" fill="#C4AE84" stroke="#987F58" strokeWidth="2" strokeLinejoin="round" />
+        {/* Brim stitch */}
+        <path d="M 55 58 Q 100 63 145 58" stroke="#A98E60" strokeWidth="1.2" fill="none" strokeDasharray="3 3" />
+      </g>
+    );
+  }
+
+  if (hatId === 'flowerCrown') {
+    const petals = (
+      <g fill="#F472B6" stroke="#E11D48" strokeWidth="1">
+        <circle cx="6" cy="0" r="4" />
+        <circle cx="-6" cy="0" r="4" />
+        <circle cx="0" cy="-6" r="4" />
+        <circle cx="0" cy="6" r="4" />
+      </g>
+    );
+    return (
+      <g>
+        {/* Vine band */}
+        <path d="M 56 57 Q 100 45 144 57" stroke="#65A30D" strokeWidth="5" fill="none" strokeLinecap="round" />
+        {/* Little leaves */}
+        <path d="M 62 54 Q 70 48 78 51 Q 70 56 62 54 Z" fill="#84CC16" stroke="#4D7C0F" strokeWidth="0.8" />
+        <path d="M 122 51 Q 130 48 138 54 Q 130 56 122 51 Z" fill="#84CC16" stroke="#4D7C0F" strokeWidth="0.8" />
+        {/* Blossoms */}
+        <g transform="translate(70 52)" opacity="0.95">{petals}</g>
+        <g transform="translate(100 49)" opacity="0.95">{petals}</g>
+        <g transform="translate(130 52)" opacity="0.95">{petals}</g>
+        <g transform="translate(85 47) scale(0.8)" opacity="0.9">{petals}</g>
+        <g transform="translate(115 47) scale(0.8)" opacity="0.9">{petals}</g>
+        <circle cx="70" cy="52" r="2" fill="#FDF2F8" />
+        <circle cx="100" cy="49" r="2" fill="#FDF2F8" />
+        <circle cx="130" cy="52" r="2" fill="#FDF2F8" />
+      </g>
+    );
+  }
+
+  // adventureHat — wide explorer brim with a trail band + buckle
+  return (
+    <g>
+      <path
+        d="M 42 56 Q 100 28 158 56 Q 132 68 100 68 Q 68 68 42 56 Z"
+        fill="#D6C08E"
+        stroke="#9C7B4A"
+        strokeWidth="2"
+        strokeLinejoin="round"
+      />
+      <path d="M 66 52 C 66 32 134 32 134 52 Z" fill="#CBB27E" stroke="#9C7B4A" strokeWidth="2" />
+      {/* Trail band */}
+      <path d="M 60 54 Q 100 58 140 54" stroke="#8B5A33" strokeWidth="5" fill="none" strokeLinecap="round" />
+      {/* Buckle */}
+      <rect x="94" y="50" width="12" height="10" rx="2" fill="#FBBF24" stroke="#8B5A33" strokeWidth="1.4" />
+      <line x1="100" y1="51" x2="100" y2="59" stroke="#8B5A33" strokeWidth="1.4" />
+    </g>
+  );
+};
+
+const PetClothing: React.FC<{
+  clothing: ClothingId | null | undefined;
+}> = ({ clothing }) => {
+  if (!clothing) return null;
+
+  if (clothing === 'hoodie') {
+    return (
+      <g>
+        <path d={OUTERWEAR_TORSO} fill="#4F46E5" stroke="#3730A3" strokeWidth="2" />
+        {/* Hood ring around the neck */}
+        <path d="M 64 120 C 74 108 88 112 88 112 C 88 118 94 124 100 124 C 106 124 112 118 112 112 C 112 112 126 108 136 120" stroke="#6366F1" strokeWidth="7" fill="none" strokeLinecap="round" />
+        {/* Drawstrings peeking under the chin */}
+        <path d="M 92 118 L 92 129" stroke="#E5E7EB" strokeWidth="2.2" strokeLinecap="round" />
+        <path d="M 108 118 L 108 129" stroke="#E5E7EB" strokeWidth="2.2" strokeLinecap="round" />
+        {/* Ribbed hem */}
+        <path d="M 69 157 Q 100 162 131 157" stroke="#3730A3" strokeWidth="4" fill="none" strokeLinecap="round" />
+        {/* Kangaroo pocket */}
+        <path d="M 82 136 Q 100 130 118 136 L 118 150 Q 100 157 82 150 Z" fill="#6366F1" stroke="#3730A3" strokeWidth="1.6" />
+      </g>
+    );
+  }
+
+  if (clothing === 'sweater') {
+    return (
+      <g>
+        <path d={OUTERWEAR_TORSO} fill="#84CC16" stroke="#4D7C0F" strokeWidth="2" />
+        {/* Round neck ribbing */}
+        <path d="M 78 122 Q 100 132 122 122" stroke="#3F6212" strokeWidth="4" fill="none" strokeLinecap="round" />
+        {/* Stitch details down the front */}
+        <path d="M 100 128 L 100 152" stroke="#65A30D" strokeWidth="3" strokeLinecap="round" strokeDasharray="4 3" />
+        <path d="M 92 128 L 92 146" stroke="#65A30D" strokeWidth="2" strokeLinecap="round" strokeDasharray="3 4" opacity="0.8" />
+        <path d="M 108 128 L 108 146" stroke="#65A30D" strokeWidth="2" strokeLinecap="round" strokeDasharray="3 4" opacity="0.8" />
+        {/* Ribbed hem */}
+        <path d="M 68 152 L 132 152" stroke="#3F6212" strokeWidth="3.5" strokeLinecap="round" />
+        <path d="M 68 157 L 132 157" stroke="#3F6212" strokeWidth="3" strokeLinecap="round" opacity="0.7" />
+      </g>
+    );
+  }
+
+  if (clothing === 'raincoat') {
+    return (
+      <g>
+        <path d={OUTERWEAR_TORSO} fill="#FACC15" stroke="#CA8A04" strokeWidth="2" />
+        {/* Hood rim */}
+        <path d="M 74 118 Q 100 108 126 118" stroke="#EAB308" strokeWidth="6" fill="none" strokeLinecap="round" />
+        {/* Front placket + buttons */}
+        <line x1="100" y1="124" x2="100" y2="160" stroke="#CA8A04" strokeWidth="2" />
+        <circle cx="100" cy="132" r="2.2" fill="#78350F" />
+        <circle cx="100" cy="142" r="2.2" fill="#78350F" />
+        <circle cx="100" cy="152" r="2.2" fill="#78350F" />
+        {/* Hem */}
+        <path d="M 69 153 Q 100 162 131 153" stroke="#CA8A04" strokeWidth="3" fill="none" strokeLinecap="round" />
+      </g>
+    );
+  }
+
+  if (clothing === 'pajamas') {
+    return (
+      <g>
+        {/* Longer lounge romper */}
+        <path
+          d="M 66 116 C 66 96 134 96 134 116 C 145 132 143 160 132 166 C 100 171 68 171 68 166 C 57 160 55 132 66 116 Z"
+          fill="#FB7185"
+          stroke="#E11D48"
+          strokeWidth="2"
+        />
+        {/* Collar flaps */}
+        <path d="M 76 120 L 100 132 L 90 120 Z" fill="#FDA4AF" stroke="#E11D48" strokeWidth="1" />
+        <path d="M 124 120 L 100 132 L 110 120 Z" fill="#FDA4AF" stroke="#E11D48" strokeWidth="1" />
+        {/* Button placket */}
+        <circle cx="102" cy="136" r="2" fill="#FFF1F2" stroke="#E11D48" strokeWidth="0.8" />
+        <circle cx="102" cy="146" r="2" fill="#FFF1F2" stroke="#E11D48" strokeWidth="0.8" />
+        <circle cx="102" cy="156" r="2" fill="#FFF1F2" stroke="#E11D48" strokeWidth="0.8" />
+        {/* Dreamy dots */}
+        <circle cx="80" cy="136" r="1.4" fill="#FDA4AF" />
+        <circle cx="120" cy="142" r="1.4" fill="#FDA4AF" />
+        <circle cx="86" cy="152" r="1.4" fill="#FDA4AF" />
+      </g>
+    );
+  }
+
+  if (clothing === 'explorerJacket') {
+    return (
+      <g>
+        <path d={OUTERWEAR_TORSO} fill="#D6C08E" stroke="#A08B5E" strokeWidth="2" />
+        {/* Collar */}
+        <path d="M 70 118 L 90 126 L 96 118 Z" fill="#C4AE84" stroke="#8A7448" strokeWidth="1.2" />
+        <path d="M 130 118 L 110 126 L 104 118 Z" fill="#C4AE84" stroke="#8A7448" strokeWidth="1.2" />
+        {/* Front zipper line */}
+        <line x1="100" y1="126" x2="100" y2="156" stroke="#8A7448" strokeWidth="1.6" strokeDasharray="2 2" />
+        {/* Chest pockets */}
+        <rect x="72" y="132" width="18" height="13" rx="3" fill="#CBB27E" stroke="#8A7448" strokeWidth="1.2" />
+        <rect x="110" y="132" width="18" height="13" rx="3" fill="#CBB27E" stroke="#8A7448" strokeWidth="1.2" />
+        <line x1="72" y1="136" x2="90" y2="136" stroke="#8A7448" strokeWidth="1" />
+        <line x1="110" y1="136" x2="128" y2="136" stroke="#8A7448" strokeWidth="1" />
+        {/* Belt */}
+        <path d="M 70 148 Q 100 154 130 148" stroke="#8B5A33" strokeWidth="5" fill="none" strokeLinecap="round" />
+        <rect x="95" y="145" width="10" height="8" rx="1.5" fill="#FBBF24" stroke="#8B5A33" strokeWidth="1.2" />
+      </g>
+    );
+  }
+
+  // summerShirt — light short-sleeve with collar + polka dots
+  return (
+    <g>
+      <path d={OUTERWEAR_TORSO} fill="#7DD3FC" stroke="#0284C7" strokeWidth="2" />
+      {/* Collar */}
+      <path d="M 82 116 L 100 126 L 92 114 Z" fill="#E0F2FE" stroke="#0284C7" strokeWidth="1.2" />
+      <path d="M 118 116 L 100 126 L 108 114 Z" fill="#E0F2FE" stroke="#0284C7" strokeWidth="1.2" />
+      {/* Tiny sleeve stubs */}
+      <path d="M 64 118 C 56 126 58 136 68 140 C 72 130 74 122 74 118 Z" fill="#38BDF8" stroke="#0284C7" strokeWidth="1.4" strokeLinejoin="round" />
+      <path d="M 136 118 C 144 126 142 136 132 140 C 128 130 126 122 126 118 Z" fill="#38BDF8" stroke="#0284C7" strokeWidth="1.4" strokeLinejoin="round" />
+      {/* Polka dots */}
+      <circle cx="84" cy="136" r="2.4" fill="#E0F2FE" opacity="0.9" />
+      <circle cx="116" cy="140" r="2.4" fill="#E0F2FE" opacity="0.9" />
+      <circle cx="100" cy="150" r="2.4" fill="#E0F2FE" opacity="0.9" />
+      <circle cx="92" cy="142" r="1.8" fill="#E0F2FE" opacity="0.75" />
+      <circle cx="108" cy="132" r="1.8" fill="#E0F2FE" opacity="0.75" />
+      <path d="M 70 155 Q 100 160 130 155" stroke="#0284C7" strokeWidth="2.5" fill="none" strokeLinecap="round" opacity="0.8" />
+    </g>
+  );
+};
+
 export const CuteCompanion: React.FC<CuteCompanionProps> = ({
   species,
   mood = 'idle',
-  equipped = { hat: null, glasses: false, scarf: false, collar: true },
+  equipped = { hat: null, clothing: null, glasses: false, scarf: false, collar: true },
   interactive = true,
   onPet,
   className = '',
@@ -276,6 +572,9 @@ export const CuteCompanion: React.FC<CuteCompanionProps> = ({
     md: 'w-44 h-44',
     lg: 'w-60 h-60',
     hero: 'w-72 h-72 sm:w-80 sm:h-80',
+    // Square and small, matching the round frame the community headers clip it
+    // into. The mascot is centred, so the face lands inside the circle.
+    avatar: 'w-full h-full',
   }[size];
 
   const isSleeping = mood === 'sleeping';
@@ -299,10 +598,22 @@ export const CuteCompanion: React.FC<CuteCompanionProps> = ({
   const isSerious = mood === 'serious' || mood === 'angry';
   const isCalmMood = mood === 'calm' || mood === 'peaceful';
 
+  // Eating: chewing food vs lapping a drink. Sniffing only counts while the
+  // pet is not already eating, so the bite motion always wins.
+  const isDrinking = isEating && consumedItemKind === 'drink';
+  const isSniffingNow = isSniffing && !isEating;
+
   // Gentle, emotion-appropriate idle movement. Downhearted moods sink and
   // sway rather than bounce, so the pet never looks cheerful by default.
-  const drift = MOOD_DRIFT[mood] ?? (isHappy ? MOOD_DRIFT.happy : MOOD_DRIFT.idle);
-  const hasDrift = Boolean(MOOD_DRIFT[mood]) || isHappy;
+  // Eating, drinking and sniffing take over the motion while they last.
+  const drift = isEating
+    ? isDrinking
+      ? EAT_DRIFT.drink
+      : EAT_DRIFT.food
+    : isSniffingNow
+    ? EAT_DRIFT.sniff
+    : MOOD_DRIFT[mood] ?? (isHappy ? MOOD_DRIFT.happy : MOOD_DRIFT.idle);
+  const hasDrift = isEating || isSniffingNow || Boolean(MOOD_DRIFT[mood]) || isHappy;
 
   // The item actually being consumed. Only fall back to a species nibble when the
   // caller has not told us what was served, so we never imply "fish" for water.
@@ -353,7 +664,7 @@ export const CuteCompanion: React.FC<CuteCompanionProps> = ({
                 delay: i * 0.35,
                 ease: 'easeInOut',
               }}
-              className="absolute bottom-8 left-1/2 w-6 h-6 rounded-full bg-cyan-200/80 border-2 border-white shadow-inner"
+              className="absolute bottom-8 left-1/2 w-6 h-6 rounded-full bg-cyan-200/80 dark:bg-cyan-400/25 border-2 border-white dark:border-cyan-100/70 shadow-inner"
             />
           ))}
         </div>
@@ -436,12 +747,15 @@ export const CuteCompanion: React.FC<CuteCompanionProps> = ({
 
           {/* Main Mascot Vector Illustration Container with Smooth Squish & Bounce.
               Drifts with the mood, so a sad pet sways heavy and low while an
-              excited one hops — the pet never idles cheerfully by default. */}
+              excited one hops — the pet never idles cheerfully by default.
+              While eating it dips toward the bowl on every bite. */}
           <motion.div
         animate={{
           y: drift.y,
           rotate: hasDrift ? drift.rotate : 0,
-          scaleY: isExcited
+          scaleY: isEating
+            ? [1, 0.94, 1]
+            : isExcited
             ? [1, 1.08, 0.94, 1]
             : isHappy || isLoving
             ? [1, 1.04, 0.97, 1]
@@ -454,7 +768,13 @@ export const CuteCompanion: React.FC<CuteCompanionProps> = ({
           y: { duration: drift.duration, repeat: Infinity, ease: 'easeInOut' },
           rotate: { duration: drift.duration, repeat: Infinity, ease: 'easeInOut' },
           scaleY: {
-            duration: isExcited ? 0.45 : isHappy || isLoving ? 0.8 : 2.4,
+            duration: isEating
+              ? drift.duration
+              : isExcited
+              ? 0.45
+              : isHappy || isLoving
+              ? 0.8
+              : 2.4,
             repeat: Infinity,
             ease: 'easeInOut',
           },
@@ -572,6 +892,10 @@ export const CuteCompanion: React.FC<CuteCompanionProps> = ({
                 <line x1="124" y1="167" x2="124" y2="173" stroke="#E0A85C" strokeWidth="1.5" strokeLinecap="round" />
               </g>
 
+              {/* Equipped Clothing — wraps the torso under the ears/head so the
+                  head stays on top and the outfit reads as worn, not planted. */}
+              <PetClothing clothing={equipped.clothing} />
+
               {/* Left Floppy Ear */}
               <motion.g
                 animate={{
@@ -620,8 +944,8 @@ export const CuteCompanion: React.FC<CuteCompanionProps> = ({
               <circle cx="132" cy="96" r="10" fill={`url(#${paint('dogCheek')})`} />
 
               {/* Eyes — the pet's face mirrors what the user is feeling */}
-              {blink || isSleeping ? (
-                /* Sleeping / Blinking Happy Arcs */
+              {blink || isSleeping || isEating ? (
+                /* Sleeping / Blinking / Eating Happy Arcs */
                 <g stroke="#3A200A" strokeWidth="3" strokeLinecap="round" fill="none">
                   <path d="M 72 82 Q 80 88 88 82" />
                   <path d="M 112 82 Q 120 88 128 82" />
@@ -691,7 +1015,10 @@ export const CuteCompanion: React.FC<CuteCompanionProps> = ({
               <ellipse cx="98" cy="91" rx="2" ry="1" fill="#FFFFFF" opacity="0.6" />
 
               {/* Mouth & Pink Tongue */}
-              {isCrying ? (
+              {isEating ? (
+                /* Chewing food / lapping a drink */
+                <EatingMouth cx={100} cy={102} drinking={isDrinking} />
+              ) : isCrying ? (
                 /* Quivering frown — the pet is upset about what you told it */
                 <motion.path
                   d="M 91 104 Q 100 98 109 104"
@@ -782,19 +1109,8 @@ export const CuteCompanion: React.FC<CuteCompanionProps> = ({
                 </g>
               )}
 
-              {equipped.hat === 'salakot' && (
-                <g>
-                  <path d="M 46 54 Q 100 26 154 54 Q 100 64 46 54 Z" fill="#E0A85C" stroke="#9C6B3E" strokeWidth="2" />
-                  <circle cx="100" cy="26" r="4" fill="#B9793A" />
-                </g>
-              )}
-
-              {equipped.hat === 'beanie' && (
-                <g>
-                  <path d="M 64 56 C 64 30 136 30 136 56 Z" fill="#4F46E5" stroke="#3730A3" strokeWidth="2" />
-                  <circle cx="100" cy="30" r="7" fill="#818CF8" />
-                </g>
-              )}
+              {/* Headwear — shared renderer draws every owned hat on the head */}
+              <PetHat hatId={equipped.hat} />
             </g>
           </svg>
         ) : (
@@ -909,6 +1225,10 @@ export const CuteCompanion: React.FC<CuteCompanionProps> = ({
                 <line x1="123" y1="167" x2="123" y2="173" stroke="#EAC08A" strokeWidth="1.4" strokeLinecap="round" />
               </g>
 
+              {/* Equipped Clothing — wraps the torso under the ears/head so the
+                  head stays on top and the outfit reads as worn, not planted. */}
+              <PetClothing clothing={equipped.clothing} />
+
               {/* Left Pointy Cat Ear with Pink Inside */}
               <motion.g
                 animate={{
@@ -967,8 +1287,8 @@ export const CuteCompanion: React.FC<CuteCompanionProps> = ({
               </g>
 
               {/* Eyes — the pet's face mirrors what the user is feeling */}
-              {blink || isSleeping ? (
-                /* Sleeping / Blinking Happy Arcs */
+              {blink || isSleeping || isEating ? (
+                /* Sleeping / Blinking / Eating Happy Arcs */
                 <g stroke="#3A200A" strokeWidth="3" strokeLinecap="round" fill="none">
                   <path d="M 70 82 Q 78 88 86 82" />
                   <path d="M 114 82 Q 122 88 130 82" />
@@ -1033,7 +1353,10 @@ export const CuteCompanion: React.FC<CuteCompanionProps> = ({
               <polygon points="97,94 103,94 100,98" fill="#FB7185" stroke="#E11D48" strokeWidth="0.8" />
 
               {/* Mouth — mirrors the user's emotional weight */}
-              {isCrying ? (
+              {isEating ? (
+                /* Chewing food / lapping a drink */
+                <EatingMouth cx={100} cy={101} drinking={isDrinking} />
+              ) : isCrying ? (
                 /* Quivering frown — the pet feels it with you */
                 <motion.path
                   d="M 92 103 Q 100 97 108 103"
@@ -1126,19 +1449,8 @@ export const CuteCompanion: React.FC<CuteCompanionProps> = ({
                 </g>
               )}
 
-              {equipped.hat === 'salakot' && (
-                <g>
-                  <path d="M 46 54 Q 100 26 154 54 Q 100 64 46 54 Z" fill="#E0A85C" stroke="#9C6B3E" strokeWidth="2" />
-                  <circle cx="100" cy="26" r="4" fill="#B9793A" />
-                </g>
-              )}
-
-              {equipped.hat === 'beanie' && (
-                <g>
-                  <path d="M 64 56 C 64 30 136 30 136 56 Z" fill="#4F46E5" stroke="#3730A3" strokeWidth="2" />
-                  <circle cx="100" cy="30" r="7" fill="#818CF8" />
-                </g>
-              )}
+              {/* Headwear — shared renderer draws every owned hat on the head */}
+              <PetHat hatId={equipped.hat} />
             </g>
           </svg>
         )}

@@ -215,7 +215,7 @@ function createBlushTexture(): THREE.CanvasTexture {
 export const ThreePetCanvas: React.FC<ThreePetCanvasProps> = ({
   species,
   animationMood = 'idle',
-  equipped = { hat: null, glasses: false, scarf: false, collar: true },
+  equipped = { hat: null, clothing: null, glasses: false, scarf: false, collar: true },
   timeOfDay = 'day',
   onPet,
   interactive = true,

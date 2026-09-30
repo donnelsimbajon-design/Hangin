@@ -222,14 +222,6 @@ export const PrivateJournal: React.FC<PrivateJournalProps> = ({
               <Delete className="w-5 h-5" />
             </button>
           </div>
-
-          {/* Quick Demo Bypass hint */}
-          <button
-            onClick={() => onUnlock(pin || '1234')}
-            className="text-[11px] text-emerald-600 dark:text-emerald-400 hover:underline font-bold mt-2"
-          >
-            Quick Unlock (Default: {pin || '1234'})
-          </button>
         </motion.div>
       </div>
     );

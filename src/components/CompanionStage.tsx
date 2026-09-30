@@ -368,7 +368,7 @@ export const CompanionStage: React.FC<CompanionStageProps> = ({
             <div className="grid grid-cols-4 gap-2">
               <button
                 onClick={() => handleFeed('apple', 'Apple', 20)}
-                className="flex flex-col items-center p-2 rounded-xl bg-white dark:bg-[#182a22] border border-amber-100 dark:border-emerald-800/40 text-center hover:bg-amber-100/50 transition-colors"
+                className="flex flex-col items-center p-2 rounded-xl bg-white dark:bg-[#182a22] border border-amber-100 dark:border-emerald-800/40 text-center hover:bg-amber-100/50 dark:hover:bg-amber-900/25 transition-colors"
               >
                 <span className="text-xl">🍎</span>
                 <span className="text-[11px] font-semibold text-emerald-950 dark:text-emerald-100 mt-1">Apple</span>
@@ -377,7 +377,7 @@ export const CompanionStage: React.FC<CompanionStageProps> = ({
 
               <button
                 onClick={() => handleFeed('banana', 'Banana', 22)}
-                className="flex flex-col items-center p-2 rounded-xl bg-white dark:bg-[#182a22] border border-amber-100 dark:border-emerald-800/40 text-center hover:bg-amber-100/50 transition-colors"
+                className="flex flex-col items-center p-2 rounded-xl bg-white dark:bg-[#182a22] border border-amber-100 dark:border-emerald-800/40 text-center hover:bg-amber-100/50 dark:hover:bg-amber-900/25 transition-colors"
               >
                 <span className="text-xl">🍌</span>
                 <span className="text-[11px] font-semibold text-emerald-950 dark:text-emerald-100 mt-1">Banana</span>
@@ -386,7 +386,7 @@ export const CompanionStage: React.FC<CompanionStageProps> = ({
 
               <button
                 onClick={() => handleFeed('riceBowl', 'Rice Bowl', 35)}
-                className="flex flex-col items-center p-2 rounded-xl bg-white dark:bg-[#182a22] border border-amber-100 dark:border-emerald-800/40 text-center hover:bg-amber-100/50 transition-colors"
+                className="flex flex-col items-center p-2 rounded-xl bg-white dark:bg-[#182a22] border border-amber-100 dark:border-emerald-800/40 text-center hover:bg-amber-100/50 dark:hover:bg-amber-900/25 transition-colors"
               >
                 <span className="text-xl">🍚</span>
                 <span className="text-[11px] font-semibold text-emerald-950 dark:text-emerald-100 mt-1">Rice</span>
@@ -395,7 +395,7 @@ export const CompanionStage: React.FC<CompanionStageProps> = ({
 
               <button
                 onClick={() => handleFeed('water', 'Fresh Water', 12)}
-                className="flex flex-col items-center p-2 rounded-xl bg-white dark:bg-[#182a22] border border-amber-100 dark:border-emerald-800/40 text-center hover:bg-amber-100/50 transition-colors"
+                className="flex flex-col items-center p-2 rounded-xl bg-white dark:bg-[#182a22] border border-amber-100 dark:border-emerald-800/40 text-center hover:bg-amber-100/50 dark:hover:bg-amber-900/25 transition-colors"
               >
                 <span className="text-xl">💧</span>
                 <span className="text-[11px] font-semibold text-emerald-950 dark:text-emerald-100 mt-1">Water</span>

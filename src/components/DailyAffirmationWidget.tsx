@@ -131,6 +131,22 @@ export const AFFIRMATION_LIBRARY: AffirmationItem[] = [
   },
 ];
 
+/**
+ * The one affirmation for today, resolved deterministically from the date.
+ *
+ * Exported so every surface that shows "today's affirmation" — this widget and
+ * the companion's chat bubble in HomeScenicStage — lands on the same entry.
+ * Both must agree, or the sanctuary would contradict itself.
+ */
+export const getTodayAffirmation = (): AffirmationItem => {
+  const today = new Date();
+  const dayOfYear = Math.floor(
+    (today.getTime() - new Date(today.getFullYear(), 0, 0).getTime()) / 1000 / 60 / 60 / 24
+  );
+
+  return AFFIRMATION_LIBRARY[dayOfYear % AFFIRMATION_LIBRARY.length];
+};
+
 interface DailyAffirmationWidgetProps {
   companionName?: string;
   onAddPoints?: (amount: number) => void;
@@ -142,16 +158,13 @@ export const DailyAffirmationWidget: React.FC<DailyAffirmationWidgetProps> = ({
   companionName = 'Habi',
   onAddPoints,
 }) => {
-  // Deterministic daily index based on current date
-  const getTodayIndex = () => {
-    const today = new Date();
-    const dayOfYear = Math.floor(
-      (today.getTime() - new Date(today.getFullYear(), 0, 0).getTime()) / 1000 / 60 / 60 / 24
-    );
-    return dayOfYear % AFFIRMATION_LIBRARY.length;
-  };
+  // Deterministic daily index based on current date. Delegates to the shared
+  // resolver so this widget and the companion's chat bubble always agree on
+  // which entry is "today".
+  const getTodayIndex = () =>
+    AFFIRMATION_LIBRARY.indexOf(getTodayAffirmation());
 
-  const [currentIndex, setCurrentIndex] = useState(getTodayIndex());
+  const [currentIndex, setCurrentIndex] = useState(getTodayIndex);
   const [bookmarkedIds, setBookmarkedIds] = useState<string[]>(() => {
     try {
       const saved = localStorage.getItem(BOOKMARK_STORAGE_KEY);
@@ -319,7 +332,7 @@ export const DailyAffirmationWidget: React.FC<DailyAffirmationWidgetProps> = ({
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer shadow-2xs active:scale-95 ${
                 isBookmarked
                   ? 'bg-emerald-500 text-white shadow-emerald-500/20'
-                  : 'bg-white/80 dark:bg-emerald-950/70 text-slate-700 dark:text-emerald-200 border border-slate-200 dark:border-emerald-800 hover:bg-emerald-50'
+                  : 'bg-white/80 dark:bg-emerald-950/70 text-slate-700 dark:text-emerald-200 border border-slate-200 dark:border-emerald-800 hover:bg-emerald-50 dark:hover:bg-emerald-900/50'
               }`}
               title={isBookmarked ? 'Remove from Saved' : 'Bookmark this Affirmation'}
             >
@@ -341,8 +354,8 @@ export const DailyAffirmationWidget: React.FC<DailyAffirmationWidgetProps> = ({
               onClick={() => handleSpeak(currentAffirmation.quote)}
               className={`p-1.5 rounded-full border text-xs transition-colors cursor-pointer ${
                 isSpeaking
-                  ? 'bg-purple-100 text-purple-700 border-purple-300 animate-pulse'
-                  : 'bg-white/80 dark:bg-emerald-950/70 text-slate-600 dark:text-emerald-300 border-slate-200 dark:border-emerald-800 hover:bg-emerald-50'
+                  ? 'bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-200 border-purple-300 dark:border-purple-700/60 animate-pulse'
+                  : 'bg-white/80 dark:bg-emerald-950/70 text-slate-600 dark:text-emerald-300 border-slate-200 dark:border-emerald-800 hover:bg-emerald-50 dark:hover:bg-emerald-900/50'
               }`}
               title={isSpeaking ? 'Stop Reading' : 'Listen with Soothing Audio Voice'}
             >
@@ -352,7 +365,7 @@ export const DailyAffirmationWidget: React.FC<DailyAffirmationWidgetProps> = ({
             {/* Copy Quote Button */}
             <button
               onClick={() => handleCopyQuote(currentAffirmation.quote, currentAffirmation.author)}
-              className="p-1.5 rounded-full bg-white/80 dark:bg-emerald-950/70 border border-slate-200 dark:border-emerald-800 text-slate-600 dark:text-emerald-300 hover:bg-emerald-50 cursor-pointer transition-colors"
+              className="p-1.5 rounded-full bg-white/80 dark:bg-emerald-950/70 border border-slate-200 dark:border-emerald-800 text-slate-600 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-900/50 cursor-pointer transition-colors"
               title="Copy affirmation to clipboard"
             >
               {copiedToast ? (

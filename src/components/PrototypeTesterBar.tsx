@@ -185,7 +185,7 @@ export const PrototypeTesterBar: React.FC<PrototypeTesterBarProps> = ({
 
             <button
               onClick={onTestReveal}
-              className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold flex items-center gap-1 cursor-pointer"
+              className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 dark:hover:bg-emerald-600 text-white font-bold flex items-center gap-1 cursor-pointer"
               title="Test Duolingo Survey & Onboarding (Photos #5 & 6)"
             >
               <CheckCircle className="w-3 h-3 text-white" />

@@ -105,7 +105,7 @@ export const BayanihanCircle: React.FC<BayanihanCircleProps> = ({
 
         {/* Search */}
         <div className="relative">
-          <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-emerald-700/60" />
+          <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-emerald-700/60 dark:text-emerald-300/50" />
           <input
             type="text"
             value={searchQuery}
@@ -125,7 +125,7 @@ export const BayanihanCircle: React.FC<BayanihanCircleProps> = ({
             className={`px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap transition-colors cursor-pointer border ${
               activeChannel === ch.id
                 ? 'bg-emerald-800 text-white border-emerald-900 shadow-xs'
-                : 'bg-emerald-50 dark:bg-[#182a22] text-emerald-900 dark:text-emerald-200 border-emerald-200 dark:border-emerald-800/40 hover:bg-emerald-100'
+                : 'bg-emerald-50 dark:bg-[#182a22] text-emerald-900 dark:text-emerald-200 border-emerald-200 dark:border-emerald-800/40 hover:bg-emerald-100 dark:hover:bg-emerald-900'
             }`}
           >
             {ch.name}
@@ -192,10 +192,10 @@ export const BayanihanCircle: React.FC<BayanihanCircleProps> = ({
                 className={`flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-lg transition-colors ${
                   post.hasValidated
                     ? 'bg-emerald-100 dark:bg-emerald-900 text-emerald-900 dark:text-emerald-100'
-                    : 'text-emerald-800 dark:text-emerald-300 hover:bg-emerald-50'
+                    : 'text-emerald-800 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-900/50'
                 }`}
               >
-                <CheckCircle className="w-3.5 h-3.5 text-emerald-600" />
+                <CheckCircle className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-300" />
                 <span>Validate ({post.validates})</span>
               </button>
 
@@ -204,7 +204,7 @@ export const BayanihanCircle: React.FC<BayanihanCircleProps> = ({
                 className={`flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-lg transition-colors ${
                   post.hasSentVibes
                     ? 'bg-rose-100 dark:bg-rose-950/60 text-rose-900 dark:text-rose-200'
-                    : 'text-emerald-800 dark:text-emerald-300 hover:bg-emerald-50'
+                    : 'text-emerald-800 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-900/50'
                 }`}
               >
                 <Heart className="w-3.5 h-3.5 text-rose-500" />
@@ -215,9 +215,9 @@ export const BayanihanCircle: React.FC<BayanihanCircleProps> = ({
                 onClick={() =>
                   setActiveCommentPostId(activeCommentPostId === post.id ? null : post.id)
                 }
-                className="flex items-center gap-1 text-xs font-semibold text-emerald-800 dark:text-emerald-300 px-2.5 py-1 rounded-lg hover:bg-emerald-50 transition-colors"
+                className="flex items-center gap-1 text-xs font-semibold text-emerald-800 dark:text-emerald-300 px-2.5 py-1 rounded-lg hover:bg-emerald-50 dark:hover:bg-emerald-900/50 transition-colors"
               >
-                <MessageCircle className="w-3.5 h-3.5 text-sky-600" />
+                <MessageCircle className="w-3.5 h-3.5 text-sky-600 dark:text-sky-300" />
                 <span>Reply ({post.comments.length})</span>
               </button>
             </div>

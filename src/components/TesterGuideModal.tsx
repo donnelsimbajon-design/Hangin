@@ -28,7 +28,7 @@ export const TesterGuideModal: React.FC<TesterGuideModalProps> = ({ isOpen, onCl
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-full hover:bg-emerald-50 text-emerald-600 transition-colors"
+            className="p-1.5 rounded-full hover:bg-emerald-50 dark:hover:bg-emerald-900/50 text-emerald-600 dark:text-emerald-300 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>

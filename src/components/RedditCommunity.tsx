@@ -21,7 +21,6 @@ import {
   Plus,
   Tag,
   Hash,
-  User,
   Calendar,
   Globe,
   Flower2,
@@ -31,8 +30,16 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
-import { ForumPost, ForumComment, ForumAward, PetSpecies, Subforum } from '../types';
+import {
+  ForumPost,
+  ForumComment,
+  ForumAward,
+  PetSpecies,
+  EquippedAccessories,
+  Subforum,
+} from '../types';
 import { CIRCLE_AWARD_VISUALS } from '../data/circleAwards';
+import { CuteCompanion } from './CuteCompanion';
 
 interface RedditCommunityProps {
   posts: ForumPost[];
@@ -46,7 +53,6 @@ interface RedditCommunityProps {
   onGiveAward: (postId: string, awardName: string, icon: string) => void;
   onAddComment: (postId: string, commentText: string) => void;
   onCreateSubforum?: (subforum: Subforum) => void;
-  onAddPoints?: (amount: number) => void;
   onTriggerCrisisSafety: () => void;
 }
 
@@ -104,6 +110,61 @@ const getPostDate = (post: ForumPost) => {
 };
 
 /**
+ * A post/comment author's companion, drawn as a small round avatar.
+ *
+ * This renders the SAME `CuteCompanion` mascot the rest of the sanctuary uses,
+ * at the `avatar` size, wearing the `EquippedAccessories` recorded on the post
+ * or comment. So the avatar is literally the author's companion rather than a
+ * separate icon set, and it stays in step with the wardrobe renderer: a hat
+ * bought in the Market shows up here too.
+ *
+ * `species` is read with `authorSpecies` as a fallback because both spellings
+ * exist on stored posts, and it falls back to the viewer only in the (practically
+ * unreachable) case of a post with no species at all.
+ */
+const CompanionAvatar: React.FC<{
+  post: {
+    species?: PetSpecies;
+    authorSpecies?: PetSpecies;
+    equipped?: EquippedAccessories;
+  };
+  label: string;
+  size?: 'sm' | 'md';
+}> = ({ post, label, size = 'md' }) => {
+  const species =
+    post.species ?? post.authorSpecies ?? 'dog';
+
+  /*
+   * The companion art is a full seated figure, so a straight `w-full h-full`
+   * fit would show head-to-paws and read as a squashed pet rather than a face.
+   * Scaling it up and anchoring the transform to the top crops in on the head
+   * and shoulders, which is what makes a 28-36px circle legible.
+   */
+  const box = size === 'sm' ? 'w-7 h-7' : 'w-9 h-9';
+  const zoom =
+    size === 'sm'
+      ? 'scale-[1.7] origin-top'
+      : 'scale-[1.5] origin-top';
+
+  return (
+    <span
+      title={`${label}'s companion`}
+      className={`${box} shrink-0 rounded-full overflow-hidden bg-emerald-50 dark:bg-[#0e1a15] border border-emerald-200 dark:border-emerald-800/70 flex items-center justify-center`}
+    >
+      <span className={`block w-full h-full ${zoom}`}>
+        <CuteCompanion
+          species={species}
+          equipped={post.equipped}
+          size="avatar"
+          interactive={false}
+          mood="idle"
+        />
+      </span>
+    </span>
+  );
+};
+
+/**
  * Interface icons for the built-in circles, so no emoji is used as chrome.
  * Custom subforums keep the emoji their owner picked, since that is stored on
  * the Subforum itself (see `newSubforumIcon`) and rendered as-is.
@@ -129,7 +190,6 @@ export const RedditCommunity: React.FC<RedditCommunityProps> = ({
   onGiveAward,
   onAddComment,
   onCreateSubforum,
-  onAddPoints,
   onTriggerCrisisSafety,
 }) => {
   const [newPostTitle, setNewPostTitle] = useState('');
@@ -200,9 +260,8 @@ export const RedditCommunity: React.FC<RedditCommunityProps> = ({
       onCreateSubforum(newSub);
     }
     onSelectChannel(formattedId);
-    onAddPoints?.(5);
     confetti({ particleCount: 40, spread: 60, origin: { y: 0.5 } });
-    showToast(`Created ${formattedId}! +5 WP earned! 🎉`);
+    showToast(`Created ${formattedId}! 🎉`);
     setNewSubforumName('');
     setNewSubforumDesc('');
     setIsCreateSubforumOpen(false);
@@ -214,16 +273,11 @@ export const RedditCommunity: React.FC<RedditCommunityProps> = ({
         navigator.clipboard.writeText(`${window.location.origin}/#community/${post.channel}/${post.id}`);
       }
     } catch {}
-    onAddPoints?.(2);
-    showToast('Link copied to clipboard! +2 WP awarded! 🌿');
+    showToast('Link copied to clipboard! 🌿');
   };
 
-  const handleVoteWithPoints = (postId: string, direction: 'up' | 'down') => {
+  const handleVote = (postId: string, direction: 'up' | 'down') => {
     onVotePost(postId, direction);
-    if (direction === 'up') {
-      onAddPoints?.(1);
-      showToast('+1 WP earned for spreading warmth! ✨');
-    }
   };
 
   const handleSubmitPost = (e: React.FormEvent) => {
@@ -246,20 +300,18 @@ export const RedditCommunity: React.FC<RedditCommunityProps> = ({
     const titleWithFlair = `[${selectedFlair}] ${newPostTitle.trim() || 'Mindful Reflection'}`;
     onAddPost(selectedChannelForPost, newPostText.trim(), attachedImage || undefined, titleWithFlair);
 
-    onAddPoints?.(5);
     setNewPostTitle('');
     setNewPostText('');
     setAttachedImage(null);
     setIsCreatePostOpen(false);
-    showToast('Posted to ' + selectedChannelForPost + '! +5 WP earned! 🍃');
+    showToast('Posted to ' + selectedChannelForPost + '! 🍃');
   };
 
   const handleAddCommentSubmit = (postId: string) => {
     if (!commentInput.trim()) return;
     onAddComment(postId, commentInput.trim());
-    onAddPoints?.(2);
     setCommentInput('');
-    showToast('Comment added! +2 WP earned! 💬');
+    showToast('Comment added! 💬');
   };
 
   const filteredPosts = posts
@@ -369,7 +421,7 @@ export const RedditCommunity: React.FC<RedditCommunityProps> = ({
                   type="button"
                   onClick={() => setIsCreatePostOpen(false)}
                   aria-label="Close composer"
-                  className="p-1 rounded-full text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900 hover:text-emerald-700 dark:hover:text-white cursor-pointer shrink-0"
+                  className="p-1 rounded-full text-emerald-600 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-900 hover:text-emerald-700 dark:hover:text-white cursor-pointer shrink-0"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -603,7 +655,8 @@ export const RedditCommunity: React.FC<RedditCommunityProps> = ({
       </div>
 
       {/* ============================================================
-          COMMUNITY FEED — title/date, content, tags, extras, footer
+          COMMUNITY FEED — each card is header (username + companion avatar +
+          date), body (title, content, tags, extras), then the action footer
           ============================================================ */}
       <div className="space-y-3">
         {filteredPosts.map((post) => {
@@ -618,27 +671,41 @@ export const RedditCommunity: React.FC<RedditCommunityProps> = ({
               key={post.id}
               className="rounded-2xl bg-white dark:bg-[#13221b] border border-emerald-200 dark:border-emerald-800/80 shadow-xs hover:border-emerald-300 dark:hover:border-emerald-700 transition-all flex flex-col overflow-hidden"
             >
-              <div className="p-3 sm:p-4 text-left">
-                {/* 1. Header — prominent title left, secondary date right */}
-                <div className="flex items-start justify-between gap-3">
-                  <h3 className="text-sm sm:text-base font-extrabold text-slate-900 dark:text-emerald-50 leading-snug min-w-0">
-                    {displayTitle}
-                  </h3>
-                  <time
-                    dateTime={postDate?.toISOString()}
-                    className="inline-flex items-center gap-1 text-[10px] sm:text-[11px] font-semibold text-slate-500 dark:text-emerald-400/70 shrink-0 mt-0.5 whitespace-nowrap"
-                  >
-                    <Calendar className="w-3 h-3 shrink-0" />
-                    {postDate ? postDate.toLocaleDateString() : String(post.timestamp ?? '')}
-                  </time>
-                </div>
+              {/* 1. HEADER — the author's companion avatar, then their username,
+                  with the date pushed to the far right. The avatar is the first
+                  flex child and `shrink-0`, so the username is what truncates
+                  on a narrow screen rather than the avatar being squeezed. */}
+              <div className="flex items-center gap-2 px-3 sm:px-4 pt-3 sm:pt-4 pb-2">
+                <CompanionAvatar
+                  post={post}
+                  label={post.authorName || post.author || 'GentleUser'}
+                />
 
-                {/* 2. Post content */}
-                <p className="mt-2 text-xs sm:text-sm text-slate-700 dark:text-emerald-200/90 leading-relaxed whitespace-pre-wrap">
+                <span className="text-xs sm:text-[13px] font-bold text-slate-700 dark:text-emerald-200 min-w-0 truncate">
+                  u/{post.authorName || post.author || 'GentleUser'}
+                </span>
+
+                <time
+                  dateTime={postDate?.toISOString()}
+                  className="ml-auto inline-flex items-center gap-1 text-[10px] sm:text-[11px] font-semibold text-slate-500 dark:text-emerald-400/70 shrink-0 whitespace-nowrap"
+                >
+                  <Calendar className="w-3 h-3 shrink-0" />
+                  {postDate ? postDate.toLocaleDateString() : String(post.timestamp ?? '')}
+                </time>
+              </div>
+
+              {/* 2. BODY — title, then the post content itself */}
+              <div className="px-3 sm:px-4">
+                <h3 className="text-sm sm:text-base font-extrabold text-slate-900 dark:text-emerald-50 leading-snug">
+                  {displayTitle}
+                </h3>
+
+                <p className="mt-1.5 text-xs sm:text-sm text-slate-700 dark:text-emerald-200/90 leading-relaxed whitespace-pre-wrap">
                   {post.content || post.text}
                 </p>
 
-                {/* 3. Tags — flair + circle, lifted from existing post data */}
+                {/* 3. Tags — flair + circle, lifted from existing post data.
+                    The author no longer appears here: they are the header. */}
                 {tags.length > 0 && (
                   <div className="mt-2.5 flex items-center gap-1.5 flex-wrap">
                     {tags.map((tag) => (
@@ -650,10 +717,6 @@ export const RedditCommunity: React.FC<RedditCommunityProps> = ({
                         {tag}
                       </span>
                     ))}
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-semibold text-emerald-700 dark:text-emerald-400/80">
-                      <User className="w-3 h-3 shrink-0 opacity-70" />
-                      u/{post.authorName || post.author || 'GentleUser'}
-                    </span>
                   </div>
                 )}
 
@@ -707,24 +770,39 @@ export const RedditCommunity: React.FC<RedditCommunityProps> = ({
                     {/* Comment list */}
                     <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
                       {post.comments && post.comments.length > 0 ? (
-                        post.comments.map((cmt) => (
-                          <div
-                            key={cmt.id}
-                            className="p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-100 dark:border-emerald-800/60 text-xs"
-                          >
-                            <div className="flex items-center gap-1.5 font-bold text-slate-700 dark:text-emerald-200 text-[11px] mb-1">
-                              <span>u/{cmt.authorName || cmt.author || 'MindfulFriend'}</span>
-                              <span className="text-slate-400">•</span>
-                              <span className="text-slate-400 font-normal">
-                                {new Date(cmt.timestamp).toLocaleTimeString([], {
-                                  hour: '2-digit',
-                                  minute: '2-digit',
-                                })}
-                              </span>
+                        post.comments.map((cmt) => {
+                          const commentAuthor =
+                            cmt.authorName || cmt.author || 'MindfulFriend';
+
+                          return (
+                            /* Same avatar-then-username header as a post, at
+                               the smaller avatar size a nested reply can
+                               afford, with the body beneath it. */
+                            <div
+                              key={cmt.id}
+                              className="p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-100 dark:border-emerald-800/60 text-xs"
+                            >
+                              <div className="flex items-center gap-1.5 font-bold text-slate-700 dark:text-emerald-200 text-[11px] mb-1.5">
+                                <CompanionAvatar
+                                  post={cmt}
+                                  label={commentAuthor}
+                                  size="sm"
+                                />
+
+                                <span className="min-w-0 truncate">{`u/${commentAuthor}`}</span>
+
+                                <span className="text-slate-400 shrink-0">•</span>
+                                <span className="text-slate-400 font-normal shrink-0 whitespace-nowrap">
+                                  {new Date(cmt.timestamp).toLocaleTimeString([], {
+                                    hour: '2-digit',
+                                    minute: '2-digit',
+                                  })}
+                                </span>
+                              </div>
+                              <p className="text-slate-600 dark:text-emerald-300/90">{cmt.text}</p>
                             </div>
-                            <p className="text-slate-600 dark:text-emerald-300/90">{cmt.text}</p>
-                          </div>
-                        ))
+                          );
+                        })
                       ) : (
                         <p className="text-xs text-slate-400 dark:text-emerald-400 italic py-2 text-center">
                           No comments yet. Be the first to share warmth!
@@ -734,13 +812,14 @@ export const RedditCommunity: React.FC<RedditCommunityProps> = ({
                   </div>
                 )}
 
-                {/* 5. Footer actions — lightweight, Lucide icons only */}
-                <div className="mt-3 pt-2.5 border-t border-emerald-100 dark:border-emerald-900/40 flex items-center flex-wrap gap-x-1 sm:gap-x-2 gap-y-1 text-[11px] sm:text-xs font-bold text-slate-800 dark:text-emerald-400">
+                {/* 5. Footer actions — Like / Comments / Award / Share. These
+                    award nothing: taking part in the circle is the reward. */}
+                <div className="mt-3 pt-2.5 pb-3 sm:pb-4 border-t border-emerald-100 dark:border-emerald-900/40 flex items-center flex-wrap gap-x-1 sm:gap-x-2 gap-y-1 text-[11px] sm:text-xs font-bold text-slate-800 dark:text-emerald-400">
                   {/* Heart — Like */}
                   <button
-                    onClick={() => handleVoteWithPoints(post.id, 'up')}
+                    onClick={() => handleVote(post.id, 'up')}
                     aria-pressed={isLiked}
-                    title={isLiked ? 'Remove your like' : 'Like this post (+1 WP)'}
+                    title={isLiked ? 'Remove your like' : 'Like this post'}
                     className={`flex items-center gap-1.5 px-2 py-1.5 rounded-lg transition-colors cursor-pointer ${
                       isLiked
                         ? 'text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/60'
@@ -778,7 +857,7 @@ export const RedditCommunity: React.FC<RedditCommunityProps> = ({
                       }
                       aria-expanded={awardPickerPostId === post.id}
                       aria-haspopup="true"
-                      title="Give this post an award (+3 WP)"
+                      title="Give this post an award"
                       className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg hover:bg-amber-50 dark:hover:bg-amber-950/50 hover:text-amber-600 transition-colors cursor-pointer"
                     >
                       <span
@@ -817,8 +896,7 @@ export const RedditCommunity: React.FC<RedditCommunityProps> = ({
                                 onClick={() => {
                                   onGiveAward(post.id, aw.name, aw.icon);
                                   setAwardPickerPostId(null);
-                                  onAddPoints?.(3);
-                                  showToast(`Gave ${aw.name} award! +3 WP earned! 🏆`);
+                                  showToast(`Gave ${aw.name} award! 🏆`);
                                 }}
                                 title={aw.name}
                                 aria-label={`Give ${aw.name} award`}
@@ -836,21 +914,12 @@ export const RedditCommunity: React.FC<RedditCommunityProps> = ({
                   {/* Share2 — Share */}
                   <button
                     onClick={() => handleSharePost(post)}
-                    title="Share post & copy link (+2 WP)"
+                    title="Share post & copy link"
                     className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg hover:bg-emerald-50 dark:hover:bg-emerald-900/60 transition-colors cursor-pointer"
                   >
                     <Share2 className="w-4 h-4" />
                     <span>Share</span>
                   </button>
-
-                  {/* +2 WP indicator */}
-                  <span
-                    className="ml-auto inline-flex items-center gap-1 text-[10px] font-black text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 px-2 py-1 rounded-full shrink-0"
-                    title="Earn +2 WP when you share this post"
-                  >
-                    <Sparkles className="w-3 h-3" />
-                    +2 WP
-                  </span>
                 </div>
               </div>
             </div>
@@ -886,7 +955,7 @@ export const RedditCommunity: React.FC<RedditCommunityProps> = ({
                 </div>
                 <button
                   onClick={() => setIsCreateSubforumOpen(false)}
-                  className="p-1 rounded-full hover:bg-emerald-50 dark:hover:bg-emerald-900 text-emerald-700 cursor-pointer"
+                  className="p-1 rounded-full hover:bg-emerald-50 dark:hover:bg-emerald-900 text-emerald-700 dark:text-emerald-300 cursor-pointer"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -967,7 +1036,7 @@ export const RedditCommunity: React.FC<RedditCommunityProps> = ({
                   disabled={!newSubforumName.trim()}
                   className="px-5 py-2.5 rounded-full bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 text-white font-black text-xs uppercase tracking-wider shadow-md cursor-pointer transition-all"
                 >
-                  Create &amp; Launch Subforum (+5 WP)
+                  Create &amp; Launch Subforum
                 </button>
               </div>
             </motion.div>

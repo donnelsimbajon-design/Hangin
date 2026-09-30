@@ -198,7 +198,7 @@ export const DigitalShieldTab: React.FC<DigitalShieldTabProps> = ({
               className="w-6 h-6 rounded-full bg-white shadow-md flex items-center justify-center"
             >
               {isAdultBlockerActive ? (
-                <Check className="w-3.5 h-3.5 text-emerald-600 stroke-[3]" />
+                <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-300 stroke-[3]" />
               ) : (
                 <EyeOff className="w-3 h-3 text-slate-400" />
               )}
@@ -292,7 +292,7 @@ export const DigitalShieldTab: React.FC<DigitalShieldTabProps> = ({
               <button
                 onClick={() => handleRemoveSite(site)}
                 aria-label={`Remove ${site}`}
-                className="w-5 h-5 rounded-md flex items-center justify-center text-emerald-400 hover:text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/60 transition-colors cursor-pointer"
+                className="w-5 h-5 rounded-md flex items-center justify-center text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-200 hover:bg-emerald-50 dark:hover:bg-emerald-950/60 transition-colors cursor-pointer"
               >
                 <Trash2 className="w-3 h-3" />
               </button>

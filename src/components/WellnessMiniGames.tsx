@@ -865,7 +865,7 @@ const CloudJumperGame: React.FC<{
   return (
     <div className="flex flex-col items-center">
       <div className="w-full flex items-center justify-between text-xs font-bold mb-2 text-emerald-950 dark:text-emerald-100">
-        <span>Altitude: <span className="text-emerald-600 font-extrabold">{altitude}m</span></span>
+        <span>Altitude: <span className="text-emerald-600 dark:text-emerald-300 font-extrabold">{altitude}m</span></span>
         <span className="text-[11px] text-emerald-600 dark:text-emerald-400">
           Tap fast to bounce higher!
         </span>
