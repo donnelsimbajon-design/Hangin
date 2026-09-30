@@ -29,16 +29,57 @@ export interface PetStats {
   isSoapy: boolean;
 }
 
+/**
+ * Headwear offered in the Market's "Clothing & Hats" tab. `salakot` and
+ * `beanie` are the two original hats — they are kept (and simply repriced)
+ * so sanctuaries that already own them keep their purchase.
+ */
+export type HatId =
+  | 'salakot'
+  | 'beanie'
+  | 'cap'
+  | 'bucketHat'
+  | 'flowerCrown'
+  | 'adventureHat';
+
+/** Outfits offered in the Market's "Clothing & Hats" tab. */
+export type ClothingId =
+  | 'hoodie'
+  | 'sweater'
+  | 'raincoat'
+  | 'pajamas'
+  | 'explorerJacket'
+  | 'summerShirt';
+
 export interface AccessoryInventory {
   hatSalakot: boolean;
   hatBeanie: boolean;
   sunglasses: boolean;
   cozyScarf: boolean;
   collarBell: boolean;
+
+  // ---- Clothing & Hats wardrobe ----
+  // Optional on purpose: `AppState` is persisted per browser, and sanctuaries
+  // saved before this wardrobe existed have no keys for it. A missing key
+  // simply reads as "not owned", so no state migration is needed.
+  hatCap?: boolean;
+  hatBucketHat?: boolean;
+  hatFlowerCrown?: boolean;
+  hatAdventureHat?: boolean;
+
+  clothingHoodie?: boolean;
+  clothingSweater?: boolean;
+  clothingRaincoat?: boolean;
+  clothingPajamas?: boolean;
+  clothingExplorerJacket?: boolean;
+  clothingSummerShirt?: boolean;
 }
 
 export interface EquippedAccessories {
-  hat: 'salakot' | 'beanie' | null;
+  /** Only one hat at a time — equipping another replaces this. */
+  hat: HatId | null;
+  /** Only one outfit at a time — equipping another replaces this. */
+  clothing: ClothingId | null;
   glasses: boolean;
   scarf: boolean;
   collar: boolean;
@@ -104,6 +145,14 @@ export interface ForumComment {
   authorName?: string;
   species?: PetSpecies;
   authorSpecies?: PetSpecies;
+  /**
+   * The author's companion as they were wearing it when they wrote this. Same
+   * `EquippedAccessories` the sanctuary stores for the living companion, so a
+   * commenter is drawn from the existing companion appearance and the community
+   * needs no avatar model of its own. Optional: seeds and older saved state may
+   * predate it, and a missing value simply renders the bare companion.
+   */
+  equipped?: EquippedAccessories;
   text: string;
   timestamp: string | number;
   likes?: number;
@@ -124,6 +173,14 @@ export interface ForumPost {
   authorName?: string;
   species: PetSpecies;
   authorSpecies?: PetSpecies;
+  /**
+   * The author's companion as they were wearing it when they posted. The same
+   * `EquippedAccessories` the sanctuary stores for the living companion, so a
+   * post header can show the author's own companion without a parallel avatar
+   * model. Optional: seeds and older saved state may predate it, and a missing
+   * value simply renders the bare companion.
+   */
+  equipped?: EquippedAccessories;
   avatarFrame?: string;
   channel: string;
   title?: string;
@@ -177,4 +234,5 @@ export interface AppState {
   lastActiveDate: string;
   shieldActive: boolean;
   focusSessionMinutes: number;
+  newcomerClaimedDay?: number;
 }

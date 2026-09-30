@@ -6,6 +6,7 @@ import {
   ArrowLeft,
   Check,
   CheckCircle2,
+  X,
   Gift,
   Award,
   Shirt,
@@ -35,9 +36,22 @@ import {
   Dog,
   Cat,
   ShieldCheck,
+  CloudRain,
+  CloudSun,
+  Moon,
+  Compass,
+  HardHat,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
-import { Inventory, AccessoryInventory, EquippedAccessories, DailyHabit, PetSpecies } from '../types';
+import {
+  Inventory,
+  AccessoryInventory,
+  EquippedAccessories,
+  DailyHabit,
+  PetSpecies,
+  HatId,
+  ClothingId,
+} from '../types';
 
 interface ExpandedMarketProps {
   species?: PetSpecies;
@@ -50,9 +64,14 @@ interface ExpandedMarketProps {
   onBack: () => void;
   onBuyItem: (itemKey: keyof Inventory, cost: number) => boolean;
   onBuyAccessory: (accKey: keyof AccessoryInventory, cost: number) => boolean;
-  onEquipAccessory: (slot: 'hat' | 'glasses' | 'scarf', value: any) => void;
+  onEquipAccessory: (
+    slot: 'hat' | 'clothing' | 'glasses' | 'scarf',
+    value: any
+  ) => void;
   onToggleHabit: (habitId: string) => void;
   onAddPoints: (amount: number) => void;
+  newcomerClaimedDay: number;
+  onClaimNewcomerDay: (day: number) => void;
 }
 
 export const ExpandedMarket: React.FC<ExpandedMarketProps> = ({
@@ -69,9 +88,10 @@ export const ExpandedMarket: React.FC<ExpandedMarketProps> = ({
   onEquipAccessory,
   onToggleHabit,
   onAddPoints,
+  newcomerClaimedDay,
+  onClaimNewcomerDay,
 }) => {
   const [activeCategory, setActiveCategory] = useState<'topup' | 'food' | 'care' | 'wearables' | 'awards'>('topup');
-  const [claimedDay, setClaimedDay] = useState<number>(1);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [currency, setCurrency] = useState<'PHP' | 'USD'>('PHP');
   const [purchasingBundle, setPurchasingBundle] = useState<any | null>(null);
@@ -160,15 +180,21 @@ export const ExpandedMarket: React.FC<ExpandedMarketProps> = ({
   ];
 
   const handleClaimNewcomerDay = (dayNum: number) => {
-    if (dayNum !== claimedDay + 1 && dayNum !== 1) {
+    // Only allow claiming the next sequential day (or day 1 if nothing claimed yet)
+    const nextClaimableDay = newcomerClaimedDay + 1;
+    if (dayNum !== nextClaimableDay && !(dayNum === 1 && newcomerClaimedDay === 0)) {
       showToast('Log in tomorrow to claim the next day reward');
       return;
     }
-    setClaimedDay(dayNum);
+    onClaimNewcomerDay(dayNum);
     confetti({ particleCount: 40, spread: 60 });
+    if (dayNum === 1) onAddPoints(10);
     if (dayNum === 2) onBuyItem('apple', 0);
+    if (dayNum === 3) onBuyAccessory('hatBeanie', 0);
     if (dayNum === 4) onAddPoints(20);
     if (dayNum === 5) onBuyItem('soap', 0);
+    if (dayNum === 6) onBuyAccessory('cozyScarf', 0);
+    if (dayNum === 7) showToast('Blessing Award claimed!');
     showToast(`Claimed Day ${dayNum} reward`);
   };
 
@@ -192,11 +218,208 @@ export const ExpandedMarket: React.FC<ExpandedMarketProps> = ({
     { key: 'brush' as const, name: 'Wooden Coat Brush', Icon: Paintbrush2, cost: 7, desc: '+15 Coat shine & happiness', iconBg: 'bg-white dark:bg-[#182a22] border border-amber-100 dark:border-amber-900/40', iconColor: 'text-amber-700 dark:text-amber-300' },
   ];
 
-  const wearablesCatalog = [
-    { key: 'hatSalakot' as const, slot: 'hat' as const, val: 'salakot', name: 'Woven Salakot Hat', Icon: Sun, cost: 15, desc: 'Classic Filipino straw sun hat', iconBg: 'bg-white dark:bg-[#182a22] border border-yellow-100 dark:border-yellow-900/40', iconColor: 'text-yellow-700 dark:text-yellow-300' },
-    { key: 'hatBeanie' as const, slot: 'hat' as const, val: 'beanie', name: 'Cozy Knit Beanie', Icon: Snowflake, cost: 18, desc: 'Warm sage pom-pom winter beanie', iconBg: 'bg-white dark:bg-[#182a22] border border-teal-100 dark:border-teal-900/40', iconColor: 'text-teal-600 dark:text-teal-300' },
-    { key: 'sunglasses' as const, slot: 'glasses' as const, val: true, name: 'Cool Dark Shades', Icon: Glasses, cost: 14, desc: 'Classic sunglasses', iconBg: 'bg-white dark:bg-[#182a22] border border-slate-200 dark:border-slate-700/50', iconColor: 'text-slate-700 dark:text-slate-300' },
-    { key: 'cozyScarf' as const, slot: 'scarf' as const, val: true, name: 'Hand-knit Scarf', Icon: Wind, cost: 20, desc: 'Soft neck scarf', iconBg: 'bg-white dark:bg-[#182a22] border border-orange-100 dark:border-orange-900/40', iconColor: 'text-orange-500 dark:text-orange-300' },
+  /**
+   * Clothing & Hats.
+   *
+   * `slot` is the single-slot key on `EquippedAccessories` that the item writes
+   * to, and `val` is the id the companion renderer looks for. Ownership lives on
+   * `AppState.accessories` under `key` — the same store the original hats use,
+   * so a sanctuary that already owns the salakot or beanie keeps it.
+   */
+  type WearableSlot = 'hat' | 'clothing' | 'glasses' | 'scarf';
+
+  const clothingCatalog: {
+    key: keyof AccessoryInventory;
+    slot: WearableSlot;
+    val: ClothingId;
+    name: string;
+    Icon: React.ElementType<{ className?: string }>;
+    cost: number;
+    desc: string;
+    iconBg: string;
+    iconColor: string;
+  }[] = [
+    {
+      key: 'clothingHoodie',
+      slot: 'clothing',
+      val: 'hoodie',
+      name: 'Cozy Hoodie',
+      Icon: Shirt,
+      cost: 80,
+      desc: 'Soft fleece with a warm hood for cool evenings',
+      iconBg: 'bg-white dark:bg-[#182a22] border border-indigo-100 dark:border-indigo-900/40',
+      iconColor: 'text-indigo-600 dark:text-indigo-300',
+    },
+    {
+      key: 'clothingSummerShirt',
+      slot: 'clothing',
+      val: 'summerShirt',
+      name: 'Summer Shirt',
+      Icon: Sun,
+      cost: 90,
+      desc: 'Breathable short sleeves for warm afternoons',
+      iconBg: 'bg-white dark:bg-[#182a22] border border-sky-100 dark:border-sky-900/40',
+      iconColor: 'text-sky-500 dark:text-sky-300',
+    },
+    {
+      key: 'clothingSweater',
+      slot: 'clothing',
+      val: 'sweater',
+      name: 'Green Sweater',
+      Icon: Shirt,
+      cost: 100,
+      desc: 'Knitted sage green with a snug ribbed hem',
+      iconBg: 'bg-white dark:bg-[#182a22] border border-emerald-100 dark:border-emerald-900/40',
+      iconColor: 'text-emerald-600 dark:text-emerald-300',
+    },
+    {
+      key: 'clothingRaincoat',
+      slot: 'clothing',
+      val: 'raincoat',
+      name: 'Raincoat',
+      Icon: CloudRain,
+      cost: 120,
+      desc: 'Waterproof yellow shell with a little hood',
+      iconBg: 'bg-white dark:bg-[#182a22] border border-amber-100 dark:border-amber-900/40',
+      iconColor: 'text-amber-600 dark:text-amber-300',
+    },
+    {
+      key: 'clothingPajamas',
+      slot: 'clothing',
+      val: 'pajamas',
+      name: 'Comfy Pajamas',
+      Icon: Moon,
+      cost: 140,
+      desc: 'Feather-soft lounge set for restful nights',
+      iconBg: 'bg-white dark:bg-[#182a22] border border-pink-100 dark:border-pink-900/40',
+      iconColor: 'text-pink-500 dark:text-pink-300',
+    },
+    {
+      key: 'clothingExplorerJacket',
+      slot: 'clothing',
+      val: 'explorerJacket',
+      name: 'Explorer Jacket',
+      Icon: Compass,
+      cost: 180,
+      desc: 'Khaki field jacket with pockets and a belt',
+      iconBg: 'bg-white dark:bg-[#182a22] border border-stone-200 dark:border-stone-700/50',
+      iconColor: 'text-stone-600 dark:text-stone-300',
+    },
+  ];
+
+  const hatsCatalog: {
+    key: keyof AccessoryInventory;
+    slot: WearableSlot;
+    val: HatId | true;
+    name: string;
+    Icon: React.ElementType<{ className?: string }>;
+    cost: number;
+    desc: string;
+    iconBg: string;
+    iconColor: string;
+  }[] = [
+    {
+      key: 'hatCap',
+      slot: 'hat',
+      val: 'cap',
+      name: 'Simple Cap',
+      Icon: HardHat,
+      cost: 50,
+      desc: 'Everyday two-tone cap with a curved brim',
+      iconBg: 'bg-white dark:bg-[#182a22] border border-cyan-100 dark:border-cyan-900/40',
+      iconColor: 'text-cyan-600 dark:text-cyan-300',
+    },
+    {
+      key: 'hatBeanie',
+      slot: 'hat',
+      val: 'beanie',
+      name: 'Beanie',
+      Icon: Snowflake,
+      cost: 70,
+      desc: 'Warm knit cap with a fluffy pom-pom',
+      iconBg: 'bg-white dark:bg-[#182a22] border border-teal-100 dark:border-teal-900/40',
+      iconColor: 'text-teal-600 dark:text-teal-300',
+    },
+    {
+      key: 'hatSalakot',
+      slot: 'hat',
+      val: 'salakot',
+      name: 'Sun Hat',
+      Icon: Sun,
+      cost: 90,
+      desc: 'Classic wide-brim woven sun shield',
+      iconBg: 'bg-white dark:bg-[#182a22] border border-yellow-100 dark:border-yellow-900/40',
+      iconColor: 'text-yellow-700 dark:text-yellow-300',
+    },
+    {
+      key: 'hatBucketHat',
+      slot: 'hat',
+      val: 'bucketHat',
+      name: 'Bucket Hat',
+      Icon: CloudSun,
+      cost: 110,
+      desc: 'Soft khaki bucket with a stitched brim',
+      iconBg: 'bg-white dark:bg-[#182a22] border border-orange-100 dark:border-orange-900/40',
+      iconColor: 'text-orange-500 dark:text-orange-300',
+    },
+    {
+      key: 'hatFlowerCrown',
+      slot: 'hat',
+      val: 'flowerCrown',
+      name: 'Flower Crown',
+      Icon: Flower2,
+      cost: 130,
+      desc: 'Hand-picked blossoms for gentle days',
+      iconBg: 'bg-white dark:bg-[#182a22] border border-rose-100 dark:border-rose-900/40',
+      iconColor: 'text-rose-500 dark:text-rose-300',
+    },
+    {
+      key: 'hatAdventureHat',
+      slot: 'hat',
+      val: 'adventureHat',
+      name: 'Adventure Hat',
+      Icon: Compass,
+      cost: 160,
+      desc: 'Wide-brim explorer hat with a trail band',
+      iconBg: 'bg-white dark:bg-[#182a22] border border-amber-200 dark:border-amber-800/50',
+      iconColor: 'text-amber-600 dark:text-amber-300',
+    },
+  ];
+
+  /** Sunglasses & scarf stay in the same slot system as before. */
+  const extrasCatalog: {
+    key: keyof AccessoryInventory;
+    slot: WearableSlot;
+    val: true;
+    name: string;
+    Icon: React.ElementType<{ className?: string }>;
+    cost: number;
+    desc: string;
+    iconBg: string;
+    iconColor: string;
+  }[] = [
+    {
+      key: 'sunglasses',
+      slot: 'glasses',
+      val: true,
+      name: 'Cool Dark Shades',
+      Icon: Glasses,
+      cost: 14,
+      desc: 'Classic sunglasses',
+      iconBg: 'bg-white dark:bg-[#182a22] border border-slate-200 dark:border-slate-700/50',
+      iconColor: 'text-slate-700 dark:text-slate-300',
+    },
+    {
+      key: 'cozyScarf',
+      slot: 'scarf',
+      val: true,
+      name: 'Hand-knit Scarf',
+      Icon: Wind,
+      cost: 20,
+      desc: 'Soft neck scarf',
+      iconBg: 'bg-white dark:bg-[#182a22] border border-orange-100 dark:border-orange-900/40',
+      iconColor: 'text-orange-500 dark:text-orange-300',
+    },
   ];
 
   const circleAwardsCatalog = [
@@ -226,6 +449,122 @@ export const ExpandedMarket: React.FC<ExpandedMarketProps> = ({
       <span className="inline-flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300">
         All pets
       </span>
+    );
+  };
+
+  /**
+   * Renders one wearable card. Shared by the Clothing, Hats, and Extra flair
+   * sections so every item gets identical purchase/equip behavior.
+   *
+   * Purchase flow:
+   *  - Owned items show Equip / Equipped+Unequip instead of a price.
+   *  - Not-owned items charge WP and mark the item owned on `accessories`.
+   *  - Not enough WP → the purchase is refused with a visible message.
+   */
+  const renderWearableCard = (acc: {
+    key: keyof AccessoryInventory;
+    slot: WearableSlot;
+    val: HatId | ClothingId | true;
+    name: string;
+    Icon: React.ElementType<{ className?: string }>;
+    cost: number;
+    desc: string;
+    iconBg: string;
+    iconColor: string;
+  }) => {
+    const isOwned = Boolean(accessories[acc.key]);
+    const isEquipped =
+      (acc.slot === 'hat' && equipped.hat === acc.val) ||
+      (acc.slot === 'clothing' && equipped.clothing === acc.val) ||
+      (acc.slot === 'glasses' && equipped.glasses) ||
+      (acc.slot === 'scarf' && equipped.scarf);
+    const Icon = acc.Icon;
+
+    return (
+      <div
+        key={acc.key}
+        className={`p-3.5 rounded-2xl border flex items-center justify-between gap-3 transition-colors ${
+          isEquipped
+            ? 'bg-emerald-50 dark:bg-emerald-900/30 border-emerald-300 dark:border-[#2d4d41]'
+            : 'bg-emerald-50/50 dark:bg-[#182a22] border-emerald-100 dark:border-emerald-800/40'
+        }`}
+      >
+        <div className="flex items-center gap-3 min-w-0">
+          <span className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${acc.iconBg} ${acc.iconColor}`}>
+            <Icon className="w-5 h-5" />
+          </span>
+          <div className="min-w-0">
+            <h4 className="text-xs font-bold text-emerald-950 dark:text-emerald-100">
+              {acc.name}
+            </h4>
+            <p className="text-[10px] text-emerald-700 dark:text-emerald-300">
+              {acc.desc}
+            </p>
+            {isOwned ? (
+              <span className="text-[10px] text-emerald-800 dark:text-emerald-200 font-semibold mt-0.5 block">
+                Owned
+              </span>
+            ) : (
+              <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold mt-0.5 block">
+                {acc.cost} WP
+              </span>
+            )}
+          </div>
+        </div>
+
+        {isOwned ? (
+          <div className="flex items-center gap-1.5 shrink-0">
+            {isEquipped ? (
+              <>
+                <span className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-emerald-800 text-white text-xs font-bold">
+                  <Check className="w-3.5 h-3.5" />
+                  Equipped
+                </span>
+                <button
+                  onClick={() =>
+                    onEquipAccessory(
+                      acc.slot,
+                      acc.slot === 'hat' || acc.slot === 'clothing'
+                        ? null
+                        : false
+                    )
+                  }
+                  title={`Unequip ${acc.name}`}
+                  className="p-1.5 rounded-xl text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition-colors cursor-pointer"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={() => onEquipAccessory(acc.slot, acc.val)}
+                className="px-3 py-1.5 rounded-xl text-xs font-bold cursor-pointer transition-colors bg-emerald-200 dark:bg-emerald-800 text-emerald-900 dark:text-emerald-100 hover:bg-emerald-300 dark:hover:bg-emerald-700"
+              >
+                Equip
+              </button>
+            )}
+          </div>
+        ) : (
+          <button
+            onClick={() => {
+              if (points < acc.cost) {
+                showToast(
+                  `Not enough WP — you need ${acc.cost - points} more WP for ${acc.name}`
+                );
+                return;
+              }
+              const ok = onBuyAccessory(acc.key, acc.cost);
+              if (ok) {
+                confetti({ particleCount: 30, spread: 50 });
+                showToast(`Unlocked ${acc.name}`);
+              }
+            }}
+            className="px-3.5 py-1.5 rounded-xl bg-emerald-800 hover:bg-emerald-900 text-white text-xs font-bold shadow-xs cursor-pointer active:scale-95 shrink-0"
+          >
+            {acc.cost} WP
+          </button>
+        )}
+      </div>
     );
   };
 
@@ -293,15 +632,19 @@ export const ExpandedMarket: React.FC<ExpandedMarketProps> = ({
 
         <div className="grid grid-cols-7 gap-1.5 sm:gap-2">
           {newcomerDays.map((d) => {
-            const isClaimed = d.day <= claimedDay;
-            const canClaim = d.day === claimedDay + 1;
+            const isClaimed = d.day <= newcomerClaimedDay;
+            const canClaim = d.day === newcomerClaimedDay + 1;
+            const isLocked = !isClaimed && !canClaim;
             const Icon = d.Icon;
 
             return (
               <button
                 key={d.day}
                 onClick={() => handleClaimNewcomerDay(d.day)}
-                className={`flex flex-col items-center p-2 rounded-2xl border text-center transition-all cursor-pointer ${
+                disabled={isLocked}
+                className={`flex flex-col items-center p-2 rounded-2xl border text-center transition-all ${
+                  isLocked ? 'cursor-not-allowed' : 'cursor-pointer'
+                } ${
                   isClaimed
                     ? 'bg-emerald-100/70 dark:bg-emerald-900/60 border-emerald-300 dark:border-[#2d4d41]'
                     : canClaim
@@ -592,75 +935,53 @@ export const ExpandedMarket: React.FC<ExpandedMarketProps> = ({
           </div>
         )}
 
-        {/* WEARABLES CATEGORY */}
+        {/* WEARABLES CATEGORY — Clothing, Hats & Extra flair */}
         {activeCategory === 'wearables' && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {wearablesCatalog.map((acc) => {
-              const isOwned = accessories[acc.key];
-              const isEquipped =
-                (acc.slot === 'hat' && equipped.hat === acc.val) ||
-                (acc.slot === 'glasses' && equipped.glasses) ||
-                (acc.slot === 'scarf' && equipped.scarf);
-              const Icon = acc.Icon;
+          <div className="space-y-5">
+            <section>
+              <div className="flex items-center gap-1.5 mb-2.5">
+                <Shirt className="w-3.5 h-3.5 text-emerald-700 dark:text-emerald-300" />
+                <h4 className="text-xs font-black uppercase tracking-wider text-emerald-900 dark:text-emerald-100">
+                  Clothing
+                </h4>
+                <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium ml-1">
+                  (one worn at a time)
+                </span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {clothingCatalog.map((acc) => renderWearableCard(acc))}
+              </div>
+            </section>
 
-              return (
-                <div
-                  key={acc.key}
-                  className={`p-3.5 rounded-2xl border flex items-center justify-between gap-3 transition-colors ${
-                    isEquipped
-                      ? 'bg-emerald-50 dark:bg-emerald-900/30 border-emerald-300 dark:border-[#2d4d41]'
-                      : 'bg-emerald-50/50 dark:bg-[#182a22] border-emerald-100 dark:border-emerald-800/40'
-                  }`}
-                >
-                  <div className="flex items-center gap-3 min-w-0">
-                    <span className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${acc.iconBg} ${acc.iconColor}`}>
-                      <Icon className="w-5 h-5" />
-                    </span>
-                    <div className="min-w-0">
-                      <h4 className="text-xs font-bold text-emerald-950 dark:text-emerald-100">
-                        {acc.name}
-                      </h4>
-                      <p className="text-[10px] text-emerald-700 dark:text-emerald-300">
-                        {acc.desc}
-                      </p>
-                    </div>
-                  </div>
+            <section>
+              <div className="flex items-center gap-1.5 mb-2.5">
+                <Crown className="w-3.5 h-3.5 text-emerald-700 dark:text-emerald-300" />
+                <h4 className="text-xs font-black uppercase tracking-wider text-emerald-900 dark:text-emerald-100">
+                  Hats
+                </h4>
+                <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium ml-1">
+                  (one worn at a time)
+                </span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {hatsCatalog.map((acc) => renderWearableCard(acc))}
+              </div>
+            </section>
 
-                  {isOwned ? (
-                    <button
-                      onClick={() =>
-                        onEquipAccessory(
-                          acc.slot,
-                          isEquipped ? (acc.slot === 'hat' ? null : false) : acc.val
-                        )
-                      }
-                      className={`px-3 py-1.5 rounded-xl text-xs font-bold cursor-pointer transition-colors flex items-center gap-1 shrink-0 ${
-                        isEquipped
-                          ? 'bg-emerald-800 text-white'
-                          : 'bg-emerald-200 dark:bg-emerald-800 text-emerald-900 dark:text-emerald-100 hover:bg-emerald-300'
-                      }`}
-                    >
-                      {isEquipped && <Check className="w-3.5 h-3.5" />}
-                      {isEquipped ? 'Equipped' : 'Equip'}
-                    </button>
-                  ) : (
-                    <button
-                      onClick={() => {
-                        const ok = onBuyAccessory(acc.key, acc.cost);
-                        if (ok) {
-                          confetti({ particleCount: 30, spread: 50 });
-                          showToast(`Unlocked ${acc.name}`);
-                        }
-                      }}
-                      disabled={points < acc.cost}
-                      className="px-3.5 py-1.5 rounded-xl bg-emerald-800 hover:bg-emerald-900 disabled:opacity-40 text-white text-xs font-bold shadow-xs cursor-pointer shrink-0"
-                    >
-                      {acc.cost} WP
-                    </button>
-                  )}
-                </div>
-              );
-            })}
+            <section>
+              <div className="flex items-center gap-1.5 mb-2.5">
+                <Sparkles className="w-3.5 h-3.5 text-emerald-700 dark:text-emerald-300" />
+                <h4 className="text-xs font-black uppercase tracking-wider text-emerald-900 dark:text-emerald-100">
+                  Extra flair
+                </h4>
+                <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium ml-1">
+                  (sunglasses &amp; scarf)
+                </span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {extrasCatalog.map((acc) => renderWearableCard(acc))}
+              </div>
+            </section>
           </div>
         )}
 

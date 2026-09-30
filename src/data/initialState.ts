@@ -48,6 +48,9 @@ export const initialPosts: ForumPost[] = [
     id: 'post-1',
     author: 'u/QuietRiver_92',
     species: 'dog',
+    // A companion look, so the seeded feed exercises the post-header avatar
+    // with more than one species/outfit combination.
+    equipped: { hat: 'salakot', clothing: null, glasses: false, scarf: false, collar: true },
     channel: 'h/ScreenFreeLiving',
     title: 'Put my phone in another room during family dinner tonight',
     text: 'We ended up laughing over old childhood stories for over an hour. Small wins! Truly grateful for the quiet headspace.',
@@ -66,6 +69,7 @@ export const initialPosts: ForumPost[] = [
         id: 'c-1',
         author: 'u/CalmPanda',
         species: 'cat',
+        equipped: { hat: null, clothing: 'pajamas', glasses: false, scarf: false, collar: true },
         text: 'That sounds so peaceful. Inspiring me to do the same tonight! 🌱',
         timestamp: '1 hour ago',
         upvotes: 8,
@@ -77,6 +81,7 @@ export const initialPosts: ForumPost[] = [
     id: 'post-2',
     author: 'u/Sam_Manila',
     species: 'cat',
+    equipped: { hat: 'beanie', clothing: 'hoodie', glasses: true, scarf: true, collar: false },
     channel: 'h/StressSupport',
     title: 'Midterms were overwhelming, but the 5-4-3-2-1 technique pulled me back',
     text: 'Doing 5 minutes of grounding with my companion reminded me I can just focus on the single step right in front of me instead of spiraling into tomorrow.',
@@ -95,6 +100,7 @@ export const initialPosts: ForumPost[] = [
         id: 'c-2',
         author: 'u/Lia_Breeze',
         species: 'dog',
+        equipped: { hat: 'flowerCrown', clothing: null, glasses: false, scarf: false, collar: true },
         text: 'You got this Sam! Remember to drink water and take small breaks.',
         timestamp: '30 mins ago',
         upvotes: 14,
@@ -106,6 +112,7 @@ export const initialPosts: ForumPost[] = [
     id: 'post-3',
     author: 'u/AuraFocus',
     species: 'dog',
+    equipped: { hat: 'cap', clothing: 'summerShirt', glasses: false, scarf: false, collar: true },
     channel: 'h/StudyFocus',
     title: 'Sanctuary mode saved my afternoon review session',
     text: 'Blocked 5 distracting social apps. No random dopamine loops, no notifications. Felt so refreshing to be immersed in work for 45 solid minutes.',
@@ -142,6 +149,7 @@ export const defaultAppState: AppState = {
   },
   equipped: {
     hat: null,
+    clothing: null,
     glasses: false,
     scarf: false,
     collar: false,
@@ -152,6 +160,16 @@ export const defaultAppState: AppState = {
     sunglasses: false,
     cozyScarf: false,
     collarBell: false,
+    hatCap: false,
+    hatBucketHat: false,
+    hatFlowerCrown: false,
+    hatAdventureHat: false,
+    clothingHoodie: false,
+    clothingSweater: false,
+    clothingRaincoat: false,
+    clothingPajamas: false,
+    clothingExplorerJacket: false,
+    clothingSummerShirt: false,
   },
   inventory: {
     // Shared
@@ -190,8 +208,11 @@ export const defaultAppState: AppState = {
   isJournalLocked: true, // Always start locked per user's prompt: "lock screen will be shown not this"
   forumPosts: initialPosts,
   activeChannel: 'all',
-  streakDays: 1,
+  // A brand-new account has not completed a day of care yet, so it starts
+  // with an earned streak of 0 rather than a hardcoded demo "1".
+  streakDays: 0,
   lastActiveDate: new Date().toISOString().split('T')[0],
   shieldActive: true,
   focusSessionMinutes: 25,
+  newcomerClaimedDay: 0,
 };

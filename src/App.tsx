@@ -11,7 +11,6 @@ import {
   Sun,
   Moon,
   Flame,
-  PhoneCall,
   Leaf,
   PawPrint,
   Apple,
@@ -19,6 +18,7 @@ import {
 import confetti from 'canvas-confetti';
 
 import { defaultAppState } from './data/initialState';
+import { useTheme } from './hooks/useTheme';
 import {
   AppState,
   PetSpecies,
@@ -46,7 +46,6 @@ import { PhoneMinimizer } from './components/PhoneMinimizer';
 import { PrototypeTesterBar } from './components/PrototypeTesterBar';
 import { TesterGuideModal } from './components/TesterGuideModal';
 import { AppSpotlightTutorial } from './components/AppSpotlightTutorial';
-import { DailyAffirmationWidget } from './components/DailyAffirmationWidget';
 import { HanginIntroScreen } from './components/HanginIntroScreen';
 
 const STORAGE_KEY = 'hangin_wellness_v7_state';
@@ -74,6 +73,61 @@ type AppTab =
   | 'market';
 
 type PhoneMode = 'app' | 'home' | 'minimizer';
+
+/**
+ * Whether a sanctuary is already stored on this device.
+ *
+ * `STORAGE_KEY` holds exactly one account per browser, so this flag is what
+ * separates "returning user, keep my progress" from "new registration, start
+ * clean". Read once, because a stored sanctuary is never created or removed
+ * behind our back while the app is running.
+ */
+const hasStoredSanctuary = (): boolean => {
+  try {
+    return localStorage.getItem(STORAGE_KEY) !== null;
+  } catch (error) {
+    console.error('Error reading saved state:', error);
+    return false;
+  }
+};
+
+/**
+ * A brand-new account's sanctuary.
+ *
+ * Progress always starts at zero: 0 WP and a 0-day streak. WP is then earned
+ * through the usual actions (habits, journaling, community, check-ins) and
+ * this function never runs again for that account, so it cannot hand out
+ * demo progress.
+ */
+const createFreshAppState = (
+  overrides: Partial<AppState> = {}
+): AppState => ({
+  ...defaultAppState,
+  points: 0,
+  streakDays: 0,
+  lastActiveDate: new Date().toISOString().split('T')[0],
+  ...overrides,
+});
+
+/**
+ * True when the guardian signing in owns the sanctuary already saved here.
+ * Compared on the trimmed name only — the PIN is a journal lock the user may
+ * legitimately change, not the account identity.
+ */
+const isReturningGuardian = (
+  state: AppState,
+  userName: string
+): boolean => {
+  const savedName = (state.userName ?? '').trim();
+
+  if (savedName.length === 0) {
+    return false;
+  }
+
+  return (
+    savedName.toLowerCase() === userName.trim().toLowerCase()
+  );
+};
 
 export default function App() {
   /*
@@ -103,6 +157,17 @@ export default function App() {
       onboarded: false,
     };
   });
+
+  /*
+   * --------------------------------------------------------------------------
+   * ACCOUNT IDENTITY
+   * --------------------------------------------------------------------------
+   * `STORAGE_KEY` holds a single account per browser, so remembering whether
+   * it was already populated is what lets a returning guardian keep their
+   * progress while a newly registered guardian starts from zero.
+   */
+
+  const [hadStoredSanctuary] = useState<boolean>(hasStoredSanctuary);
 
   /*
    * --------------------------------------------------------------------------
@@ -144,7 +209,21 @@ export default function App() {
 
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isCrisisOpen, setIsCrisisOpen] = useState(false);
-  const [darkMode, setDarkMode] = useState(false);
+
+  /*
+   * --------------------------------------------------------------------------
+   * THEME
+   * --------------------------------------------------------------------------
+   *
+   * `useTheme` owns persistence and the `.dark` class on <html>; the visual
+   * ramp lives in index.css. Surfaces both the header shortcut and the
+   * Appearance row in Settings, which are two views of one control.
+   */
+
+  const {
+    isDark: darkMode,
+    toggleTheme,
+  } = useTheme();
 
   const [showGuideModal, setShowGuideModal] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
@@ -218,20 +297,6 @@ export default function App() {
 
   /*
    * --------------------------------------------------------------------------
-   * DARK MODE
-   * --------------------------------------------------------------------------
-   */
-
-  useEffect(() => {
-    if (darkMode) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  }, [darkMode]);
-
-  /*
-   * --------------------------------------------------------------------------
    * LOGO ADMIN CONTROLS
    * --------------------------------------------------------------------------
    */
@@ -278,10 +343,11 @@ export default function App() {
       console.error('Error resetting local storage:', error);
     }
 
-    setAppState({
-      ...defaultAppState,
-      onboarded: false,
-    });
+    setAppState(
+      createFreshAppState({
+        onboarded: false,
+      })
+    );
 
     setIsLoggedIn(false);
     setActiveTab('home');
@@ -304,13 +370,34 @@ export default function App() {
     userName: string;
     pin: string;
   }) => {
-    setAppState((previous) => ({
-      ...previous,
-      userName: data.userName,
-      journalPin:
-        data.pin || previous.journalPin || '1234',
-      onboarded: true,
-    }));
+    const guardianName = data.userName.trim();
+
+    // Signing in as the guardian who already owns the stored sanctuary keeps
+    // every bit of their progress. Any other name is a new registration, so
+    // it starts from a clean slate instead of inheriting someone else's
+    // Wellness Points, streak, journal and inventory.
+    const returningGuardian =
+      hadStoredSanctuary &&
+      isReturningGuardian(appState, guardianName);
+
+    if (returningGuardian) {
+      setAppState((previous) => ({
+        ...previous,
+        userName: guardianName,
+        journalPin:
+          data.pin || previous.journalPin || '1234',
+        onboarded: true,
+      }));
+    } else {
+      setAppState(
+        createFreshAppState({
+          userName: guardianName,
+          journalPin:
+            data.pin || '1234',
+          onboarded: true,
+        })
+      );
+    }
 
     setIsLoggedIn(true);
 
@@ -594,6 +681,12 @@ export default function App() {
     accKey: keyof AccessoryInventory,
     cost: number
   ): boolean => {
+    // Already-owned wearables are permanent, so a second purchase is rejected
+    // outright — it must never drain WP for something the guardian already has.
+    if (appState.accessories[accKey]) {
+      return false;
+    }
+
     if (appState.points < cost) {
       return false;
     }
@@ -619,6 +712,10 @@ export default function App() {
   /*
    * --------------------------------------------------------------------------
    * EQUIP ACCESSORY
+   *
+   * `hat` and `clothing` are single-slot: writing a new value into a slot
+   * replaces whatever was there, so the companion can only ever wear one hat
+   * and one outfit at a time. Passing `null` takes the slot back off.
    * --------------------------------------------------------------------------
    */
 
@@ -701,6 +798,13 @@ export default function App() {
     setActiveTab('market');
   };
 
+  const handleClaimNewcomerDay = (day: number) => {
+    setAppState((previous) => ({
+      ...previous,
+      newcomerClaimedDay: day,
+    }));
+  };
+
   /*
    * --------------------------------------------------------------------------
    * FORUM - ADD POST
@@ -725,6 +829,9 @@ export default function App() {
       authorName,
       species: appState.species,
       authorSpecies: appState.species,
+      // The author's companion as worn right now, so the post header's avatar
+      // is their companion rather than a generic mascot.
+      equipped: appState.equipped,
       channel,
       title:
         title ||
@@ -760,8 +867,6 @@ export default function App() {
         ...(previous.forumPosts ?? []),
       ],
     }));
-
-    handleAddPoints(5);
 
     confetti({
       particleCount: 45,
@@ -889,8 +994,6 @@ export default function App() {
         forumPosts,
       };
     });
-
-    handleAddPoints(2);
   };
 
   /*
@@ -921,6 +1024,9 @@ export default function App() {
           authorName,
           species: previous.species,
           authorSpecies: previous.species,
+          // Same as a post: carry the companion's current look so the reply's
+          // avatar matches the author's companion.
+          equipped: previous.equipped,
           text: commentText,
           timestamp: 'Just now',
           likes: 1,
@@ -941,8 +1047,6 @@ export default function App() {
         forumPosts,
       };
     });
-
-    handleAddPoints(3);
   };
 
   /*
@@ -961,7 +1065,6 @@ export default function App() {
         newSub,
       ],
       activeChannel: newSub.id,
-      points: previous.points + 5,
     }));
 
     confetti({
@@ -1039,21 +1142,35 @@ export default function App() {
     mindfulGoals: string[];
     dailyPace?: 'casual' | 'regular' | 'dedicated';
   }) => {
-    setAppState((previous) => ({
-      ...previous,
+    const guardianName = data.userName.trim();
+
+    // Same rule as the login screen: a guardian who already owns the stored
+    // sanctuary keeps their progress and just refreshes their preferences,
+    // while a first-time registration begins at 0 WP and a 0-day streak.
+    const returningGuardian =
+      hadStoredSanctuary &&
+      isReturningGuardian(appState, guardianName);
+
+    const onboardingDetails = {
       onboarded: true,
       species: data.species,
       companionName: data.companionName,
-      userName: data.userName,
+      userName: guardianName,
       journalPin: data.pin,
       mindfulGoals: data.mindfulGoals,
-      dailyPace:
-        data.dailyPace ?? 'regular',
-      points: Math.max(
-        previous.points,
-        25
-      ),
-    }));
+      dailyPace: data.dailyPace ?? 'regular',
+    };
+
+    if (returningGuardian) {
+      setAppState((previous) => ({
+        ...previous,
+        ...onboardingDetails,
+      }));
+    } else {
+      setAppState(
+        createFreshAppState(onboardingDetails)
+      );
+    }
 
     setIsLoggedIn(true);
     setShowOnboarding(false);
@@ -1291,7 +1408,11 @@ export default function App() {
               <Flame className="w-3.5 h-3.5 text-red-500 fill-red-500" />
 
               <span>
-                {appState.streakDays ?? 1}d
+                {Math.max(
+                  0,
+                  appState.streakDays ?? 0
+                )}
+                d
               </span>
             </div>
 
@@ -1308,25 +1429,15 @@ export default function App() {
               </span>
             </button>
 
-            {/* CRISIS */}
-            <button
-              onClick={() =>
-                setIsCrisisOpen(true)
-              }
-              className="h-8 px-2.5 rounded-full inline-flex items-center gap-1.5 bg-rose-500/10 hover:bg-rose-500/20 dark:bg-rose-500/15 dark:hover:bg-rose-500/25 border border-rose-500/25 text-xs font-bold text-rose-700 dark:text-rose-300 cursor-pointer shadow-2xs transition-all shrink-0"
-              title="24/7 Philippines Crisis Hotline: 1553"
-            >
-              <PhoneCall className="w-3.5 h-3.5 text-rose-500 animate-pulse" />
-              <span>1553</span>
-            </button>
-
             {/* DARK MODE */}
             <button
-              onClick={() =>
-                setDarkMode(
-                  (previous) => !previous
-                )
+              onClick={toggleTheme}
+              aria-label={
+                darkMode
+                  ? 'Switch to Light Mode'
+                  : 'Switch to Dark Mode'
               }
+              aria-pressed={darkMode}
               className="h-8 w-8 rounded-full inline-flex items-center justify-center bg-emerald-500/10 hover:bg-emerald-500/20 dark:bg-emerald-500/15 dark:hover:bg-emerald-500/25 border border-emerald-500/25 text-emerald-800 dark:text-emerald-200 cursor-pointer shadow-2xs transition-all shrink-0"
               title={
                 darkMode
@@ -1337,7 +1448,7 @@ export default function App() {
               {darkMode ? (
                 <Sun className="w-4 h-4 text-amber-400" />
               ) : (
-                <Moon className="w-4 h-4 text-emerald-700" />
+                <Moon className="w-4 h-4 text-emerald-700 dark:text-emerald-300" />
               )}
             </button>
           </div>
@@ -1435,15 +1546,6 @@ export default function App() {
                   }
                   onOpenChat={() =>
                     setIsChatOpen(true)
-                  }
-                />
-
-                <DailyAffirmationWidget
-                  companionName={
-                    appState.companionName
-                  }
-                  onAddPoints={
-                    handleAddPoints
                   }
                 />
               </motion.div>
@@ -1570,9 +1672,6 @@ export default function App() {
                   onTriggerCrisisSafety={() =>
                     setIsCrisisOpen(true)
                   }
-                  onAddPoints={
-                    handleAddPoints
-                  }
                 />
               </motion.div>
             )}
@@ -1659,11 +1758,7 @@ export default function App() {
                     appState.equipped
                   }
                   darkMode={darkMode}
-                  onToggleDarkMode={() =>
-                    setDarkMode(
-                      (previous) => !previous
-                    )
-                  }
+                  onToggleDarkMode={toggleTheme}
                   onOpenMarket={
                     handleOpenMarket
                   }
@@ -1746,6 +1841,12 @@ export default function App() {
                   onAddPoints={
                     handleAddPoints
                   }
+                  newcomerClaimedDay={
+                    appState.newcomerClaimedDay ?? 0
+                  }
+                  onClaimNewcomerDay={
+                    handleClaimNewcomerDay
+                  }
                 />
               </motion.div>
             )}
@@ -1801,7 +1902,7 @@ export default function App() {
             <div className="text-xs space-y-2.5 text-emerald-900/90 dark:text-emerald-200/90 mb-5 leading-relaxed">
               <div className="p-3 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-100 dark:border-emerald-900/50">
                 <div className="font-bold mb-1 flex items-center gap-1.5 text-emerald-800 dark:text-emerald-200">
-                  <Smartphone className="w-3.5 h-3.5 text-emerald-600" />
+                  <Smartphone className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-300" />
                   <span>
                     Android / Chrome:
                   </span>
